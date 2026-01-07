@@ -1,0 +1,135 @@
+{
+  "id": "5054206",
+  "name": "小卫",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "5634240",
+      "name": "mobile-alt",
+      "font_class": "mobile-alt",
+      "unicode": "f052",
+      "unicode_decimal": 61522
+    },
+    {
+      "icon_id": "6995489",
+      "name": "fa-eye-close",
+      "font_class": "fa-eye-close",
+      "unicode": "e607",
+      "unicode_decimal": 58887
+    },
+    {
+      "icon_id": "31694884",
+      "name": "fas fa-eye",
+      "font_class": "a-fasfa-eye",
+      "unicode": "e609",
+      "unicode_decimal": 58889
+    },
+    {
+      "icon_id": "4936487",
+      "name": "question-circle-fill",
+      "font_class": "question-circle-fill",
+      "unicode": "e845",
+      "unicode_decimal": 59461
+    },
+    {
+      "icon_id": "5634491",
+      "name": "unlock-alt",
+      "font_class": "unlock-alt",
+      "unicode": "f129",
+      "unicode_decimal": 61737
+    },
+    {
+      "icon_id": "7648722",
+      "name": "fa-cog",
+      "font_class": "cog",
+      "unicode": "e611",
+      "unicode_decimal": 58897
+    },
+    {
+      "icon_id": "11813164",
+      "name": "info-circle",
+      "font_class": "info-circle",
+      "unicode": "e608",
+      "unicode_decimal": 58888
+    },
+    {
+      "icon_id": "18948975",
+      "name": "fa-plus",
+      "font_class": "fasfa-plus",
+      "unicode": "e606",
+      "unicode_decimal": 58886
+    },
+    {
+      "icon_id": "21448963",
+      "name": "fas fa-chevron-right Copy",
+      "font_class": "fasfa-chevron-rightCopy",
+      "unicode": "e60d",
+      "unicode_decimal": 58893
+    },
+    {
+      "icon_id": "30204199",
+      "name": "fa-home",
+      "font_class": "fa-home",
+      "unicode": "e602",
+      "unicode_decimal": 58882
+    },
+    {
+      "icon_id": "32188260",
+      "name": "fa-key",
+      "font_class": "fa-key",
+      "unicode": "e605",
+      "unicode_decimal": 58885
+    },
+    {
+      "icon_id": "32211377",
+      "name": "fas fa-qrcode Copy 2",
+      "font_class": "a-fasfa-qrcodeCopy2",
+      "unicode": "e6bb",
+      "unicode_decimal": 59067
+    },
+    {
+      "icon_id": "34603277",
+      "name": "fa-user",
+      "font_class": "a-zu394",
+      "unicode": "e663",
+      "unicode_decimal": 58979
+    },
+    {
+      "icon_id": "40949308",
+      "name": "fa-user-circle-o",
+      "font_class": "fa-user-circle-o",
+      "unicode": "e637",
+      "unicode_decimal": 58935
+    },
+    {
+      "icon_id": "4946026",
+      "name": "智能仓储",
+      "font_class": "zhinengcangchu",
+      "unicode": "e600",
+      "unicode_decimal": 58880
+    },
+    {
+      "icon_id": "16344589",
+      "name": "fas fa-building",
+      "font_class": "fasfa-building",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "35335967",
+      "name": "door-open",
+      "font_class": "door-open",
+      "unicode": "e8ad",
+      "unicode_decimal": 59565
+    },
+    {
+      "icon_id": "42117203",
+      "name": "fas fa-list-ul",
+      "font_class": "a-fasfa-list-ul",
+      "unicode": "e63a",
+      "unicode_decimal": 58938
+    }
+  ]
+}

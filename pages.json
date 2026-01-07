@@ -1,0 +1,216 @@
+{
+	"easycom": {
+			"autoscan": true,
+			// 注意一定要放在custom里，否则无效，https://ask.dcloud.net.cn/question/131175
+			"custom": {
+				"^u--(.*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+				"^up-(.*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+		        "^u-([^-].*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+			    "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+			}
+		},
+	"pages": [ 
+		// {
+		// 	"path": "pages/ioslogin/index",
+		// 	"style": {
+		// 		"navigationBarTitleText": "登录"
+		// 	}
+		// },
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/door/index",
+			"style": {
+				"navigationBarTitleText": "开门"
+			}
+		},
+		{
+			"path": "pages/device/index",
+			"style": {
+				"navigationBarTitleText": "房屋"
+			}
+		},
+		{
+			"path": "pages/my/index",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
+		},
+		{
+			"path": "pages/house/apply",
+			"style": {
+				"navigationBarTitleText": "房屋申请"
+			}
+		},
+		{
+			"path": "pages/door/scan",
+			"style": {
+				"navigationBarTitleText": "扫码开门"
+			}
+		},
+		{
+			"path": "pages/camera/index",
+			"style": {
+				"navigationBarTitleText": "摄像头"
+			}
+		},
+		{
+			"path": "pages/lq-upgrade/upgrade",
+			"style": {
+				"navigationBarTitleText": "",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"bounce": "none",
+					"animationType": "none", //取消窗口动画
+					"background": "transparent" // 设置背景透明
+				}
+			}
+		},
+		{
+			"path": "workbench_package/pages/about/index",
+			"style": {
+				"navigationBarTitleText": "关于我们"
+			}
+		}
+	],
+	"subPackages": [
+		{
+			"root": "user_package",
+			"pages": [
+				{
+					"path": "pages/login/index",
+					"style": {
+						"navigationBarTitleText": "用户登录"
+					}
+				},
+				{
+					"path": "pages/webview",
+					"style": {
+						"navigationBarTitleText": "网页全屏预览",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/profile/index",
+					"style": {
+						"navigationBarTitleText": "修改用户资料"
+					}
+				},
+				{
+					"path": "pages/register/index",
+					"style": {
+						"navigationBarTitleText": "用户注册"
+					}
+				},
+				{
+					"path": "pages/forgot-password/index",
+					"style": {
+						"navigationBarTitleText": "忘记密码"
+					}
+				},
+				{
+					"path": "pages/agreement/user",
+					"style": {
+						"navigationBarTitleText": "用户服务协议"
+					}
+				},
+				{
+					"path": "pages/agreement/privacy",
+					"style": {
+						"navigationBarTitleText": "隐私政策"
+					}
+				}
+			]
+		},
+		{
+			"root": "workbench_package",
+			"pages": [
+				{
+					"path": "pages/visitor-password/index",
+					"style": {
+						"navigationBarTitleText": "临时访客密码"
+					}
+				},
+				{
+					"path": "pages/qrcode/index",
+					"style": {
+						"navigationBarTitleText": "二维码界面",
+						"statusBarBackgroundColor": "#FCDEDE"
+					}
+				},
+				{
+					"path": "pages/my/index",
+					"style": {
+						"navigationBarTitleText": "我的"
+					}
+				},
+				{
+					"path": "pages/face-upload/index",
+					"style": {
+						"navigationBarTitleText": "人脸上传"
+					}
+				},
+				{
+					"path": "pages/door-list/index",
+					"style": {
+						"navigationBarTitleText": "远程开门",
+						"app-plus": {
+							"bounce": "none"
+						}
+					}
+				}				
+			]
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "云小卫",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8",
+		"app-plus": {
+            "bounce": "none" 
+        }
+	},
+	"tabBar": {
+		"color": "#64748b",
+		"selectedColor": "#667eea",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "/static/icons/icon_home.png",
+				"selectedIconPath": "/static/icons/icon_home_select.png"
+			},
+			{
+				"pagePath": "pages/door/index",
+				"text": "开门",
+				"iconPath": "/static/icons/icon_unlock.png",
+				"selectedIconPath": "/static/icons/icon_unlock_select.png"
+			},
+			{
+				"pagePath": "pages/device/index",
+				"text": "房屋",
+				"iconPath": "/static/icons/icon_list.png",
+				"selectedIconPath": "/static/icons/icon_list_select.png"
+			},
+			{
+				"pagePath": "pages/my/index",
+				"text": "我的",
+				"iconPath": "/static/icons/icon_user.png",
+				"selectedIconPath": "/static/icons/icon_user_select.png"
+			}
+		]
+	},
+	"uniIdRouter": {
+		"loginPage": "user_package/pages/login/index",
+		"needLogin": [
+			"workbench_package/pages/.*"
+		]
+	}
+}

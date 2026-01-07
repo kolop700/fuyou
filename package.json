@@ -1,0 +1,15 @@
+{
+  "devDependencies": {
+    "sass": "^1.63.2",
+    "sass-loader": "^10.4.1"
+  },
+  "dependencies": {
+    "clipboard": "^2.0.11",
+    "crypto-js": "^4.2.0",
+    "dayjs": "^1.11.13",
+    "deep-pick-omit": "^1.2.1",
+    "destr": "^2.0.3",
+    "pinia": "^2.0.36",
+    "pinia-plugin-persistedstate": "^4.2.0"
+  }
+}

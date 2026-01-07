@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="favicon.ico" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+    />
+    <title>Tange H5 Video Player Demo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+      }
+
+      /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+      canvas.video-container {
+        background-color: #111;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- 当前版本需要将canvas标签的id设置为"canvas"，后续将支持动态配置 -->
+    <canvas class="video-container" id="canvas"></canvas>
+
+    <script type="module">
+      import { Configuration, DeviceMediaPlayer, initialize, setAuthentication } from './tgapi.es.min.js';
+      import { DeviceLivePlayer } from './sample-player.js';
+
+      document.addEventListener('DOMContentLoaded', function (event) {
+        const apiHub = {
+          initSdk: function (config) {
+            const { appId, token } = config;
+
+            // 初始化SDK, 创建API配置 与 初始化API
+            const configuration = new Configuration().setAppId(appId);
+            initialize(configuration);
+            setAuthentication(token);
+          },
+
+          // 判断播放器是否准备完毕，需等待播放器下载wasm依赖文件
+          playerReady: function () {
+            return DeviceMediaPlayer.ready();
+          },
+
+          createPlayer: function (type = 'live') {
+            const cameras = [
+              {
+                cameraIndex: 0,
+                videoContainer: document.getElementById('canvas'),
+              },
+            ];
+
+            let player = null;
+            switch (type) {
+              case 'live':
+                return new DeviceLivePlayer({ cameras });
+              case 'card-storage':
+                return new DeviceStoragePlayer({ cameras });
+              case 'cloud-storage':
+                return new CloudStoragePlayer({ cameras });
+              default:
+                return null;
+            }
+
+            console.log('iframe player: ', player);
+            return player;
+          },
+        };
+
+        window.apiHub = apiHub;
+      });
+    </script>
+  </body>
+</html>
