@@ -1,8 +1,12 @@
 <template>
-  <view class="device-container">
+  <view class="device-container" :style="{ background: theme.bgPrimary }">
+    <!-- 自定义导航栏 -->
+    <custom-navbar title="我的房屋" />
+    
     <scroll-view 
       class="device-content" 
       scroll-y
+      :style="{ paddingTop: navbarHeight + 'px' }"
       refresher-enabled
       :refresher-triggered="isRefreshing"
       @refresherrefresh="onRefresh"
@@ -11,8 +15,8 @@
       <view class="header-section">
         <view class="header-top">
           <view class="header-left">
-            <text class="page-title">我的房屋</text>
-            <text class="page-subtitle">管理您的房屋信息</text>
+            <text class="page-title" :style="{ color: theme.textPrimary }">我的房屋</text>
+            <text class="page-subtitle" :style="{ color: theme.textSecondary }">管理您的房屋信息</text>
           </view>
           <view class="header-btn-add" @click="handleAddDevice">
             <text class="iconfont icon-fasfa-plus" style="color: #667eea; font-size: 40rpx;"></text>
@@ -38,15 +42,15 @@
 
       <!-- 已认证房屋列表 -->
       <view class="section">
-        <text class="section-title">已认证房屋</text>
+        <text class="section-title" :style="{ color: theme.textPrimary }">已认证房屋</text>
         
         <!-- 空状态 -->
         <view v-if="deviceList.length === 0" class="empty-state">
           <view class="empty-icon">
-            <text class="iconfont icon-fa-home" style="color: #94a3b8; font-size: 80rpx;"></text>
+            <text class="iconfont icon-fa-home" :style="{ color: theme.textTertiary, fontSize: '80rpx' }"></text>
           </view>
-          <text class="empty-title">暂无认证房屋</text>
-          <text class="empty-desc">请点击上方"房屋认证"添加房屋</text>
+          <text class="empty-title" :style="{ color: theme.textPrimary }">暂无认证房屋</text>
+          <text class="empty-desc" :style="{ color: theme.textSecondary }">请点击上方“房屋认证”添加房屋</text>
         </view>
         
         <!-- 房屋卡片 -->
@@ -87,21 +91,32 @@
         </view>
       </view>
     </scroll-view>
+    
+    <!-- 自定义底部标签栏 -->
+    <custom-tabbar />
   </view>
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, onMounted } from 'vue'
+import { ref, getCurrentInstance, onMounted, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
+const themeStore = proxy.$store.theme.useThemeStore()
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
 
 // 房屋列表数据
 const deviceList = ref([])
 
 // 下拉刷新状态
 const isRefreshing = ref(false)
+
+// 导航栏高度
+const navbarHeight = ref(0)
 
 // 格式化日期
 const getDateOnly = (dateString) => {
@@ -227,6 +242,11 @@ const onRefresh = async () => {
 
 onLoad(async () => {
   console.log('房屋页面加载')
+  // 加载主题设置
+  themeStore.loadTheme()
+  // 计算导航栏高度
+  const systemInfo = uni.getSystemInfoSync()
+  navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
   // 只检查登录状态，不自动跳转
   if (userStore.isLogin) {
     await loadHouseList()
@@ -234,6 +254,11 @@ onLoad(async () => {
 })
 
 onShow(async () => {
+  // 隐藏原生TabBar
+  uni.hideTabBar({
+    animation: false
+  })
+  
   // 页面显示时刷新房屋列表
   if (userStore.isLogin) {
     await loadHouseList()
@@ -246,7 +271,7 @@ onShow(async () => {
 
 .device-container {
   height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  // 背景色由动态绑定
 }
 
 .device-content {
@@ -272,14 +297,14 @@ onShow(async () => {
   display: block;
   font-size: 56rpx;
   font-weight: 700;
-  color: #1e293b;
+  // 颜色由动态绑定
   margin-bottom: 16rpx;
 }
 
 .page-subtitle {
   display: block;
   font-size: 28rpx;
-  color: #64748b;
+  // 颜色由动态绑定
   opacity: 0.6;
 }
 
@@ -367,7 +392,7 @@ onShow(async () => {
 
 .section-title {
   display: block;
-  color: #1e293b;
+  // 颜色由动态绑定
   font-size: 32rpx;
   font-weight: 600;
   margin-bottom: 24rpx;
@@ -591,13 +616,13 @@ onShow(async () => {
 .empty-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1e293b;
+  // 颜色由动态绑定
   margin-bottom: 16rpx;
 }
 
 .empty-desc {
   font-size: 26rpx;
-  color: #64748b;
+  // 颜色由动态绑定
   line-height: 1.6;
 }
 </style>

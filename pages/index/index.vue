@@ -1,13 +1,16 @@
 <template>
-  <view class="page-container">
+  <view class="page-container" :style="{ background: theme.bgPrimary }">
+    <!-- 自定义导航栏 -->
+    <custom-navbar title="玉龙智眸" :transparent="true" />
+    
     <!-- 内容区域 -->
-    <scroll-view class="app-content" scroll-y>
+    <scroll-view class="app-content" scroll-y :style="{ paddingTop: navbarHeight + 'px' }">
       <!-- Header -->
       <view class="header-section">
         <view class="header-top">
           <view class="header-left">
-            <text class="app-title">玉龙智眸</text>
-            <text class="app-subtitle">智能守护，安心生活</text>
+            <text class="app-title" :style="{ color: theme.textPrimary }">玉龙智眸</text>
+            <text class="app-subtitle" :style="{ color: theme.textSecondary }">智能守护，安心生活</text>
           </view>
           <!-- 注释掉右侧按钮 -->
           <!-- <view class="header-right">
@@ -27,8 +30,8 @@
         <view class="empty-icon-wrapper">
           <text class="iconfont icon-fa-home" style="color: #fff; font-size: 80rpx;"></text>
         </view>
-        <text class="empty-title">欢迎使用玉龙智眸</text>
-        <text class="empty-desc">您还未认证房屋<br>认证后即可使用智能门禁服务</text>
+        <text class="empty-title" :style="{ color: theme.textPrimary }">欢迎使用玉龙智眸</text>
+        <text class="empty-desc" :style="{ color: theme.textSecondary }">您还未认证房屋<br>认证后即可使用智能门禁服务</text>
         
         <view class="empty-btn-wrapper">
           <view class="empty-btn" @click="handleCertification">
@@ -59,10 +62,11 @@
       <view v-else>
       <!-- 常用设备 - 显示使用最频繁的前3个设备 -->
       <view class="section">
-        <text class="section-title">常用设备</text>
+        <text class="section-title" :style="{ color: theme.textPrimary }">常用设备</text>
         <view class="action-grid">
           <view 
             class="action-btn" 
+            :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }"
             v-for="(device, index) in top3Devices" 
             :key="index"
             @click="handleQuickOpen(device)"
@@ -72,21 +76,21 @@
               <text class="status-text-small">{{ device.online === '1' ? '在线' : '离线' }}</text>
             </view>
             <text class="iconfont" :class="device.icon" :style="{ color: getIconColor(device.iconGradient), fontSize: '72rpx' }"></text>
-            <text class="action-title">{{ device.name }}</text>
-            <text class="action-desc">{{ device.location }}</text>
+            <text class="action-title" :style="{ color: theme.textPrimary }">{{ device.name }}</text>
+            <text class="action-desc" :style="{ color: theme.textSecondary }">{{ device.location }}</text>
           </view>
           
-          <view class="action-btn" @click="handleAllDevices">
+          <view class="action-btn" :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }" @click="handleAllDevices">
             <text class="iconfont icon-a-fasfa-list-ul" style="color: #0a84ff; font-size: 72rpx;"></text>
-            <text class="action-title">全部设备</text>
-            <text class="action-desc">查看更多</text>
+            <text class="action-title" :style="{ color: theme.textPrimary }">全部设备</text>
+            <text class="action-desc" :style="{ color: theme.textSecondary }">查看更多</text>
           </view>
         </view>
       </view>
 
       <!-- 快捷功能区 -->
       <view class="section">
-        <text class="section-title">快捷功能</text>
+        <text class="section-title" :style="{ color: theme.textPrimary }">快捷功能</text>
         <view class="quick-functions">
           <view class="function-card primary" @click="handleScanCode">
             <view class="function-icon-wrapper primary-gradient">
@@ -96,27 +100,27 @@
               <text class="function-title">扫码开门</text>
               <text class="function-desc">快速扫码</text>
             </view>
-            <text class="iconfont icon-fasfa-chevron-rightCopy" style="color: #94a3b8; font-size: 28rpx;"></text>
+            <text class="iconfont icon-fasfa-chevron-rightCopy" :style="{ color: theme.textTertiary, fontSize: '28rpx' }"></text>
           </view>
           
           <view class="function-grid">
-            <view class="function-item" @click="handleVisitorPassword">
+            <view class="function-item" :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }" @click="handleVisitorPassword">
               <view class="function-icon-small icon-green">
                 <text class="iconfont icon-fa-key" style="color: #fff; font-size: 40rpx;"></text>
               </view>
-              <text class="function-name">访客密码</text>
+              <text class="function-name" :style="{ color: theme.textPrimary }">访客密码</text>
             </view>
-            <view class="function-item" @click="handleVisitorCode">
+            <view class="function-item" :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }" @click="handleVisitorCode">
               <view class="function-icon-small icon-blue">
                 <text class="iconfont icon-a-fasfa-qrcodeCopy2" style="color: #fff; font-size: 40rpx;"></text>
               </view>
-              <text class="function-name">开门二维码</text>
+              <text class="function-name" :style="{ color: theme.textPrimary }">开门二维码</text>
             </view>
-            <view class="function-item" @click="handleFaceUpload">
+            <view class="function-item" :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }" @click="handleFaceUpload">
               <view class="function-icon-small icon-purple">
                 <up-icon name="account-fill" color="#fff" size="40"></up-icon>
               </view>
-              <text class="function-name">人脸上传</text>
+              <text class="function-name" :style="{ color: theme.textPrimary }">人脸上传</text>
             </view>
           </view>
         </view>
@@ -220,6 +224,9 @@
       </view> -->
       </view>
     </scroll-view>
+    
+    <!-- 自定义底部标签栏 -->
+    <custom-tabbar />
 
     <!-- 服务协议和隐私政策弹框 -->
     <uni-popup ref="agreementPopup" type="center" :mask-click="false">
@@ -246,16 +253,24 @@ import { ref, computed, getCurrentInstance, onMounted } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import scanUtils from '@/utils/scanUtils'
 import checkVersion from '@/pages/lq-upgrade/checkVersion.js'
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
 const deviceStore = proxy.$store.device.useDeviceStore()
 const agreementStore = proxy.$store.agreement.useAgreementStore()
+const themeStore = proxy.$store.theme.useThemeStore()
 const agreementPopup = ref(null)
 const notificationCount = ref(3)
 const roomList = ref([])
 const loading = ref(false)
 const deviceOpenCounts = ref({}) // 存储设备开门次数
+
+// 导航栏高度（状态栏 + 导航栏）
+const navbarHeight = ref(0)
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
 
 // 检查是否有房屋认证
 const hasRoom = computed(() => {
@@ -607,6 +622,11 @@ const handleDisagree = () => {
 
 onLoad(async () => {
   console.log('首页加载')
+  // 加载主题设置
+  themeStore.loadTheme()
+  // 计算导航栏高度
+  const systemInfo = uni.getSystemInfoSync()
+  navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
   // 检查版本更新
   checkAppUpdate()
   // 加载开门次数
@@ -620,6 +640,11 @@ onMounted(() => {
 
 // 页面显示时刷新房屋列表（从设备页面返回时可能需要更新，但不检查登录）
 onShow(async () => {
+  // 隐藏原生TabBar
+  uni.hideTabBar({
+    animation: false
+  })
+  
   // 重新加载开门次数（从开门页面返回时更新）
   loadDeviceOpenCounts()
   // 只刷新数据，不再检查登录（避免重复跳转）
@@ -640,7 +665,7 @@ onShow(async () => {
 
 .page-container {
   height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  // 背景色由动态绑定
 }
 
 .app-content {
@@ -667,14 +692,14 @@ onShow(async () => {
   display: block;
   font-size: 64rpx;
   font-weight: 700;
-  color: #1e293b;
+  // 颜色由动态绑定
   margin-bottom: 8rpx;
 }
 
 .app-subtitle {
   display: block;
   font-size: 28rpx;
-  color: #64748b;
+  // 颜色由动态绑定
   opacity: 0.6;
 }
 
@@ -726,7 +751,7 @@ onShow(async () => {
 
 .section-title {
   display: block;
-  color: #1e293b;
+  // 颜色由动态绑定
   font-size: 36rpx;
   font-weight: 600;
   margin-bottom: 32rpx;
@@ -739,13 +764,12 @@ onShow(async () => {
 }
 
 .action-btn {
-  background: white;
+  // 背景色、边框、阴影由动态绑定
   border-radius: 32rpx;
   padding: 48rpx 32rpx;
   text-align: center;
-  color: #1e293b;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  // 颜色由动态绑定
+  border: 1px solid;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -799,6 +823,7 @@ onShow(async () => {
   font-size: 28rpx;
   font-weight: 500;
   margin-top: 16rpx;
+  // 颜色由动态绑定
 }
 
 .action-desc {
@@ -806,6 +831,7 @@ onShow(async () => {
   font-size: 22rpx;
   opacity: 0.6;
   margin-top: 8rpx;
+  // 颜色由动态绑定
 }
 
 .ad-banner {
@@ -1091,14 +1117,14 @@ onShow(async () => {
   display: block;
   font-size: 36rpx;
   font-weight: 700;
-  color: #1e293b;
+  // 颜色由动态绑定
   margin-bottom: 16rpx;
 }
 
 .empty-desc {
   display: block;
   font-size: 26rpx;
-  color: #64748b;
+  // 颜色由动态绑定
   line-height: 1.6;
   margin-bottom: 48rpx;
 }
@@ -1234,14 +1260,13 @@ onShow(async () => {
 }
 
 .function-item {
-  background: white;
+  // 背景色、边框、阴影由动态绑定
   border-radius: 24rpx;
   padding: 32rpx 24rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  border: 1px solid;
 }
 
 .function-icon-small {
@@ -1269,7 +1294,7 @@ onShow(async () => {
 .function-name {
   font-size: 24rpx;
   font-weight: 600;
-  color: #1e293b;
+  // 颜色由动态绑定
   text-align: center;
 }
 

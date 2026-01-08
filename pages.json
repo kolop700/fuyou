@@ -10,34 +10,28 @@
 			}
 		},
 	"pages": [ 
-		// {
-		// 	"path": "pages/ioslogin/index",
-		// 	"style": {
-		// 		"navigationBarTitleText": "登录"
-		// 	}
-		// },
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "首页"
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/door/index",
 			"style": {
-				"navigationBarTitleText": "开门"
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/device/index",
 			"style": {
-				"navigationBarTitleText": "房屋"
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/my/index",
 			"style": {
-				"navigationBarTitleText": "我的"
+				"navigationStyle": "custom"
 			}
 		},
 		{
@@ -176,34 +170,35 @@
         }
 	},
 	"tabBar": {
+		"custom": true,
 		"color": "#64748b",
 		"selectedColor": "#667eea",
 		"backgroundColor": "#ffffff",
-		"borderStyle": "black",
+		"borderStyle": "white",
 		"list": [
 			{
 				"pagePath": "pages/index/index",
 				"text": "首页",
-				"iconPath": "/static/icons/icon_home.png",
-				"selectedIconPath": "/static/icons/icon_home_select.png"
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home-active.png"
 			},
 			{
 				"pagePath": "pages/door/index",
 				"text": "开门",
-				"iconPath": "/static/icons/icon_unlock.png",
-				"selectedIconPath": "/static/icons/icon_unlock_select.png"
+				"iconPath": "static/tabbar/door.png",
+				"selectedIconPath": "static/tabbar/door-active.png"
 			},
 			{
 				"pagePath": "pages/device/index",
 				"text": "房屋",
-				"iconPath": "/static/icons/icon_list.png",
-				"selectedIconPath": "/static/icons/icon_list_select.png"
+				"iconPath": "static/tabbar/device.png",
+				"selectedIconPath": "static/tabbar/device-active.png"
 			},
 			{
 				"pagePath": "pages/my/index",
 				"text": "我的",
-				"iconPath": "/static/icons/icon_user.png",
-				"selectedIconPath": "/static/icons/icon_user_select.png"
+				"iconPath": "static/tabbar/my.png",
+				"selectedIconPath": "static/tabbar/my-active.png"
 			}
 		]
 	},

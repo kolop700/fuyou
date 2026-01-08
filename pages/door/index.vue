@@ -1,18 +1,22 @@
 <template>
-  <view class="door-container">
-    <scroll-view class="door-content" scroll-y>
+  <view class="door-container" :style="{ background: theme.bgPrimary }">
+    <!-- 自定义导航栏 -->
+    <custom-navbar title="门禁设备" />
+    
+    <scroll-view class="door-content" scroll-y :style="{ paddingTop: navbarHeight + 'px' }">
       <!-- Header -->
       <view class="header-section">
-        <text class="page-title">门禁设备</text>
-        <text class="page-subtitle">选择要开启的门禁</text>
+        <text class="page-title" :style="{ color: theme.textPrimary }">门禁设备</text>
+        <text class="page-subtitle" :style="{ color: theme.textSecondary }">选择要开启的门禁</text>
       </view>
 
       <!-- 搜索框 -->
       <view class="search-section">
-        <view class="search-box">
-          <text class="iconfont icon-search" style="color: #94a3b8; font-size: 32rpx;"></text>
+        <view class="search-box" :style="{ background: theme.bgInput, borderColor: theme.borderColor }">
+          <text class="iconfont icon-search" :style="{ color: theme.textTertiary, fontSize: '32rpx' }"></text>
           <input 
             class="search-input"
+            :style="{ color: theme.textPrimary }"
             type="text" 
             v-model="searchKey" 
             placeholder="搜索设备名称或地址" 
@@ -21,7 +25,7 @@
           <text 
             v-if="searchKey" 
             class="iconfont icon-fasfa-times-circle" 
-            style="color: #94a3b8; font-size: 32rpx;"
+            :style="{ color: theme.textTertiary, fontSize: '32rpx' }"
             @click="clearSearch"
           ></text>
         </view>
@@ -50,16 +54,17 @@
         <!-- 空状态 -->
         <view v-if="filteredDeviceList.length === 0" class="empty-device-state">
           <view class="empty-device-icon">
-            <text class="iconfont icon-door-open" style="color: #94a3b8; font-size: 80rpx;"></text>
+            <text class="iconfont icon-door-open" :style="{ color: theme.textTertiary, fontSize: '80rpx' }"></text>
           </view>
-          <text class="empty-device-title">{{ searchKey ? '未找到匹配的设备' : '暂无门禁设备' }}</text>
-          <text class="empty-device-desc">{{ searchKey ? '请尝试其他关键词' : '请先在设备页面添加门禁设备' }}</text>
+          <text class="empty-device-title" :style="{ color: theme.textPrimary }">{{ searchKey ? '未找到匹配的设备' : '暂无门禁设备' }}</text>
+          <text class="empty-device-desc" :style="{ color: theme.textSecondary }">{{ searchKey ? '请尝试其他关键词' : '请先在设备页面添加门禁设备' }}</text>
         </view>
         
         <!-- 设备卡片 -->
         <view 
           v-else
           class="device-card" 
+          :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }"
           v-for="(device, index) in filteredDeviceList" 
           :key="index"
           @click="handleQuickUnlock(device)"
@@ -70,26 +75,29 @@
             </view>
             <view class="device-info">
               <view class="device-title-row">
-                <text class="device-name">{{ device.name }}</text>
+                <text class="device-name" :style="{ color: theme.textPrimary }">{{ device.name }}</text>
                 <view class="status-indicator" :class="device.online === '1' ? 'status-online' : 'status-offline'"></view>
               </view>
-              <text class="device-location">{{ device.location }}</text>
+              <text class="device-location" :style="{ color: theme.textSecondary }">{{ device.location }}</text>
             </view>
-            <text class="iconfont icon-fasfa-chevron-rightCopy" style="color: #94a3b8; font-size: 36rpx; opacity: 0.3;"></text>
+            <text class="iconfont icon-fasfa-chevron-rightCopy" :style="{ color: theme.textTertiary, fontSize: '36rpx', opacity: '0.3' }"></text>
           </view>
           <view class="device-stats">
             <view class="stat-item">
-              <text class="stat-label">信号</text>
-              <text class="stat-value">{{ device.signal }}</text>
+              <text class="stat-label" :style="{ color: theme.textSecondary }">信号</text>
+              <text class="stat-value" :style="{ color: theme.textPrimary }">{{ device.signal }}</text>
             </view>
             <view class="stat-item">
-              <text class="stat-label">状态</text>
-              <text class="stat-value">{{ device.online === '1' ? '在线' : '离线' }}</text>
+              <text class="stat-label" :style="{ color: theme.textSecondary }">状态</text>
+              <text class="stat-value" :style="{ color: theme.textPrimary }">{{ device.online === '1' ? '在线' : '离线' }}</text>
             </view>
           </view>
         </view>
       </view>
     </scroll-view>
+    
+    <!-- 自定义底部标签栏 -->
+    <custom-tabbar />
 
     <!-- 开门成功弹窗 -->
     <uni-popup ref="successPopup" type="center" :mask-click="true">
@@ -112,14 +120,22 @@
 import { ref, computed, getCurrentInstance } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import doorAccessUtils from '@/utils/doorAccessUtils'
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
 const deviceStore = proxy.$store.device.useDeviceStore()
+const themeStore = proxy.$store.theme.useThemeStore()
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
 
 const successPopup = ref(null)
 const currentDevice = ref(null)
 const searchKey = ref('')
+
+// 导航栏高度
+const navbarHeight = ref(0)
 
 // 获取设备开门次数
 const getDeviceOpenCount = (doorMac) => {
@@ -323,11 +339,19 @@ const loadDeviceList = async () => {
 
 onLoad(async () => {
   console.log('开门页面加载')
+  // 计算导航栏高度
+  const systemInfo = uni.getSystemInfoSync()
+  navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
   // 只加载数据，不检查登录跳转
   await loadDeviceList()
 })
 
 onShow(async () => {
+  // 隐藏原生TabBar
+  uni.hideTabBar({
+    animation: false
+  })
+  
   // 页面显示时刷新设备列表和房屋列表
   if (userStore.isLogin) {
     try {

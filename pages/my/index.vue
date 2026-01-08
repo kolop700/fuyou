@@ -1,6 +1,9 @@
 <template>
-  <view class="my-container">
-    <scroll-view class="my-content" scroll-y>
+  <view class="my-container" :style="{ background: theme.bgPrimary }">
+    <!-- 自定义导航栏（非透明） -->
+    <custom-navbar title="" :transparent="false" />
+    
+    <scroll-view class="my-content" scroll-y :style="{ paddingTop: navbarHeight + 'px', paddingBottom: '120rpx' }">
       <!-- 用户信息头部 -->
       <view class="profile-header">
         <view class="profile-avatar" @click="handleAvatarClick">
@@ -13,26 +16,33 @@
 
       <!-- 菜单列表 -->
       <view class="menu-section">
-        <view class="menu-item" @click="handleFaceUpload">
+        <view class="menu-item" :style="{ background: theme.bgCard, color: theme.textPrimary }" @click="handleThemeToggle">
+          <view class="menu-left">
+            <text class="iconfont menu-icon" :class="isDark ? 'icon-fa-moon-o' : 'icon-sun-o'" :style="{ color: isDark ? '#667eea' : '#ff9500' }"></text>
+            <text class="menu-text">主题模式</text>
+          </view>
+          <text class="theme-mode-text" :style="{ color: theme.colorAccent, fontSize: '28rpx' }">{{ isDark ? '深色' : '亮色' }}</text>
+        </view>
+        <view class="menu-item" :style="{ background: theme.bgCard, color: theme.textPrimary }" @click="handleFaceUpload">
           <view class="menu-left">
             <text class="iconfont icon-fa-user-circle-o menu-icon" style="color: #667eea;"></text>
             <text class="menu-text">人脸录入</text>
           </view>
           <text class="iconfont icon-fasfa-chevron-rightCopy menu-arrow"></text>
         </view>
-        <view class="menu-item" @click="handlePassword">
+        <view class="menu-item" :style="{ background: theme.bgCard, color: theme.textPrimary }" @click="handlePassword">
           <view class="menu-left">
             <text class="iconfont icon-fa-key menu-icon" style="color: #ff9500;"></text>
             <text class="menu-text">密码管理</text>
           </view>
-          <text class="iconfont icon-fasfa-chevron-rightCopy menu-arrow"></text>
+          <text class="iconfont icon-fasfa-chevron-rightCopy menu-arrow" :style="{ color: theme.textTertiary }"></text>
         </view>
-        <view class="menu-item" @click="handleAbout">
+        <view class="menu-item" :style="{ background: theme.bgCard, color: theme.textPrimary }" @click="handleAbout">
           <view class="menu-left">
             <text class="iconfont icon-info-circle menu-icon" style="color: #34c759;"></text>
             <text class="menu-text">关于玉龙智眸</text>
           </view>
-          <text class="iconfont icon-fasfa-chevron-rightCopy menu-arrow"></text>
+          <text class="iconfont icon-fasfa-chevron-rightCopy menu-arrow" :style="{ color: theme.textTertiary }"></text>
         </view>
       </view>
 
@@ -43,15 +53,37 @@
         </button>
       </view>
     </scroll-view>
+    
+    <!-- 自定义底部标签栏 -->
+    <custom-tabbar />
   </view>
 </template>
 
 <script setup>
 import { ref, computed, getCurrentInstance, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
+const themeStore = proxy.$store.theme.useThemeStore()
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
+const isDark = computed(() => themeStore.isDark())
+
+// 导航栏高度
+const navbarHeight = ref(0)
+
+// 切换主题
+const handleThemeToggle = () => {
+  themeStore.toggleTheme()
+  uni.showToast({
+    title: `已切换为${themeStore.isDark() ? '深色' : '亮色'}模式`,
+    icon: 'success',
+    duration: 1500
+  })
+}
 
 // 格式化手机号显示
 const formatPhone = (phone) => {
@@ -140,8 +172,27 @@ const isLoggedIn = computed(() => {
 })
 
 onLoad(() => {
-  // 只检查登录状态，不自动跳转
-  console.log('我的页面加载，登录状态:', userStore.isLogin)
+  try {
+    // 加载主题设置
+    themeStore.loadTheme()
+    // 计算导航栏高度
+    const systemInfo = uni.getSystemInfoSync()
+    navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
+    // 只检查登录状态，不自动跳转
+    console.log('我的页面加载，登录状态:', userStore.isLogin)
+    console.log('主题模式:', themeStore.themeMode)
+  } catch (error) {
+    console.error('我的页面加载失败:', error)
+    // 默认值
+    navbarHeight.value = 44
+  }
+})
+
+onShow(() => {
+  // 隐藏原生TabBar
+  uni.hideTabBar({
+    animation: false
+  })
 })
 </script>
 
@@ -150,7 +201,7 @@ onLoad(() => {
 
 .my-container {
   height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  // 背景色由动态绑定
 }
 
 .my-content {
@@ -206,9 +257,8 @@ onLoad(() => {
   align-items: center;
   justify-content: space-between;
   padding: 32rpx 40rpx;
-  background: white;
+  // 背景色和颜色由动态绑定
   margin: 0 40rpx 2rpx;
-  color: #1e293b;
 }
 
 .menu-item:first-child {
@@ -238,7 +288,7 @@ onLoad(() => {
 .menu-arrow {
   opacity: 0.4;
   font-size: 36rpx;
-  color: #94a3b8;
+  // 颜色由动态绑定
 }
 
 .logout-section {
@@ -263,5 +313,10 @@ onLoad(() => {
 
 .logout-btn::after {
   border: none;
+}
+
+// 主题模式文字样式
+.theme-mode-text {
+  font-weight: 600;
 }
 </style>
