@@ -6,8 +6,8 @@ export const darkTheme = {
   // 背景色
   bgPrimary: 'linear-gradient(180deg, #0a0f1a 0%, #0d1520 100%)',
   bgSecondary: 'hsl(220, 25%, 12%)',
-  bgCard: 'rgba(255, 255, 255, 0.08)',
-  bgCardHover: 'rgba(255, 255, 255, 0.12)',
+  bgCard: 'rgba(30, 41, 59, 0.95)',  // 修改：深蓝灰色，95%不透明
+  bgCardHover: 'rgba(51, 65, 85, 0.9)',
   bgInput: 'rgba(255, 255, 255, 0.06)',
   bgInputFocus: 'rgba(255, 255, 255, 0.1)',
   
@@ -43,6 +43,10 @@ export const darkTheme = {
   shadowCard: '0 4rpx 16rpx rgba(0, 0, 0, 0.3)',
   shadowCardHover: '0 20rpx 40rpx -10px rgba(0, 0, 0, 0.4)',
   shadowButton: '0 10px 30px -10px rgba(56, 189, 248, 0.5)',
+  shadowLogo: '0 40rpx 80rpx -20rpx rgba(56, 189, 248, 0.4)',
+  
+  // Logo渐变
+  logoGradient: 'linear-gradient(135deg, hsl(200, 85%, 55%) 0%, hsl(210, 85%, 50%) 100%)',
   
   // 透明度
   opacity: {
@@ -94,6 +98,10 @@ export const lightTheme = {
   shadowCard: '0 4rpx 16rpx rgba(0, 0, 0, 0.05)',
   shadowCardHover: '0 12rpx 32rpx -8px rgba(0, 0, 0, 0.12)',
   shadowButton: '0 8px 24px -8px rgba(59, 130, 246, 0.5)',
+  shadowLogo: '0 24rpx 64rpx -16rpx rgba(59, 130, 246, 0.4)',
+  
+  // Logo渐变
+  logoGradient: 'linear-gradient(135deg, hsl(210, 100%, 50%) 0%, hsl(220, 90%, 55%) 100%)',
   
   // 透明度
   opacity: {

@@ -1,4 +1,4 @@
-<template>
+<<template>
   <view class="custom-navbar" :style="{ background: navbarBg, paddingTop: statusBarHeight + 'px' }">
     <view class="navbar-content" :style="{ height: navbarHeight + 'px' }">
       <!-- 左侧返回按钮/占位 -->
@@ -6,10 +6,10 @@
         <view 
           v-if="showBack" 
           class="navbar-back"
-          :style="{ background: theme.bgCard, borderColor: theme.borderColor }"
+          :style="{ background: theme.bgCard, boxShadow: backBtnShadow }"
           @click="handleBack"
         >
-          <text class="iconfont icon-fasfa-chevron-left" :style="{ color: theme.textPrimary, fontSize: '32rpx' }"></text>
+          <text class="iconfont icon-arrow-left" :style="{ color: theme.textPrimary }"></text>
         </view>
       </view>
       
@@ -69,7 +69,13 @@ const navbarBg = computed(() => {
   if (props.bgColor) {
     return props.bgColor
   }
-  return theme.value.bgCard
+  // 导航栏透明，让页面背景透过来
+  return 'transparent'
+})
+
+// 返回按钮阴影（浅色模式有阴影，深色模式无）
+const backBtnShadow = computed(() => {
+  return themeStore.isDark() ? 'none' : '0 4rpx 16rpx rgba(0,0,0,0.06)'
 })
 
 // 返回上一页
@@ -106,15 +112,14 @@ onMounted(() => {
   left: 0;
   right: 0;
   z-index: 999;
-  backdrop-filter: blur(20rpx);
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  // 背景色由动态绑定
 }
 
 .navbar-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32rpx;
+  padding: 20rpx 48rpx;
 }
 
 .navbar-left,
@@ -133,19 +138,23 @@ onMounted(() => {
 }
 
 .navbar-back {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid;
   transition: all 0.3s ease;
+  // 背景色和阴影由动态绑定
+  
+  .iconfont {
+    font-size: 32rpx;
+    // 颜色由动态绑定
+  }
 }
 
 .navbar-back:active {
-  transform: scale(0.9);
-  opacity: 0.8;
+  transform: scale(0.95);
 }
 
 .navbar-center {
@@ -156,7 +165,8 @@ onMounted(() => {
 }
 
 .navbar-title {
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: 600;
+  // 颜色由动态绑定
 }
 </style>

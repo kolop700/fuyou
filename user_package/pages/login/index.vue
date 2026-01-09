@@ -1,170 +1,121 @@
 <template>
-  <view class="login-container">
-    <view class="login-content">
-      <!-- Logo Section -->
+  <view class="login-page" :style="{ background: theme.bgPrimary }">
+    <!-- 环境光背景 -->
+    <view class="ambient-bg"></view>
+    
+    <!-- 状态栏占位 -->
+    <view class="status-bar-space" :style="{ height: statusBarHeight + 'px' }"></view>
+    
+    <!-- 内容区域 -->
+    <view class="page-content">
+      <!-- Logo区域 -->
       <view class="logo-section">
-        <view class="logo">
-          <image class="logo-image" src="/static/logo.png" mode="aspectFit"></image>
+        <view class="logo-box" :style="{ background: theme.logoGradient, boxShadow: theme.shadowLogo }">
+          <text class="iconfont icon-fa-building"></text>
         </view>
-        <text class="app-title">玉龙智眸</text>
-        <text class="app-subtitle">智能门禁 · 安全便捷</text>
+        <text class="title" :style="{ color: theme.textPrimary }">欢迎回来</text>
+        <text class="subtitle" :style="{ color: theme.textSecondary }">登录您的优福社区账户</text>
       </view>
-
-      <!-- Login Form -->
-      <view class="form-card">
-        <text class="form-title">欢迎回来</text>
-        <text class="form-subtitle">登录您的账户继续使用</text>
-
-        <view class="input-group">
-          <text class="input-label">手机号</text>
-          <u-input
-            v-model="form.user_account"
-            type="text"
+      
+      <!-- 表单 -->
+      <view class="form-group">
+        <view class="input-with-icon" :style="{ background: theme.bgCard }">
+          <text class="iconfont icon-mobile-alt icon" :style="{ color: theme.textSecondary }"></text>
+          <input 
+            v-model="form.user_account" 
+            type="text" 
+            class="input-field" 
+            :style="{ color: theme.textPrimary }"
             placeholder="请输入手机号"
+            placeholder-class="placeholder"
             :maxlength="11"
-            :border="false"
-            :customStyle="inputStyle"
-            shape="round"
-          >
-            <template #suffix>
-              <text class="iconfont icon-mobile-alt" style="color: #94a3b8; font-size: 36rpx;"></text>
-            </template>
-          </u-input>
+          />
         </view>
-
-        <view class="input-group">
-          <text class="input-label">密码</text>
-          <u-input
-            v-model="form.password"
-            :type="showPassword ? 'text' : 'password'"
+      </view>
+      
+      <view class="form-group">
+        <view class="input-with-icon" :style="{ background: theme.bgCard }">
+          <text class="iconfont icon-fa-lock icon" :style="{ color: theme.textSecondary }"></text>
+          <input 
+            v-model="form.password" 
+            :type="showPassword ? 'text' : 'password'" 
+            class="input-field" 
+            :style="{ color: theme.textPrimary }"
             placeholder="请输入密码"
-            :border="false"
-            :customStyle="inputStyle"
-            shape="round"
-          >
-            <template #suffix>
-              <view @click="togglePasswordVisibility" style="padding: 0 10rpx;">
-                <text 
-                  class="iconfont" 
-                  :class="showPassword ? 'icon-a-fasfa-eye' : 'icon-fa-eye-close'"
-                  style="color: #94a3b8; font-size: 36rpx;"
-                ></text>
-              </view>
-            </template>
-          </u-input>
+            placeholder-class="placeholder"
+          />
         </view>
-
-        <!-- 忘记密码 -->
-        <view class="forgot-password-wrapper">
-          <text class="link-text" @click="goToForgotPassword">忘记密码?</text>
+      </view>
+      
+      <!-- 记住密码和忘记密码 -->
+      <view class="options-row">
+        <label class="remember-label" @click="toggleRemember">
+          <checkbox :checked="remember" :color="theme.colorAccent" />
+          <text class="remember-text" :style="{ color: theme.textSecondary }">记住密码</text>
+        </label>
+        <text class="link-text" :style="{ color: theme.colorAccent }" @click="goToForgotPassword">忘记密码?</text>
+      </view>
+      
+      <!-- 登录按钮 -->
+      <button class="btn-primary" @click="handleLogin">登 录</button>
+      
+      <!-- 暂时隐藏社交登录 -->
+      <!-- <view class="divider">
+        <view class="divider-line" :style="{ background: theme.dividerColor }"></view>
+        <text class="divider-text" :style="{ color: theme.textSecondary }">其他方式登录</text>
+        <view class="divider-line" :style="{ background: theme.dividerColor }"></view>
+      </view>
+      
+      <view class="social-login">
+        <view class="social-btn wechat" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+          <text class="iconfont icon-a-fabfa-weixin"></text>
         </view>
-
-        <!-- 协议同意 -->
-        <view class="agreement">
-          <checkbox-group @change="onCheckboxChange">
-            <checkbox 
-              value="agree"
-              :checked="checked" 
-              color="#667eea"
-              style="transform:scale(0.75); margin-right: 8rpx;"
-            />
-          </checkbox-group>
-          <text class="agreement-text">我已阅读并同意</text>
-          <text class="link-text-inline" @click="openUserAgreement">《用户协议》</text>
-          <text class="agreement-text-inline">和</text>
-          <text class="link-text-inline" @click="openPrivacyPolicy">《隐私政策》</text>
+        <view class="social-btn alipay" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+          <text class="iconfont icon-f-alipay"></text>
         </view>
-
-        <!-- 登录按钮 -->
-        <view class="btn-wrapper">
-          <u-button
-            text="登录"
-            type="primary"
-            size="normal"
-            :plain="false"
-            shape="round"
-            :customStyle="buttonStyle"
-            @click="handleLogin"
-          ></u-button>
+        <view class="social-btn apple" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+          <text class="iconfont icon-f-apple" :style="{ color: theme.textPrimary }"></text>
         </view>
-
-        <!-- 注册链接 -->
-        <view class="register-link">
-          <text class="register-text">还没有账户？</text>
-          <text class="link-text" @click="goToRegister">立即注册</text>
-        </view>
+      </view> -->
+      
+      <!-- 注册提示 -->
+      <view class="register-tip" style="margin-top: 64rpx;">
+        <text class="tip-text" :style="{ color: theme.textSecondary }">还没有账号? </text>
+        <text class="link-text" :style="{ color: theme.colorAccent }" @click="goToRegister">立即注册</text>
       </view>
     </view>
-
-    <!-- 提示信息弹窗 -->
-    <uni-popup ref="message" type="message">
-      <uni-popup-message :type="msgType" :message="messageText" :duration="2000"></uni-popup-message>
-    </uni-popup>
   </view>
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from 'vue'
+import { ref, computed, getCurrentInstance } from 'vue'
 import { onLoad } from "@dcloudio/uni-app"
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
+
+// 数据
 const form = ref({
   user_account: '',
   password: ''
 })
 const showPassword = ref(false)
-const checked = ref(false) // 默认不同意
-const msgType = ref('')
-const messageText = ref('')
-const message = ref(null)
+const remember = ref(false)
+const statusBarHeight = ref(0)
 
-// 输入框样式
-const inputStyle = {
-  border: '4rpx solid #e2e8f0',
-  borderRadius: '20rpx',
-  padding: '24rpx 28rpx',
-  backgroundColor: '#fff',
-  fontSize: '28rpx'
+// 获取主题 Store
+const themeStore = proxy.$store.theme.useThemeStore()
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
+
+// 切换记住密码
+const toggleRemember = () => {
+  remember.value = !remember.value
 }
 
-// 按钮样式
-const buttonStyle = {
-  width: '100%',
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-}
-
-// 协议勾选改变
-const onCheckboxChange = (e) => {
-  checked.value = e.detail.value.includes('agree')
-}
-
-// 切换密码显示/隐藏
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
-
-// 打开用户协议
-const openUserAgreement = () => {
-  uni.navigateTo({ url: '/user_package/pages/agreement/user' })
-}
-
-// 打开隐私政策
-const openPrivacyPolicy = () => {
-  uni.navigateTo({ url: '/user_package/pages/agreement/privacy' })
-}
-
-
+// 登录处理
 const handleLogin = async () => {
-  // 检查协议同意
-  if (!checked.value) {
-    uni.showToast({
-      title: '请先同意用户协议和隐私政策',
-      icon: 'none',
-      duration: 2000
-    })
-    return
-  }
-
   // 手机号验证
   if (!form.value.user_account) {
     uni.showToast({
@@ -209,22 +160,19 @@ const handleLogin = async () => {
       user_acct: form.value.user_account,
       user_password: form.value.password
     }
-    console.log(loginData)
+    
     const res = await proxy.$api.user.UserLogin(loginData)
-    console.log(res)
+    
     if (res.code === "0") {
-      // 先保存用户信息到pinia store（这样才能确保登录状态更新）
       const userData = res.data[0]
       await proxy.$store.user.useUserStore().loginSuccess(userData)
       
-      // 显示成功提示
       uni.showToast({
         title: '登录成功',
         icon: 'success',
         duration: 1500
       })
       
-      // 延迟跳转到首页，使用 reLaunch 清除页面栈，避免重复跳转
       setTimeout(() => {
         uni.reLaunch({
           url: '/pages/index/index'
@@ -245,12 +193,14 @@ const handleLogin = async () => {
   }
 }
 
+// 跳转注册
 const goToRegister = () => {
   uni.navigateTo({
     url: '../register/index'
   })
 }
 
+// 跳转忘记密码
 const goToForgotPassword = () => {
   uni.navigateTo({
     url: '../forgot-password/index'
@@ -258,159 +208,231 @@ const goToForgotPassword = () => {
 }
 
 onLoad((params) => {
-  console.log(params)
+  // 加载主题设置
+  themeStore.loadTheme()
+  // 获取状态栏高度
+  const systemInfo = uni.getSystemInfoSync()
+  statusBarHeight.value = systemInfo.statusBarHeight || 0
 })
 </script>
 
 <style lang="scss" scoped>
 @import '@/static/fonts/iconfont.css';
 
-.login-container {
-  height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 60rpx 20rpx;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.login-content {
+.login-page {
   width: 100%;
-  max-width: 750rpx;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  // 背景色由动态绑定
 }
 
+/* 环境光背景 */
+.ambient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 20% 20%, hsla(200, 80%, 50%, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 80%, hsla(280, 60%, 40%, 0.1), transparent 40%);
+}
+
+/* 状态栏占位 */
+.status-bar-space {
+  width: 100%;
+}
+
+/* 页面内容 */
+.page-content {
+  padding: 120rpx 48rpx 48rpx;
+  position: relative;
+  z-index: 10;
+}
+
+/* Logo区域 */
 .logo-section {
   text-align: center;
-  margin-bottom: 20rpx;
+  margin-bottom: 80rpx;
 }
 
-.logo {
+.logo-box {
   width: 160rpx;
   height: 160rpx;
+  margin: 0 auto 40rpx;
   border-radius: 48rpx;
-  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16rpx;
-  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  // 背景渐变和阴影由动态绑定
+  
+  .iconfont {
+    font-size: 72rpx;
+    color: white;
+  }
 }
 
-.logo-image {
-  width: 100%;
-  height: 100%;
-}
-
-.app-title {
+.title {
   display: block;
-  font-size: 44rpx;
+  font-size: 48rpx;
   font-weight: 700;
-  color: white;
-  margin-bottom: 8rpx;
+  margin-bottom: 16rpx;
+  // 颜色由动态绑定
 }
 
-.app-subtitle {
+.subtitle {
   display: block;
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 28rpx;
+  // 颜色由动态绑定
 }
 
-.form-card {
-  background: white;
-  border-radius: 40rpx;
-  padding: 36rpx 32rpx;
-  width: 100%;
-  box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.15);
-  box-sizing: border-box;
+/* 表单组 */
+.form-group {
+  margin-bottom: 32rpx;
 }
 
-.form-title {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 8rpx;
-}
-
-.form-subtitle {
-  display: block;
-  font-size: 24rpx;
-  color: #64748b;
-  margin-bottom: 24rpx;
-}
-
-.input-group {
-  margin-bottom: 24rpx;
-}
-
-.input-label {
-  display: block;
-  font-size: 24rpx;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 12rpx;
-}
-
-
-.forgot-password-wrapper {
-  text-align: right;
-  margin-bottom: 20rpx;
-}
-
-.agreement {
+.input-with-icon {
+  position: relative;
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
-  margin-bottom: 24rpx;
-  font-size: 22rpx;
-  line-height: 1.4;
-  white-space: nowrap;
+  border-radius: 28rpx;
+  overflow: hidden;
+  // 背景色由动态绑定
+  transition: all 0.3s ease;
 }
 
-.agreement-text {
-  color: #64748b;
-  font-size: 22rpx;
-  white-space: nowrap;
+.icon {
+  position: absolute;
+  left: 32rpx;
+  font-size: 32rpx;
+  z-index: 2;
+  // 颜色由动态绑定
 }
 
-.agreement-text-inline {
-  color: #64748b;
-  font-size: 22rpx;
-  white-space: nowrap;
-  margin: 0 4rpx;
+.input-field {
+  width: 100%;
+  height: 96rpx;
+  padding: 0 32rpx 0 76rpx;
+  border-radius: 28rpx;
+  font-size: 30rpx;
+  border: none;
+  outline: none;
+  background: transparent;
+  transition: all 0.3s ease;
+  // 颜色由动态绑定
 }
 
-.link-text-inline {
-  color: #667eea;
-  font-weight: 600;
-  font-size: 22rpx;
-  white-space: nowrap;
-  margin: 0 2rpx;
+/* 选项行 */
+.options-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 64rpx;
+}
+
+.remember-label {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+}
+
+.remember-text {
+  // 颜色由动态绑定
 }
 
 .link-text {
-  color: #667eea;
-  font-weight: 600;
   font-size: 26rpx;
+  font-weight: 600;
+  // 颜色由动态绑定
 }
 
-.btn-wrapper {
-  margin-bottom: 20rpx;
+/* 登录按钮 */
+.btn-primary {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+  border-radius: 28rpx;
+  border: none;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 48rpx;
+  box-shadow: 0 20rpx 60rpx -20rpx rgba(56, 189, 248, 0.5);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+.btn-primary:active {
+  transform: scale(0.98);
+}
 
-.register-link {
+/* 分割线 */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+  margin-bottom: 48rpx;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2rpx;
+  // 背景色由动态绑定
+}
+
+.divider-text {
+  font-size: 26rpx;
+  // 颜色由动态绑定
+}
+
+/* 社交登录 */
+.social-login {
+  display: flex;
+  justify-content: center;
+  gap: 40rpx;
+  margin-bottom: 64rpx;
+}
+
+.social-btn {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border: 2rpx solid;
+  // 背景色和边框色由动态绑定
+  
+  .iconfont {
+    font-size: 48rpx;
+  }
+}
+
+.social-btn:active {
+  transform: translateY(-4rpx);
+}
+
+.social-btn.wechat .iconfont {
+  color: #07C160;
+}
+
+.social-btn.alipay .iconfont {
+  color: #1677FF;
+}
+
+// Apple 图标颜色由动态绑定
+
+/* 注册提示 */
+.register-tip {
   text-align: center;
-  font-size: 24rpx;
-  color: #64748b;
-  margin-top: 0;
+  font-size: 28rpx;
 }
 
-.register-text {
-  color: #64748b;
+.tip-text {
+  // 颜色由动态绑定
 }
 </style>

@@ -1,128 +1,107 @@
 <template>
-  <view class="forgot-container">
-    <view class="forgot-content">
-      <!-- Form Card -->
-      <view class="form-card">
-        <text class="form-title">忘记密码</text>
-        <text class="form-subtitle">重置您的账户密码</text>
-
-        <view class="input-group">
-          <text class="input-label">手机号</text>
-          <u-input
-            v-model="form.phone"
-            type="text"
-            placeholder="请输入手机号"
-            :maxlength="11"
-            :border="false"
-            :customStyle="inputStyle"
-            shape="round"
-          >
-            <template #suffix>
-              <text class="iconfont icon-mobile-alt" style="color: #94a3b8; font-size: 36rpx;"></text>
-            </template>
-          </u-input>
-        </view>
-
-        <view class="input-group">
-          <text class="input-label">验证码</text>
-          <view class="verify-code-wrapper">
-            <u-input
-              v-model="form.code"
-              type="text"
-              placeholder="请输入验证码"
-              :maxlength="6"
-              :border="false"
-              :customStyle="inputStyle"
-              shape="round"
-              style="flex: 1; margin-right: 16rpx;"
+  <view class="forgot-page" :style="{ background: theme.bgPrimary }">
+    <!-- 环境光背景 -->
+    <view class="ambient-bg"></view>
+    
+    <!-- 自定义导航栏 -->
+    <custom-navbar title="修改密码" :show-back="true" />
+    
+     <!-- 内容区域 -->
+    <scroll-view scroll-y class="scroll-content" :style="{ paddingTop: navbarHeight + 'px' }">
+      <view class="page-content">
+        <!-- 表单 -->
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">手机号码</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }">
+            <text class="iconfont icon-mobile-alt icon" :style="{ color: theme.textSecondary }"></text>
+            <input 
+              v-model="form.phone" 
+              type="text" 
+              class="input-field" 
+              :style="{ color: theme.textPrimary }"
+              placeholder="请输入手机号"
+              placeholder-class="placeholder"
+              :maxlength="11"
             />
-            <u-button
-              :text="counting ? `${counter}s` : '发送验证码'"
-              type="primary"
-              size="small"
-              :plain="false"
-              shape="round"
-              :disabled="counting"
-              :customStyle="codeButtonStyle"
-              @click="getCode"
-            ></u-button>
           </view>
         </view>
 
-        <view class="input-group">
-          <text class="input-label">新密码</text>
-          <u-input
-            v-model="form.newPassword"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="请输入新密码"
-            :border="false"
-            :customStyle="inputStyle"
-            shape="round"
-          >
-            <template #suffix>
-              <view @click="togglePasswordVisibility" style="padding: 0 10rpx;">
-                <text 
-                  class="iconfont" 
-                  :class="showPassword ? 'icon-a-fasfa-eye' : 'icon-fa-eye-close'"
-                  style="color: #94a3b8; font-size: 36rpx;"
-                ></text>
-              </view>
-            </template>
-          </u-input>
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">验证码</text>
+          <view class="verify-row">
+            <view class="input-with-icon verify-input" :style="{ background: theme.bgCard }">
+              <input 
+                v-model="form.code" 
+                type="text" 
+                class="input-field" 
+                :style="{ color: theme.textPrimary }"
+                placeholder="请输入验证码"
+                placeholder-class="placeholder"
+                :maxlength="6"
+              />
+            </view>
+            <button 
+              class="btn-secondary" 
+              :style="secondaryBtnStyle"
+              :disabled="counting" 
+              @click="getCode"
+            >
+              {{ counting ? `${counter}s` : '获取验证码' }}
+            </button>
+          </view>
         </view>
 
-        <view class="input-group">
-          <text class="input-label">确认密码</text>
-          <u-input
-            v-model="form.confirmPassword"
-            :type="showConfirmPassword ? 'text' : 'password'"
-            placeholder="请再次输入密码"
-            :border="false"
-            :customStyle="inputStyle"
-            shape="round"
-          >
-            <template #suffix>
-              <view @click="toggleConfirmPasswordVisibility" style="padding: 0 10rpx;">
-                <text 
-                  class="iconfont" 
-                  :class="showConfirmPassword ? 'icon-a-fasfa-eye' : 'icon-fa-eye-close'"
-                  style="color: #94a3b8; font-size: 36rpx;"
-                ></text>
-              </view>
-            </template>
-          </u-input>
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">新密码</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }">
+            <text class="iconfont icon-fa-lock icon" :style="{ color: theme.textSecondary }"></text>
+            <input 
+              v-model="form.newPassword" 
+              :type="showPassword ? 'text' : 'password'" 
+              class="input-field" 
+              :style="{ color: theme.textPrimary }"
+              placeholder="请输入新密码"
+              placeholder-class="placeholder"
+            />
+          </view>
         </view>
 
-        <!-- 提交按钮 -->
-        <view class="btn-wrapper">
-          <u-button
-            text="确定"
-            type="primary"
-            size="normal"
-            :plain="false"
-            shape="round"
-            :disabled="!isFormValid"
-            :customStyle="buttonStyle"
-            @click="handleReset"
-          ></u-button>
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">确认新密码</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }">
+            <text class="iconfont icon-fa-lock icon" :style="{ color: theme.textSecondary }"></text>
+            <input 
+              v-model="form.confirmPassword" 
+              :type="showConfirmPassword ? 'text' : 'password'" 
+              class="input-field" 
+              :style="{ color: theme.textPrimary }"
+              placeholder="请再次输入新密码"
+              placeholder-class="placeholder"
+            />
+          </view>
         </view>
+
+        <!-- 按钮 -->
+        <button class="btn-primary" :style="{ boxShadow: theme.shadowButton }" @click="handleReset">确认修改</button>
 
         <!-- 返回登录 -->
         <view class="register-link">
-          <text class="register-text">想起密码了？</text>
-          <text class="link-text" @click="goToLogin">返回登录</text>
+          <text class="register-text" :style="{ color: theme.textSecondary }">想起密码了？</text>
+          <text class="link-text" :style="{ color: theme.colorAccent }" @click="goToLogin">返回登录</text>
         </view>
       </view>
-    </view>
+    </scroll-view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed, getCurrentInstance } from 'vue'
 import { onLoad } from "@dcloudio/uni-app"
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
 
+// 数据
 const form = ref({
   phone: '',
   code: '',
@@ -136,46 +115,23 @@ const counting = ref(false)
 const counter = ref(60)
 const savedVerifyCode = ref('')
 const savedPhone = ref('')
+const navbarHeight = ref(0)
 
-// 输入框样式
-const inputStyle = {
-  border: '4rpx solid #e2e8f0',
-  borderRadius: '20rpx',
-  padding: '24rpx 28rpx',
-  backgroundColor: '#fff',
-  fontSize: '28rpx'
-}
+// 获取主题 Store
+const themeStore = proxy.$store.theme.useThemeStore()
 
-// 按钮样式
-const buttonStyle = {
-  width: '100%',
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-}
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
 
-// 验证码按钮样式
-const codeButtonStyle = {
-  width: 'auto',
-  minWidth: '140rpx',
-  padding: '0 20rpx',
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-}
-
-// 切换密码显示/隐藏
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
-
-// 切换确认密码显示/隐藏
-const toggleConfirmPasswordVisibility = () => {
-  showConfirmPassword.value = !showConfirmPassword.value
-}
-
-// 计算属性判断表单是否有效
-const isFormValid = computed(() => {
-  return form.value.phone && 
-         form.value.code && 
-         form.value.newPassword && 
-         form.value.confirmPassword
+// 次要按钮样式
+const secondaryBtnStyle = computed(() => {
+  const shadow = themeStore.isDark() ? 'none' : '0 4rpx 16rpx rgba(0,0,0,0.06)'
+  return {
+    background: theme.value.bgCard,
+    color: theme.value.textPrimary,
+    borderColor: theme.value.borderColor,
+    boxShadow: shadow
+  }
 })
 
 // 生成6位随机验证码
@@ -297,91 +253,210 @@ const goToLogin = () => {
 }
 
 onLoad((params) => {
-  console.log(params)
+  // 加载主题设置
+  themeStore.loadTheme()
+  // 计算导航栏高度（状态栏 + 导航栏）
+  const systemInfo = uni.getSystemInfoSync()
+  navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
 })
 </script>
 
 <style lang="scss" scoped>
 @import '@/static/fonts/iconfont.css';
 
-.forgot-container {
-  height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.forgot-page {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  // 背景色由动态绑定
+}
+
+/* 环境光背景 */
+.ambient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 20% 20%, hsla(200, 80%, 50%, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 80%, hsla(280, 60%, 40%, 0.1), transparent 40%);
+}
+
+/* 状态栏占位 */
+.status-bar-space {
+  width: 100%;
+}
+
+/* 导航头部 */
+.nav-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 48rpx 40rpx;
+  position: relative;
+  z-index: 100;
+}
+
+.nav-back {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 60rpx 20rpx;
-  box-sizing: border-box;
-  overflow: hidden;
+  border-radius: 24rpx;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  // 背景色和阴影由动态绑定
+  
+  .iconfont {
+    font-size: 32rpx;
+    // 颜色由动态绑定
+  }
 }
 
-.forgot-content {
-  width: 100%;
-  max-width: 750rpx;
+.nav-back:active {
+  transform: scale(0.95);
 }
 
-.form-card {
-  background: white;
-  border-radius: 40rpx;
-  padding: 36rpx 32rpx;
-  width: 100%;
-  box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.15);
-  box-sizing: border-box;
-}
-
-.form-title {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 8rpx;
-}
-
-.form-subtitle {
-  display: block;
-  font-size: 24rpx;
-  color: #64748b;
-  margin-bottom: 24rpx;
-}
-
-.input-group {
-  margin-bottom: 24rpx;
-}
-
-.input-label {
-  display: block;
-  font-size: 24rpx;
+.nav-title {
+  font-size: 34rpx;
   font-weight: 600;
-  color: #64748b;
-  margin-bottom: 12rpx;
+  // 颜色由动态绑定
 }
 
-.verify-code-wrapper {
+.nav-action {
+  width: 80rpx;
+  height: 80rpx;
+}
+
+/* 滚动区域 */
+.scroll-content {
+  height: 100vh;
+  // padding-top 由动态绑定
+}
+
+.page-content {
+  padding: 80rpx 48rpx 80rpx;
+}
+
+/* 表单组 */
+.form-group {
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 26rpx;
+  margin-bottom: 16rpx;
+  // 颜色由动态绑定
+}
+
+.input-with-icon {
+  position: relative;
   display: flex;
+  align-items: center;
+  border-radius: 28rpx;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  // 背景色由动态绑定
+}
+
+.icon {
+  position: absolute;
+  left: 32rpx;
+  font-size: 32rpx;
+  z-index: 2;
+  // 颜色由动态绑定
+}
+
+.input-field {
+  width: 100%;
+  height: 96rpx;
+  padding: 0 32rpx;
+  border-radius: 28rpx;
+  font-size: 30rpx;
+  border: none;
+  outline: none;
+  background: transparent;
+  transition: all 0.3s ease;
+  // 颜色由动态绑定
+}
+
+.input-with-icon .input-field {
+  padding-left: 76rpx;
+}
+
+/* 验证码行 */
+.verify-row {
+  display: flex;
+  gap: 24rpx;
   align-items: center;
 }
 
+.verify-input {
+  flex: 1;
+}
 
-.link-text {
-  color: #667eea;
+/* 次要按钮 */
+.btn-secondary {
+  height: 96rpx;
+  padding: 0 32rpx;
+  border-radius: 28rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  border: 2rpx solid;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  // 背景色、颜色、边框色由动态绑定
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+}
+
+/* 主按钮 */
+.btn-primary {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+  border-radius: 28rpx;
+  border: none;
+  font-size: 32rpx;
   font-weight: 600;
-  font-size: 26rpx;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin-bottom: 48rpx;
+  // 阴影由动态绑定
 }
 
-.btn-wrapper {
-  margin-top: 8rpx;
-  margin-bottom: 20rpx;
+.btn-primary:active {
+  transform: scale(0.98);
 }
 
+/* 注册链接 */
 .register-link {
   text-align: center;
-  font-size: 24rpx;
-  color: #64748b;
-  margin-top: 0;
+  font-size: 28rpx;
 }
 
 .register-text {
-  color: #64748b;
+  // 颜色由动态绑定
+}
+
+.link-text {
+  font-weight: 600;
+  // 颜色由动态绑定
 }
 </style>
