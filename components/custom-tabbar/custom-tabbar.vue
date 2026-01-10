@@ -12,7 +12,7 @@
           :class="currentIndex === index ? item.selectedIcon : item.icon"
           :style="{ 
             color: currentIndex === index ? theme.colorAccent : theme.textTertiary,
-            fontSize: '48rpx'
+            fontSize: getIconSize(index)
           }"
         ></text>
       </view>
@@ -38,6 +38,15 @@ const themeStore = proxy.$store.theme.useThemeStore()
 // 主题变量
 const theme = computed(() => useThemeVars(themeStore.isDark()))
 
+// 获取图标大小（工作台和我的图标稍大）
+const getIconSize = (index) => {
+  // 索引2是工作台，索引3是我的
+  if (index === 2 || index === 3) {
+    return '52rpx'  // 工作台和我的图标稍大
+  }
+  return '48rpx'  // 首页和开门保持原大小
+}
+
 // 当前选中的索引
 const currentIndex = ref(0)
 
@@ -52,20 +61,20 @@ const tabList = [
   {
     text: '开门',
     pagePath: '/pages/door/index',
-    icon: 'icon-unlock-alt',
-    selectedIcon: 'icon-unlock-alt'
+    icon: 'icon-door-open',
+    selectedIcon: 'icon-door-open'
   },
   {
-    text: '房屋',
+    text: '工作台',
     pagePath: '/pages/device/index',
-    icon: 'icon-fasfa-building',
-    selectedIcon: 'icon-fasfa-building'
+    icon: 'icon-th-large',
+    selectedIcon: 'icon-th-large'
   },
   {
     text: '我的',
     pagePath: '/pages/my/index',
-    icon: 'icon-fa-user-circle-o',
-    selectedIcon: 'icon-fa-user-circle-o'
+    icon: 'icon-fa-user',
+    selectedIcon: 'icon-fa-user'
   }
 ]
 
