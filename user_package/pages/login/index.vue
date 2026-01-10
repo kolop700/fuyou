@@ -3,10 +3,11 @@
     <!-- 环境光背景 -->
     <view class="ambient-bg"></view>
     
-    <!-- 状态栏占位 -->
-    <view class="status-bar-space" :style="{ height: statusBarHeight + 'px' }"></view>
+    <!-- 自定义导航栏 -->
+    <custom-navbar :show-back="true" />
     
     <!-- 内容区域 -->
+    <scroll-view scroll-y class="scroll-content" :style="{ paddingTop: navbarHeight + 'px' }">
     <view class="page-content">
       <!-- Logo区域 -->
       <view class="logo-section">
@@ -84,6 +85,7 @@
         <text class="link-text" :style="{ color: theme.colorAccent }" @click="goToRegister">立即注册</text>
       </view>
     </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -101,7 +103,7 @@ const form = ref({
 })
 const showPassword = ref(false)
 const remember = ref(false)
-const statusBarHeight = ref(0)
+const navbarHeight = ref(0)
 
 // 获取主题 Store
 const themeStore = proxy.$store.theme.useThemeStore()
@@ -210,9 +212,16 @@ const goToForgotPassword = () => {
 onLoad((params) => {
   // 加载主题设置
   themeStore.loadTheme()
-  // 获取状态栏高度
+  // 获取导航栏高度
   const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 0
+  const statusBarHeight = systemInfo.statusBarHeight || 0
+  // #ifdef MP-WEIXIN
+  const menuButtonInfo = uni.getMenuButtonBoundingClientRect()
+  navbarHeight.value = statusBarHeight + menuButtonInfo.height + (menuButtonInfo.top - statusBarHeight) * 2
+  // #endif
+  // #ifdef APP-PLUS || H5
+  navbarHeight.value = statusBarHeight + 44
+  // #endif
 })
 </script>
 
@@ -240,14 +249,17 @@ onLoad((params) => {
     radial-gradient(circle at 80% 80%, hsla(280, 60%, 40%, 0.1), transparent 40%);
 }
 
-/* 状态栏占位 */
-.status-bar-space {
-  width: 100%;
+/* 滚动区域 */
+.scroll-content {
+  height: 100vh;
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
 }
 
 /* 页面内容 */
 .page-content {
-  padding: 120rpx 48rpx 48rpx;
+  padding: 60rpx 48rpx 48rpx;
   position: relative;
   z-index: 10;
 }
@@ -341,12 +353,18 @@ onLoad((params) => {
 }
 
 .remember-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   // 颜色由动态绑定
 }
 
 .link-text {
   font-size: 26rpx;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   // 颜色由动态绑定
 }
 
@@ -363,6 +381,10 @@ onLoad((params) => {
   margin-bottom: 48rpx;
   box-shadow: 0 20rpx 60rpx -20rpx rgba(56, 189, 248, 0.5);
   transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .btn-primary:active {
@@ -430,9 +452,16 @@ onLoad((params) => {
 .register-tip {
   text-align: center;
   font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .tip-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   // 颜色由动态绑定
 }
 </style>

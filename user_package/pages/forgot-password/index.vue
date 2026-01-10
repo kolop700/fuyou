@@ -438,6 +438,10 @@ onLoad((params) => {
   color: white;
   transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   margin-bottom: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   // 阴影由动态绑定
 }
 
@@ -449,14 +453,24 @@ onLoad((params) => {
 .register-link {
   text-align: center;
   font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .register-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   // 颜色由动态绑定
 }
 
 .link-text {
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   // 颜色由动态绑定
 }
 </style>
