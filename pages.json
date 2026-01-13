@@ -156,6 +156,12 @@
 							"bounce": "none"
 						}
 					}
+				},
+				{
+					"path": "pages/settings/index",
+					"style": {
+						"navigationStyle": "custom"
+					}
 				}				
 			]
 		}

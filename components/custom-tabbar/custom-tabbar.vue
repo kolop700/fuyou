@@ -121,6 +121,7 @@ const stopRouteCheck = () => {
 }
 
 onMounted(() => {
+  uni.hideTabBar()
   initCurrentIndex()
   startRouteCheck()
 })

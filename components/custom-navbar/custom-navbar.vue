@@ -1,4 +1,4 @@
-<<template>
+<template>
   <view class="custom-navbar" :style="{ background: navbarBg, paddingTop: statusBarHeight + 'px' }">
     <view class="navbar-content" :style="{ height: navbarHeight + 'px' }">
       <!-- 左侧返回按钮/占位 -->
@@ -69,8 +69,8 @@ const navbarBg = computed(() => {
   if (props.bgColor) {
     return props.bgColor
   }
-  // 导航栏透明，让页面背景透过来
-  return 'transparent'
+  // 默认背景色（与页面背景一致）
+  return theme.value.bgPrimary
 })
 
 // 返回按钮阴影（浅色模式有阴影，深色模式无）
