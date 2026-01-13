@@ -52,7 +52,7 @@ const props = defineProps({
   },
   transparent: {
     type: Boolean,
-    default: false
+    default: true
   }
 })
 
@@ -63,11 +63,11 @@ const navbarHeight = ref(44)
 
 // 计算导航栏背景色
 const navbarBg = computed(() => {
-  if (props.transparent) {
-    return 'transparent'
-  }
   if (props.bgColor) {
     return props.bgColor
+  }
+  if (props.transparent) {
+    return 'transparent'
   }
   // 默认背景色（与页面背景一致）
   return theme.value.bgPrimary
