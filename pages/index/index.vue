@@ -2,7 +2,7 @@
   <view class="page-container" :class="{ 'dark-mode': themeStore.isDark() }">
     <view class="ambient-bg"></view>
     <!-- 自定义导航栏 -->
-    <custom-navbar title="玉龙智眸" :transparent="true" />
+    <custom-navbar title="优福社区" :transparent="true" />
     
     <!-- 内容区域 -->
     <scroll-view class="app-content" scroll-y :style="{ paddingTop: navbarHeight + 'px' }">
@@ -10,7 +10,7 @@
       <view class="header-section">
         <view class="header-top">
           <view class="header-left">
-            <text class="app-title">玉龙智眸</text>
+            <text class="app-title">优福社区</text>
             <text class="app-subtitle">智能守护，安心生活</text>
           </view>
         </view>
@@ -21,7 +21,7 @@
         <view class="empty-icon-wrapper">
           <text class="iconfont icon-fa-home" style="color: #fff; font-size: 80rpx;"></text>
         </view>
-        <text class="empty-title">欢迎使用玉龙智眸</text>
+        <text class="empty-title">欢迎使用优福社区</text>
         <text class="empty-desc">您还未认证房屋<br>认证后即可使用智能门禁服务</text>
         
         <view class="empty-btn-wrapper">
@@ -51,29 +51,70 @@
 
       <!-- 有设备时显示的内容 -->
       <view v-else>
-        <!-- 常用设备 - 显示使用最频繁的前3个设备 -->
+        <!-- 常用设备 - 单个展示轮播 -->
         <view class="section">
           <text class="section-title">常用设备</text>
-          <view class="action-grid">
-            <view 
-              class="action-btn glass-card" 
-              v-for="(device, index) in top3Devices" 
-              :key="index"
-              @click="handleQuickOpen(device)"
+          
+          <view class="device-carousel-wrapper">
+            <!-- 中间设备展示 (使用 Swiper 替代 Transition) -->
+            <swiper 
+              class="device-main-display"
+              :current="currentIndex"
+              @change="handleSwiperChange"
+              :circular="false"
+              :indicator-dots="false"
+              :autoplay="false"
+              :duration="300"
             >
-              <view class="device-status-badge" :class="device.online === '1' ? 'online' : 'offline'">
-                <view class="status-dot-small"></view>
-                <text class="status-text-small">{{ device.online === '1' ? '在线' : '离线' }}</text>
-              </view>
-              <text class="iconfont" :class="device.icon" :style="{ color: getIconColor(device.iconGradient), fontSize: '72rpx' }"></text>
-              <text class="action-title">{{ device.name }}</text>
-              <text class="action-desc">{{ device.location }}</text>
+              <swiper-item v-for="(device, index) in carouselList" :key="index">
+                <view class="device-content-wrapper">
+                  <!-- 大开门按钮 -->
+                  <view 
+                    class="door-btn-wrapper"
+                    @touchstart="handlePressStart"
+                    @touchend="handlePressEnd"
+                    @touchcancel="handlePressEnd"
+                    @click="handleDeviceAction(device)"
+                  >
+                    <image 
+                      :src="isPressed && currentIndex === index ? '/static/icons/icon_index_pressed_true.png' : '/static/icons/icon_index_pressed_false.png'" 
+                      class="door-btn-img"
+                      mode="aspectFit"
+                    ></image>
+                    
+                    <!-- 设备名称 (叠加在图片下半部分) -->
+                    <view class="device-name-overlay">
+                      <text class="device-name-text">{{ device.name }}</text>
+                    </view>
+                  </view>
+                  
+                  <!-- 在线状态指示 -->
+                  <view v-if="!device.isAllDevices" class="status-indicator">
+                    <view class="status-dot" :class="device.online === '1' ? 'online' : 'offline'"></view>
+                    <text class="status-text">{{ device.online === '1' ? '设备在线' : '设备离线' }}</text>
+                  </view>
+                </view>
+              </swiper-item>
+            </swiper>
+
+            <!-- 左侧切换按钮 (绝对定位，支持点击和滑动) -->
+            <view 
+              class="nav-btn-side left-btn" 
+              @touchstart="handleButtonTouchStart"
+              @touchend="(e) => handleButtonTouchEnd(e, true)"
+              :class="{ disabled: currentIndex === 0 }"
+            >
+              <image src="/static/icons/icon_left_index.png" class="nav-icon-img" mode="aspectFit"></image>
             </view>
-            
-            <view class="action-btn glass-card" @click="handleAllDevices">
-              <text class="iconfont icon-th-large" style="color: #0a84ff; font-size: 72rpx;"></text>
-              <text class="action-title">全部设备</text>
-              <text class="action-desc">查看更多</text>
+
+            <!-- 右侧切换按钮 (绝对定位，支持点击和滑动) -->
+            <view 
+              class="nav-btn-side right-btn" 
+              @touchstart="handleButtonTouchStart"
+              @touchend="(e) => handleButtonTouchEnd(e, false)"
+              :class="{ disabled: currentIndex >= carouselList.length - 1 }"
+            >
+              <image src="/static/icons/icon_right_index.png" class="nav-icon-img" mode="aspectFit"></image>
             </view>
           </view>
         </view>
@@ -122,7 +163,7 @@
       <view class="agreement-popup">
         <view class="agreement-title">服务协议和隐私政策</view>
         <view class="agreement-content">
-          欢迎使用玉龙智眸。我们非常重视您的个人信息和隐私保护。在您使用"服务"之前，请务必仔细阅读
+          欢迎使用优福社区。我们非常重视您的个人信息和隐私保护。在您使用"服务"之前，请务必仔细阅读
           <text class="link" @click="agreementStore.openUserAgreement()">《用户协议》</text>
           <text>和</text>
           <text class="link" @click="agreementStore.openPrivacyPolicy()">《隐私政策》</text>
@@ -154,6 +195,94 @@ const notificationCount = ref(3)
 const roomList = ref([])
 const loading = ref(false)
 const deviceOpenCounts = ref({}) // 存储设备开门次数
+const currentIndex = ref(0) // 当前展示的设备索引
+const isPressed = ref(false) // 按钮按压状态
+const btnTouchStartX = ref(0) // 按钮区域触摸起始点
+
+// 轮播列表（常用设备 + 全部设备）
+const carouselList = computed(() => {
+  const list = [...commonDevices.value]
+  // 添加"全部设备"作为最后一项
+  list.push({
+    isAllDevices: true,
+    name: '全部设备',
+    online: '1' // 默认在线
+  })
+  return list
+})
+
+// 当前展示的设备
+const currentDevice = computed(() => {
+  if (carouselList.value.length === 0) return null
+  return carouselList.value[currentIndex.value] || carouselList.value[0]
+})
+
+// 向左切换
+const handlePrev = () => {
+  if (currentIndex.value > 0) {
+    currentIndex.value--
+  }
+}
+
+// 向右切换
+const handleNext = () => {
+  if (currentIndex.value < carouselList.value.length - 1) {
+    currentIndex.value++
+  }
+}
+
+// Swiper 切换事件
+const handleSwiperChange = (e) => {
+  // 只在非代码触发时更新（避免循环触发）
+  if (e.detail.source === 'touch') {
+    currentIndex.value = e.detail.current
+  }
+}
+
+// 按钮区域触摸处理（解决按钮遮挡滑动的问题）
+const handleButtonTouchStart = (e) => {
+  btnTouchStartX.value = e.changedTouches[0].clientX
+}
+
+const handleButtonTouchEnd = (e, isLeftBtn) => {
+  const endX = e.changedTouches[0].clientX
+  const diff = endX - btnTouchStartX.value
+  const threshold = 10 // 点击阈值
+  
+  // 如果移动距离很小，视为点击
+  if (Math.abs(diff) < threshold) {
+    if (isLeftBtn) handlePrev()
+    else handleNext()
+    return
+  }
+  
+  // 否则视为滑动
+  if (diff > 0) {
+    // 右滑 -> 上一张
+    handlePrev()
+  } else {
+    // 左滑 -> 下一张
+    handleNext()
+  }
+}
+
+// 按钮按压效果
+const handlePressStart = () => {
+  isPressed.value = true
+}
+
+const handlePressEnd = () => {
+  isPressed.value = false
+}
+
+// 处理设备操作（开门或跳转）
+const handleDeviceAction = (device) => {
+  if (device.isAllDevices) {
+    handleAllDevices()
+  } else {
+    handleQuickOpen(device)
+  }
+}
 
 // 导航栏高度（状态栏 + 导航栏）
 const navbarHeight = ref(0)
@@ -188,8 +317,8 @@ const getDeviceOpenCount = (doorMac) => {
   return deviceOpenCounts.value[doorMac] || 0
 }
 
-// 获取使用最频繁的前3个设备
-const top3Devices = computed(() => {
+// 获取常用设备（按使用频率排序）
+const commonDevices = computed(() => {
   if (!deviceStore.deviceList || deviceStore.deviceList.length === 0) {
     return []
   }
@@ -232,8 +361,8 @@ const top3Devices = computed(() => {
     }
   })
   
-  // 按开门次数排序，取前3个
-  return formattedList.sort((a, b) => b.openCount - a.openCount).slice(0, 3)
+  // 按开门次数排序
+  return formattedList.sort((a, b) => b.openCount - a.openCount)
 })
 
 // 从渐变色中提取主色调
@@ -399,7 +528,7 @@ const handleCertification = () => {
   if (!userStore.checkLogin()) {
     return
   }
-  uni.switchTab({
+  uni.navigateTo({
     url: '/pages/device/index'
   })
 }
@@ -929,6 +1058,142 @@ const handleAgree = () => {
   border: none;
   &::after { border: none; }
 }
+
+.device-carousel-wrapper {
+  position: relative;
+  width: 100%;
+  height: 520rpx; /* 确保高度足够 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-btn-side {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  
+  &.left-btn {
+    left: 10rpx;
+  }
+  
+  &.right-btn {
+    right: 10rpx;
+  }
+  
+  &.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  
+  &:active {
+    transform: translateY(-50%) scale(0.9);
+  }
+}
+
+.nav-icon-img {
+  width: 60rpx;
+  height: 60rpx;
+}
+
+.device-main-display {
+  width: 100%;
+  height: 100%;
+}
+
+.door-btn-wrapper {
+  width: 440rpx;
+  height: 440rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+  margin-bottom: 24rpx;
+  position: relative;
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.door-btn-img {
+  width: 100%;
+  height: 100%;
+}
+
+.device-name-overlay {
+  position: absolute;
+  bottom: 110rpx;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 2;
+  padding: 0 80rpx; /* 收窄文字区域，避开图片透明边缘 */
+  pointer-events: none; /* 防止文字遮挡点击 */
+}
+
+.device-name-text {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.6);
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 20rpx;
+  background: rgba(0,0,0,0.05);
+  border-radius: 20rpx;
+  
+  .dark-mode & {
+    background: rgba(255,255,255,0.05);
+  }
+}
+
+.status-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  
+  &.online {
+    background-color: #34c759;
+    box-shadow: 0 0 8rpx rgba(52, 199, 89, 0.5);
+  }
+  
+  &.offline {
+    background-color: #94a3b8;
+  }
+}
+
+.status-text {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+.device-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
 
 .btn-agree {
   flex: 1;

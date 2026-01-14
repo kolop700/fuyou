@@ -1,7 +1,7 @@
 <template>
   <view class="device-container" :style="{ background: theme.bgPrimary }">
     <!-- 自定义导航栏 -->
-    <custom-navbar title="我的房屋" />
+    <custom-navbar title="我的房屋" :showBack="true" />
     
     <scroll-view 
       class="device-content" 
@@ -91,9 +91,6 @@
         </view>
       </view>
     </scroll-view>
-    
-    <!-- 自定义底部标签栏 -->
-    <custom-tabbar />
   </view>
 </template>
 

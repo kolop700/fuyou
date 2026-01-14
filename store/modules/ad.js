@@ -4,10 +4,10 @@ import { useAdControlStore, AD_CONTROL_TYPES } from './adControl' // 引入广�
 
 // 定义广告 ID
 // 【安卓】
-// 玉龙智眸小卫-Android-banner  :1775833252
-// 玉龙智眸小卫-Android-插屏：1438927711  
-// 玉龙智眸小卫-Android-激励视频：1339603001
-// 玉龙智眸小卫-Android-原生信息流：1477293195
+// 优福社区小卫-Android-banner  :1775833252
+// 优福社区小卫-Android-插屏：1438927711  
+// 优福社区小卫-Android-激励视频：1339603001
+// 优福社区小卫-Android-原生信息流：1477293195
 // 【ios】
 // ios-banner：1555981719
 // ios-插屏：1762186846  

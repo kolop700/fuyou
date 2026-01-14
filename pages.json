@@ -17,6 +17,12 @@
 			}
 		},
 		{
+			"path": "pages/workbench/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/door/index",
 			"style": {
 				"navigationStyle": "custom"
@@ -195,8 +201,8 @@
 				"selectedIconPath": "static/tabbar/door-active.png"
 			},
 			{
-				"pagePath": "pages/device/index",
-				"text": "房屋",
+				"pagePath": "pages/workbench/index",
+				"text": "工作台",
 				"iconPath": "static/tabbar/device.png",
 				"selectedIconPath": "static/tabbar/device-active.png"
 			},

@@ -1,7 +1,7 @@
 <template>
   <view class="my-container" :style="{ background: theme.bgPrimary }">
     <!-- 自定义导航栏（不显示标题） -->
-    <custom-navbar title="我的" :transparent="false" />
+    <custom-navbar title="我的" />
     
     <scroll-view class="my-content" scroll-y :style="{ paddingTop: navbarHeight + 'px', paddingBottom: '120rpx' }">
       <view class="page-padding">
@@ -73,7 +73,7 @@ const menuItems = computed(() => [
     subtitle: '已绑定房屋信息',
     icon: 'icon-fa-home',
     gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    action: () => uni.switchTab({ url: '/pages/device/index' }),
+    action: () => uni.navigateTo({ url: '/pages/device/index' }),
     requiresAuth: true
   },
   {

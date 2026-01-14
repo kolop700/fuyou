@@ -66,7 +66,7 @@ const tabList = [
   },
   {
     text: '工作台',
-    pagePath: '/pages/device/index',
+    pagePath: '/pages/workbench/index',
     icon: 'icon-th-large',
     selectedIcon: 'icon-th-large'
   },
@@ -84,7 +84,13 @@ const switchTab = (item, index) => {
   
   currentIndex.value = index
   uni.switchTab({
-    url: item.pagePath
+    url: item.pagePath,
+    fail: (err) => {
+      console.log('switchTab failed, trying navigateTo', err)
+      uni.navigateTo({
+        url: item.pagePath
+      })
+    }
   })
 }
 
