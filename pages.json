@@ -132,7 +132,7 @@
 				{
 					"path": "pages/visitor-password/index",
 					"style": {
-						"navigationBarTitleText": "临时访客密码"
+						"navigationStyle": "custom"
 					}
 				},
 				{

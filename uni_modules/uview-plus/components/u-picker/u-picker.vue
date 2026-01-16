@@ -33,6 +33,7 @@
 				<picker-view
 					class="u-picker__view"
 					:indicatorStyle="`height: ${addUnit(itemHeight)}`"
+                    :mask-style="maskStyle"
 					:value="innerIndex"
 					:immediateChange="immediateChange"
 					:style="{

@@ -11,9 +11,7 @@
     <view class="page-content">
       <!-- Logo区域 -->
       <view class="logo-section">
-        <view class="logo-box" :style="{ background: theme.logoGradient, boxShadow: theme.shadowLogo }">
-          <text class="iconfont icon-fa-building"></text>
-        </view>
+        <image src="/static/logo.png" class="logo-img" mode="aspectFit"></image>
         <text class="title" :style="{ color: theme.textPrimary }">欢迎回来</text>
         <text class="subtitle" :style="{ color: theme.textSecondary }">登录您的福优智家账户</text>
       </view>
@@ -270,20 +268,12 @@ onLoad((params) => {
   margin-bottom: 80rpx;
 }
 
-.logo-box {
+.logo-img {
   width: 160rpx;
   height: 160rpx;
   margin: 0 auto 40rpx;
   border-radius: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  // 背景渐变和阴影由动态绑定
-  
-  .iconfont {
-    font-size: 72rpx;
-    color: white;
-  }
+  display: block;
 }
 
 .title {

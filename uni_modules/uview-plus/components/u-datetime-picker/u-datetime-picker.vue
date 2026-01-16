@@ -31,6 +31,7 @@
             :cancelColor="cancelColor"
             :confirmColor="confirmColor"
             :toolbarRightSlot="toolbarRightSlot"
+            :maskStyle="maskStyle"
             @close="close"
             @cancel="cancel"
             @confirm="confirm"

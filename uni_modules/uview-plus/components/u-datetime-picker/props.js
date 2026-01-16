@@ -149,6 +149,11 @@ export const props = defineMixin({
         defaultIndex: {
             type: Array,
             default: () => defProps.datetimePicker.defaultIndex
+        },
+        // 自定义遮罩层样式
+        maskStyle: {
+            type: [String, Object],
+            default: () => ''
         }
     }
 })

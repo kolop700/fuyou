@@ -1,83 +1,156 @@
 <template>
-  <view class="container">
-    <view class="title">设备</view>
-    <!-- 滚动视图用于设备按钮 -->
-    <scroll-view scroll-y="true" class="scroll-container">
-      <view v-for="(item, index) in deviceList" :key="index" class="flex flex-direction">
-        <button 
-          :class="['cu-btn login-button', item.selected ? 'bg-red' : 'textsecondary']" 
-          @tap="toggleSelection(item.id)"
-        >{{ item.name }}</button>
-      </view>
-    </scroll-view>
-    <view class="divider-botton"></view>
-    <view class="divider_40rpx"></view>
-    <view class="info-section">
-      <view class="info-item" @click="showStartPicker = true">
-        <text class="label">开始时间:</text>
-        <text class="value">{{ formatDateTime(startDateTime) }}</text>
-        <up-datetime-picker
-          ref="startPickerRef"
-          :show="showStartPicker"
-          v-model="startDateTime"
-          mode="datetime"
-          :formatter="formatter"
-          :min-date="currentTime"
-          @confirm="onStartTimeConfirm"
-          @cancel="showStartPicker = false"
-          @close="showStartPicker = false"
-          :show-seconds="true"
-        ></up-datetime-picker>
-      </view>
-      <view class="divider"></view>
-      <view class="info-item" @click="showEndPicker = true">
-        <text class="label">结束时间:</text>
-        <text class="value">{{ formatDateTime(endDateTime) }}</text>
-        <up-datetime-picker
-          ref="endPickerRef"
-          :show="showEndPicker"
-          v-model="endDateTime"
-          mode="datetime"
-          :formatter="formatter"
-          :min-date="startDateTime"
-          :max-date="maxEndTime"
-          @confirm="onEndTimeConfirm"
-          @cancel="showEndPicker = false"
-          @close="showEndPicker = false"
-          :show-seconds="true"
-        ></up-datetime-picker>
-      </view>
-      <view class="divider"></view>
-      <view class="info-item">
-        <picker mode="selector" :range="validTimesRange" :value="validTimes" @change="bindValidTimesChange">
-          <view class="picker">
-            <text class="label">有效次数:</text>
-            <text class="value">{{ validTimes }}</text>
-            <text class="endlabel">(0表示无限次)</text>
+  <view class="container" :style="{ background: theme.bgPrimary }">
+    <!-- 环境光背景 -->
+    <view class="ambient-bg"></view>
+    
+    <!-- 自定义导航栏 -->
+    <custom-navbar title="临时访客密码" />
+    
+    <view class="content-wrapper" :style="{ paddingTop: navbarHeight + 'px' }">
+      <view class="title" :style="{ color: theme.textPrimary, background: theme.bgCard }">设备</view>
+      <!-- 滚动视图用于设备按钮 -->
+      <scroll-view scroll-y="true" class="scroll-container" :style="{ background: theme.bgCard }">
+        <view v-for="(item, index) in deviceList" :key="index" class="flex flex-direction">
+          <button 
+            :class="['cu-btn login-button']" 
+            :style="item.selected ? { background: theme.colorAccent, color: '#fff' } : { background: theme.bgInput, color: theme.textSecondary, borderColor: theme.borderColor }"
+            @tap="toggleSelection(item.id)"
+          >{{ item.name }}</button>
+        </view>
+      </scroll-view>
+      <view class="divider-botton" :style="{ background: theme.bgCard }"></view>
+      <view class="divider_40rpx" :style="{ background: 'transparent' }"></view>
+      <view class="info-section" :style="{ background: 'transparent', padding: '0 32rpx' }">
+        
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">开始时间</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showStartPicker = true">
+            <text class="iconfont icon-clock icon" :style="{ color: theme.textSecondary }"></text>
+            <view class="picker-field" :style="{ color: theme.textPrimary }">
+              {{ formatDateTime(startDateTime) }}
+            </view>
+            <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
           </view>
-        </picker>
+          <up-datetime-picker
+            ref="startPickerRef"
+            :show="showStartPicker"
+            v-model="startDateTime"
+            mode="datetime"
+            :formatter="formatter"
+            :min-date="currentTime"
+            @confirm="onStartTimeConfirm"
+            @cancel="showStartPicker = false"
+            @close="showStartPicker = false"
+            :show-seconds="true"
+            :confirmColor="theme.colorAccent"
+            :cancelColor="theme.textSecondary"
+            :maskStyle="pickerMaskStyle"
+          ></up-datetime-picker>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">结束时间</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showEndPicker = true">
+            <text class="iconfont icon-clock icon" :style="{ color: theme.textSecondary }"></text>
+            <view class="picker-field" :style="{ color: theme.textPrimary }">
+              {{ formatDateTime(endDateTime) }}
+            </view>
+            <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
+          </view>
+          <up-datetime-picker
+            ref="endPickerRef"
+            :show="showEndPicker"
+            v-model="endDateTime"
+            mode="datetime"
+            :formatter="formatter"
+            :min-date="startDateTime"
+            :max-date="maxEndTime"
+            @confirm="onEndTimeConfirm"
+            @cancel="showEndPicker = false"
+            @close="showEndPicker = false"
+            :show-seconds="true"
+            :confirmColor="theme.colorAccent"
+            :cancelColor="theme.textSecondary"
+            :maskStyle="pickerMaskStyle"
+          ></up-datetime-picker>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">有效次数</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showValidTimesPicker = true">
+            <text class="iconfont icon-calendar-check icon" :style="{ color: theme.textSecondary }"></text>
+            <view class="picker-field" :style="{ color: theme.textPrimary }">
+              {{ validTimes }} 次 {{ validTimes == 0 ? '(无限次)' : '' }}
+            </view>
+            <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
+          </view>
+          <up-picker
+            :show="showValidTimesPicker"
+            :columns="validTimesColumns"
+            :defaultIndex="[validTimes]"
+            keyName="text"
+            @confirm="onValidTimesConfirm"
+            @cancel="showValidTimesPicker = false"
+            @close="showValidTimesPicker = false"
+            :confirmColor="theme.colorAccent"
+            :cancelColor="theme.textSecondary"
+            :maskStyle="pickerMaskStyle"
+          ></up-picker>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label" :style="{ color: theme.textSecondary }">开门密码</text>
+          <view class="input-with-icon" :style="{ background: theme.bgCard }">
+            <text class="iconfont icon-lock icon" :style="{ color: theme.textSecondary }"></text>
+            <view class="picker-field" :style="{ color: theme.textPrimary }">
+              {{ doorPassword }}
+            </view>
+            <view class="copy-btn" @tap="copyPassword" :style="{ color: theme.colorAccent }">复制</view>
+          </view>
+        </view>
+
       </view>
-      <view class="divider"></view>
-      <view class="info-item">
-        <text class="label">开门密码:</text>
-        <text class="value">{{ doorPassword }}</text>
+      <view class="flex flex-direction button-view" :style="{ background: 'transparent' }">
+        <button 
+          class="cu-btn login-button" 
+          :style="{ background: 'transparent', color: theme.colorAccent, border: '1px solid ' + theme.colorAccent }"
+          @tap="refresh"
+        >刷新</button>
+        <button 
+          class="cu-btn login-button" 
+          :style="{ background: theme.colorAccent, color: '#fff' }"
+          @tap="shareKeys"
+        >保存并分享钥匙</button>
       </view>
-      <view class="divider"></view>
-    </view>
-    <view class="flex flex-direction button-view">
-      <button class="cu-btn line-red login-button" @tap="refresh">刷新</button>
-      <button class="cu-btn bg-red login-button" @tap="shareKeys">保存并分享钥匙</button>
     </view>
   </view>
 </template>
 
 <script setup>
 import { ref, getCurrentInstance, computed, onMounted } from 'vue'
-import { onReady } from '@dcloudio/uni-app'
+import { onReady, onLoad } from '@dcloudio/uni-app'
+import { useThemeVars } from '@/utils/themeConfig.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
+const themeStore = proxy.$store.theme.useThemeStore()
 const deviceApi = proxy.$api.device
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
+
+// Picker Theme Computed Properties
+const pickerBg = computed(() => theme.value.bgCard)
+const pickerText = computed(() => theme.value.textPrimary)
+const pickerTitle = computed(() => theme.value.textPrimary)
+const pickerBorder = computed(() => theme.value.borderColor)
+const pickerMaskStyle = computed(() => {
+    const bg = theme.value.bgCard
+    // App-Plus picker mask gradient
+    return `background-image: linear-gradient(180deg, ${bg} 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, ${bg} 100%)`
+})
+
+const navbarHeight = ref(0)
 
 // 数据定义
 const now = new Date()
@@ -88,11 +161,20 @@ const startDateTime = ref(now.getTime())
 const endDateTime = ref(end.getTime())
 const showStartPicker = ref(false)
 const showEndPicker = ref(false)
-const validTimesRange = ref(Array.from({ length: 31 }, (_, i) => String(i)))
+const showValidTimesPicker = ref(false)
 const validTimes = ref(0)
 const doorPassword = ref(generateRandomPassword())
 const startPickerRef = ref(null)
 const endPickerRef = ref(null)
+
+// Valid Times Columns for Picker
+const validTimesColumns = computed(() => {
+  const columns = Array.from({ length: 31 }, (_, i) => ({
+    text: i === 0 ? '无限次' : `${i}次`,
+    value: i
+  }))
+  return [columns]
+})
 
 // 计算属性
 const currentTime = computed(() => Date.now())
@@ -130,8 +212,18 @@ const getSelectedDevices = () => {
   return deviceList.value.filter(item => item.selected)
 }
 
-const bindValidTimesChange = (e) => {
-  validTimes.value = validTimesRange.value[e.detail.value]
+const onValidTimesConfirm = (e) => {
+  validTimes.value = e.value[0].value
+  showValidTimesPicker.value = false
+}
+
+const copyPassword = () => {
+  uni.setClipboardData({
+    data: doorPassword.value,
+    success: () => {
+      uni.showToast({ title: '已复制到剪贴板', icon: 'none' })
+    }
+  })
 }
 
 const formatDateTime = (timestamp) => {
@@ -261,6 +353,39 @@ onMounted(() => {
   getDeviceList()
 })
 
+onLoad(() => {
+  // 加载主题设置
+  themeStore.loadTheme()
+  
+  // 计算导航栏高度
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 0
+  // #ifdef MP-WEIXIN
+  const menuButtonInfo = uni.getMenuButtonBoundingClientRect()
+  navbarHeight.value = statusBarHeight + menuButtonInfo.height + (menuButtonInfo.top - statusBarHeight) * 2
+  // #endif
+  // #ifdef APP-PLUS || H5
+  navbarHeight.value = statusBarHeight + 44
+  // #endif
+  
+  // #ifdef H5
+  // Update CSS variables for H5 pickers
+  const updatePickerStyles = () => {
+    if (typeof document !== 'undefined') {
+      const bg = theme.value.bgCard
+      const text = theme.value.textPrimary
+      const border = theme.value.borderColor
+      document.body.style.setProperty('--picker-bg-card', bg)
+      document.body.style.setProperty('--picker-text-color', text)
+      document.body.style.setProperty('--picker-border-color', border)
+    }
+  }
+  
+  updatePickerStyles()
+  watch(theme, updatePickerStyles, { deep: true })
+  // #endif
+})
+
 onReady(() => {
   startPickerRef.value?.setFormatter?.(formatter)
   endPickerRef.value?.setFormatter?.(formatter)
@@ -268,42 +393,44 @@ onReady(() => {
 </script>
 
 <style scoped>
-.nav-custom {
-  padding: 20rpx;
-  background-color: #fff;
+@import '@/static/fonts/iconfont.css';
+
+.container {
+  min-height: 100vh;
+  position: relative;
 }
 
-.content {
-  text-align: center;
-  font-size: 32rpx;
-  font-weight: 500;
+.ambient-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, hsla(200, 80%, 50%, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 80%, hsla(280, 60%, 40%, 0.1), transparent 40%);
 }
 
-.divider {
-  height: 1rpx;
-  background-color: #eee;
-}
-
-.divider_40rpx {
-  height: 40rpx;
-  background: #EEEEEE;
+.content-wrapper {
+  padding-bottom: 40rpx;
+  position: relative;
+  z-index: 1;
 }
 
 .title {
-  background-color: white;
   padding-left: 24rpx;
   padding-top: 30rpx;
   font-family: PingFang SC, PingFang SC;
   font-weight: 800;
   font-size: 34rpx;
-  color: #303030;
   line-height: 34rpx;
   text-align: left;
 }
 
 .scroll-container {
   max-height: 380rpx;
-  background-color: white;
   padding: 20rpx 40rpx;
 }
 
@@ -328,69 +455,116 @@ onReady(() => {
   line-height: 28rpx;
 }
 
-.bg-red {
-  background-color: #ff4d4f;
-  color: white;
-}
-
-.line-red {
-  border: 1px solid #ff4d4f;
-  color: #ff4d4f;
-  background-color: white;
-}
-
-.textsecondary {
-  color: #ff4d4f;
-  background-color: #EFEFEF;
-  border: 1px solid #eee;
-}
-
 .divider-botton {
-  background-color: white;
   width: 100%;
   height: 60rpx;
 }
 
 .info-section {
-  background-color: white;
-  border-radius: 10rpx;
-  margin-top: 40rpx;
-  padding: 0 40rpx;
+  margin-top: 20rpx;
 }
 
-.info-item {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  height: 80rpx;
-  font-family: PingFang SC, PingFang SC;
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
   font-weight: 500;
-  font-size: 30rpx;
-  color: #303030;
-  line-height: 30rpx;
+  margin-bottom: 16rpx;
+  padding-left: 10rpx;
 }
 
-.picker {
-  width: 100%;
+.input-with-icon {
   display: flex;
   align-items: center;
+  border-radius: 12rpx;
+  height: 100rpx;
+  padding: 0 30rpx;
+  position: relative;
+  transition: all 0.3s;
 }
 
-.label {
-  color: #888;
+.icon {
+  font-size: 36rpx;
+  margin-right: 20rpx;
 }
 
-.endlabel {
-  margin-left: 20rpx;
-  color: #888;
+.picker-field {
+  flex: 1;
+  font-size: 28rpx;
 }
 
-.value {
-  margin-left: 50rpx;
+.picker-arrow {
+  font-size: 24rpx;
+}
+
+.copy-btn {
+  font-size: 24rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 30rpx;
+  background: rgba(0,0,0,0.05);
 }
 
 .button-view {
-  background-color: white;
   margin: 40rpx;
 }
+
+.divider_40rpx {
+  height: 40rpx;
+}
+
+/* Picker Dark Mode Support */
+:deep(.u-popup__content) {
+  background: v-bind(pickerBg) !important;
+  border-radius: 28rpx 28rpx 0 0 !important;
+}
+:deep(.u-picker) {
+  background: v-bind(pickerBg) !important;
+}
+:deep(.u-picker__view) {
+  background: v-bind(pickerBg) !important;
+}
+:deep(.u-picker__view__column__item) {
+  color: v-bind(pickerText) !important;
+}
+:deep(.u-toolbar) {
+  background: v-bind(pickerBg) !important;
+}
+:deep(.u-toolbar__title) {
+  color: v-bind(pickerTitle) !important;
+}
+
+/* H5/Web Specific Overrides for Picker Mask and Indicator */
+/* #ifdef H5 */
+:deep(.uni-picker-view-mask) {
+  background-image: v-bind(pickerMask) !important;
+}
+:deep(.uni-picker-view-indicator) {
+  height: 44px !important; /* Ensure match itemHeight */
+}
+:deep(.uni-picker-view-indicator::before),
+:deep(.uni-picker-view-indicator::after) {
+  border-color: v-bind(pickerBorder) !important;
+}
+/* #endif */
+</style>
+
+<!-- Non-scoped styles for H5 Picker overrides -->
+<style>
+/* #ifdef H5 */
+.uni-picker-view-mask {
+  background-image: linear-gradient(180deg, var(--picker-bg-card) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, var(--picker-bg-card) 100%) !important;
+}
+
+.uni-picker-view-indicator::before,
+.uni-picker-view-indicator::after {
+  border-color: var(--picker-border-color) !important;
+}
+
+.u-picker__view__column__item {
+  color: var(--picker-text-color) !important;
+}
+/* #endif */
 </style>

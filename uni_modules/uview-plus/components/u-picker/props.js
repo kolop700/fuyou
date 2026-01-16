@@ -104,5 +104,10 @@ export const props = defineMixin({
 		    type: [String, Number],
 		    default: () => defProps.picker.zIndex
 		},
+        // 自定义遮罩层样式
+        maskStyle: {
+            type: [String, Object],
+            default: () => ''
+        }
     }
 })
