@@ -15,7 +15,7 @@
           <text class="iconfont icon-fa-building"></text>
         </view>
         <text class="title" :style="{ color: theme.textPrimary }">欢迎回来</text>
-        <text class="subtitle" :style="{ color: theme.textSecondary }">登录您的优福社区账户</text>
+        <text class="subtitle" :style="{ color: theme.textSecondary }">登录您的福优智家账户</text>
       </view>
       
       <!-- 表单 -->

@@ -2,7 +2,7 @@
   <view class="page-container" :class="{ 'dark-mode': themeStore.isDark() }">
     <view class="ambient-bg"></view>
     <!-- 自定义导航栏 -->
-    <custom-navbar title="优福社区" :transparent="true" />
+    <custom-navbar title="福优智家" :transparent="true" />
     
     <!-- 内容区域 -->
     <scroll-view class="app-content" scroll-y :style="{ paddingTop: navbarHeight + 'px' }">
@@ -10,7 +10,7 @@
       <view class="header-section">
         <view class="header-top">
           <view class="header-left">
-            <text class="app-title">优福社区</text>
+            <text class="app-title">福优智家</text>
             <text class="app-subtitle">智能守护，安心生活</text>
           </view>
         </view>
@@ -21,7 +21,7 @@
         <view class="empty-icon-wrapper">
           <text class="iconfont icon-fa-home" style="color: #fff; font-size: 80rpx;"></text>
         </view>
-        <text class="empty-title">欢迎使用优福社区</text>
+        <text class="empty-title">欢迎使用福优智家</text>
         <text class="empty-desc">您还未认证房屋<br>认证后即可使用智能门禁服务</text>
         
         <view class="empty-btn-wrapper">
@@ -163,7 +163,7 @@
       <view class="agreement-popup">
         <view class="agreement-title">服务协议和隐私政策</view>
         <view class="agreement-content">
-          欢迎使用优福社区。我们非常重视您的个人信息和隐私保护。在您使用"服务"之前，请务必仔细阅读
+          欢迎使用福优智家。我们非常重视您的个人信息和隐私保护。在您使用"服务"之前，请务必仔细阅读
           <text class="link" @click="agreementStore.openUserAgreement()">《用户协议》</text>
           <text>和</text>
           <text class="link" @click="agreementStore.openPrivacyPolicy()">《隐私政策》</text>
