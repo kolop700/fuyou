@@ -1,122 +1,190 @@
 <template>
-  <!-- 使用 up-navbar 组件 -->
-  <view>
+  <view class="container" :style="{ background: theme.bgPrimary }">
+    <!-- 环境光背景 -->
+    <view class="ambient-bg"></view>
+    
+    <!-- 自定义导航栏 -->
+    <custom-navbar title="门禁二维码" :showBack="true" />
+
     <!-- 用于分享的隐藏canvas -->
     <canvas
       canvas-id="shareCanvas"
       style="width: 250px; height: 250px; position: fixed; left: -9999px;"
     ></canvas>
 
-    <!-- 二维码区域 -->
-    <div class="header">
-
-      <div class="qr-rode-view">
-        <up-qrcode
-          ref="qrcodeRef"
-          :size="250"
-          :val="qrCodeValue"
-          :showLoading="true"
-          loadingText="二维码生成中..."
-          @result="onQRCodeGenerated"
-          @longpress="save"
-        ></up-qrcode>
-        <image class="arrow" :src="`/static/icons/icon_refresh.png`" @tap="refreshQRCode"></image>
-      </div>
-    </div>
-
-    <div class="info-section">
-      <div class="info-item">
-        <text class="label">开门密码:</text>
-        <text class="value">{{doorPassword}}</text>
-        <image class="copy-button" :src="`/static/icons/icon_copy.png`" @tap="copyPassword"></image>
-      </div>
-      <div class="divider"></div>
-      <div class="info-item">
-        <picker mode="selector" :range="validTimesColumns" :value="gender" @change="picktimes">
-          <view class="picker">
-            <text class="label">有效次数:</text>
-            <text class="value">{{ validTimesColumns[gender] }}</text>
-            <text class="endlabel">(无限表示不限次数)</text>
+    <scroll-view scroll-y class="scroll-content" :style="{ paddingTop: navbarHeight + 'px' }">
+      <view class="page-content">
+        <!-- 二维码区域 -->
+        <view class="qr-section">
+          <view class="qr-card" :style="{ background: theme.bgCard, boxShadow: theme.shadowCard }">
+            <up-qrcode
+              ref="qrcodeRef"
+              :size="250"
+              :val="qrCodeValue"
+              :showLoading="true"
+              loadingText="二维码生成中..."
+              :background="theme.bgCard"
+              :foreground="theme.textPrimary"
+              @result="onQRCodeGenerated"
+              @longpress="save"
+            ></up-qrcode>
+            <view class="refresh-btn" @tap="refreshQRCode">
+              <text class="iconfont icon-sync-alt" :style="{ color: theme.textSecondary }"></text>
+              <text class="refresh-text" :style="{ color: theme.textSecondary }">点击刷新</text>
+            </view>
           </view>
-        </picker>
-      </div>
-      <div class="divider"></div>
-      <div class="info-item">
-        <picker mode="selector" :range="validMinutesColumns" :value="min" @change="pickmin">
-          <view class="picker">
-            <text class="label">有效分钟:</text>
-            <text class="value">{{ validMinutesColumns[min] }}</text>
-          </view>
-        </picker>
-      </div>
-      <div class="divider"></div>
-    </div>
+        </view>
 
-    <div class="padding flex flex-direction">
-      <button form-type="submit" class="cu-btn bg-red login-button" @tap="shareToFriend">保存到本地相册</button>
-    </div>
-<!-- 
-    <div class="footer">
-      <navigator url="/pages/qrRodeManage/qrRodeManage" class="footer-link">管理员二维码</navigator>
-    </div> -->
+        <view class="info-section" :style="{ background: theme.bgCard, boxShadow: theme.shadowCard }">
+          <view class="info-item">
+            <text class="label" :style="{ color: theme.textPrimary }">开门密码</text>
+            <view class="value-container">
+              <text class="value highlight" :style="{ color: theme.colorAccent }">{{doorPassword}}</text>
+              <view class="copy-btn" @tap="copyPassword">
+                <text class="iconfont icon-fasfa-copy" :style="{ color: theme.textSecondary }"></text>
+              </view>
+            </view>
+          </view>
+          
+          <view class="divider" :style="{ background: theme.dividerColor }"></view>
+          
+          <view class="info-item" @click="showTimesPicker = true">
+            <view class="picker-row">
+              <text class="label" :style="{ color: theme.textPrimary }">有效次数</text>
+              <view class="value-container">
+                <text class="value" :style="{ color: theme.textSecondary }">{{ validTimesColumns[gender] }}</text>
+                <text class="iconfont icon-arrow-right" :style="{ color: theme.textTertiary }"></text>
+              </view>
+            </view>
+          </view>
+          
+          <view class="divider" :style="{ background: theme.dividerColor }"></view>
+          
+          <view class="info-item" @click="showMinutesPicker = true">
+            <view class="picker-row">
+              <text class="label" :style="{ color: theme.textPrimary }">有效分钟</text>
+              <view class="value-container">
+                <text class="value" :style="{ color: theme.textSecondary }">{{ validMinutesColumns[min] }}</text>
+                <text class="iconfont icon-arrow-right" :style="{ color: theme.textTertiary }"></text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- Pickers -->
+        <up-picker
+          :show="showTimesPicker"
+          :columns="validTimesColumnsList"
+          :defaultIndex="[gender]"
+          @confirm="onTimesConfirm"
+          @cancel="showTimesPicker = false"
+          @close="showTimesPicker = false"
+          :confirmColor="theme.colorAccent"
+          :cancelColor="theme.textSecondary"
+          :bgColor="theme.bgCard"
+          :maskStyle="pickerMaskStyle"
+        ></up-picker>
+
+        <up-picker
+          :show="showMinutesPicker"
+          :columns="validMinutesColumnsList"
+          :defaultIndex="[min]"
+          @confirm="onMinutesConfirm"
+          @cancel="showMinutesPicker = false"
+          @close="showMinutesPicker = false"
+          :confirmColor="theme.colorAccent"
+          :cancelColor="theme.textSecondary"
+          :bgColor="theme.bgCard"
+          :maskStyle="pickerMaskStyle"
+        ></up-picker>
+
+        <view class="padding flex flex-direction">
+          <button 
+            class="cu-btn login-button" 
+            :style="{ background: theme.colorAccent, color: '#fff', boxShadow: theme.shadowButton }"
+            @tap="shareToFriend"
+          >保存到本地相册</button>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed, getCurrentInstance, watch } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import DoorQRCodeUtils from '@/utils/doorQRCodeUtils'
 import ShareUtils from '@/utils/shareUtils'
+import { useThemeVars } from '@/utils/themeConfig.js'
+
+const { proxy } = getCurrentInstance()
+const themeStore = proxy.$store.theme.useThemeStore()
+
+// 主题变量
+const theme = computed(() => useThemeVars(themeStore.isDark()))
+
+// Picker Theme Computed Properties
+const pickerBg = computed(() => theme.value.bgCard)
+const pickerText = computed(() => theme.value.textPrimary)
+const pickerTitle = computed(() => theme.value.textPrimary)
+const pickerMaskStyle = computed(() => {
+    const bg = theme.value.bgCard
+    return `background-image: linear-gradient(180deg, ${bg} 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, ${bg} 100%)`
+})
 
 const qrcodeRef = ref(null)
-const imgUrl = ref('/static')
 const doorPassword = ref('')
 const qrCodeValue = ref('')
-const navBgColor = ref('linear-gradient(#FCD3D3, #FCDEDE)')
-const statusBarHeight = ref(0)
+const navbarHeight = ref(0)
+
+const showTimesPicker = ref(false)
+const showMinutesPicker = ref(false)
 
 // 有效次数选项
 const validTimesColumns = ['无限', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 const validMinutesColumns = Array.from({ length: 30 }, (_, i) => String(i + 1))
 
-// 在 script setup 中定义数据
+// Columns wrapper for u-picker
+const validTimesColumnsList = computed(() => [validTimesColumns])
+const validMinutesColumnsList = computed(() => [validMinutesColumns])
+
+// 数据
 const gender = ref(0)  // 有效次数索引
-const min = ref(4)        // 有效分钟索引
+const min = ref(4)     // 有效分钟索引
 
 // 生成二维码和密码
 const generateQRCode = () => {
-  // 获取选择的值
   const validTimes = validTimesColumns[gender.value] === '无限' ? 0 : parseInt(validTimesColumns[gender.value])
   const validMinutes = parseInt(validMinutesColumns[min.value])
 
-  // 调用 DoorQRCodeUtils 生成二维码和密码
   const result = DoorQRCodeUtils.generateDoorQRCode({
     validTimes,
     validMinutes
   })
 
-  // 更新显示
   qrCodeValue.value = result.qrcode
   doorPassword.value = result.tempPassword
 }
 
 // 处理有效次数变化
-const picktimes = (e) => {
-  gender.value = e.detail.value
+const onTimesConfirm = (e) => {
+  gender.value = e.indexs[0]
   generateQRCode()
+  showTimesPicker.value = false
 }
 
 // 处理有效分钟变化
-const pickmin = (e) => {
-  min.value = e.detail.value
+const onMinutesConfirm = (e) => {
+  min.value = e.indexs[0]
   generateQRCode()
+  showMinutesPicker.value = false
 }
 
 // 刷新二维码
 const refreshQRCode = () => {
-  // 强制重新生成二维码
-  qrCodeValue.value = ''  // 先清空二维码值
+  qrCodeValue.value = ''
   nextTick(() => {
-    generateQRCode()  // 在下一个tick重新生成
+    generateQRCode()
   })
 }
 
@@ -129,6 +197,7 @@ const onQRCodeGenerated = (res) => {
 const copyPassword = async () => {
   try {
     await ShareUtils.copyToClipboard(doorPassword.value)
+    uni.showToast({ title: '密码已复制', icon: 'none' })
   } catch (error) {
     console.error('复制失败:', error)
   }
@@ -139,33 +208,22 @@ const save = async () => {
   try {
     const res = await uni.showModal({
       title: '保存二维码',
-      content: '是否保存二维码到相册？'
+      content: '是否保存二维码到相册？',
+      confirmColor: theme.value.colorAccent
     })
     
     if (res.confirm) {
-      await ShareUtils.saveImageToAlbum(qrcodeRef.value.result)
+      await ShareUtils.saveImageToAlbum(qrCodeValue.value)
     }
   } catch (error) {
     console.error('保存失败:', error)
+    uni.showToast({ title: '保存失败', icon: 'none' })
   }
 }
 
 // 分享给好友
 const shareToFriend = async () => {
-	save();
-  // try {
-  //   // 获取二维码图片
-  //   const imageUrl = await ShareUtils.captureImage(qrcodeRef.value)
-    
-  //   // 分享到微信
-  //   await ShareUtils.shareToWeChat({
-  //     imageUrl,
-  //     title: '门禁二维码',
-  //     summary: `有效次数: ${validTimesColumns[gender.value]}, 有效分钟: ${validMinutesColumns[min.value]}`
-  //   })
-  // } catch (error) {
-  //   console.error('分享失败:', error)
-  // }
+  save()
 }
 
 // 微信小程序分享配置
@@ -174,7 +232,7 @@ const onShareAppMessage = () => {
   return {
     title: '门禁二维码',
     path: '/pages/qrcode/index',
-    imageUrl: qrcodeRef.value.result
+    imageUrl: qrCodeValue.value
   }
 }
 
@@ -182,311 +240,234 @@ const onShareTimeline = () => {
   return {
     title: '门禁二维码',
     query: '',
-    imageUrl: qrcodeRef.value.result
+    imageUrl: qrCodeValue.value
   }
 }
 // #endif
 
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack()
-}
+onLoad(() => {
+  themeStore.loadTheme()
+  const systemInfo = uni.getSystemInfoSync()
+  navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
+  
+  // #ifdef H5
+  // Update CSS variables for H5 pickers
+  const updatePickerStyles = () => {
+    if (typeof document !== 'undefined') {
+      const bg = theme.value.bgCard
+      const text = theme.value.textPrimary
+      const border = theme.value.borderColor
+      document.body.style.setProperty('--picker-bg-card', bg)
+      document.body.style.setProperty('--picker-text-color', text)
+      document.body.style.setProperty('--picker-border-color', border)
+    }
+  }
+  
+  updatePickerStyles()
+  watch(theme, updatePickerStyles, { deep: true })
+  // #endif
+})
 
 onMounted(() => {
-  // 初始化时生成二维码
   generateQRCode()
+})
 
-  // 获取状态栏高度
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight
-
-  // 设置状态栏颜色
-  uni.setNavigationBarColor({
-    frontColor: '#000000',
-    backgroundColor: '#FCD3D3',
-    animation: {
-      duration: 0,
-      timingFunc: 'easeIn'
-    }
-  })
+// 监听主题变化重新生成二维码以适应前景色
+watch(() => theme.value.textPrimary, () => {
+  refreshQRCode()
 })
 </script>
 
 <style scoped>
-.bg-qr-rode {
-  background-image: linear-gradient(#FCD3D3, #FCDEDE);
-  color: var(--darkGray);
-}
+@import '@/static/fonts/iconfont.css';
 
-.header {
+.container {
   width: 100%;
-  background-image: linear-gradient(#FCDEDE, #FFFFFF);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-top: 20rpx; /* 移除之前的padding-top，因为navbar组件会自动处理安全区域 */
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
 }
 
-.button-view {
-  background-color: white;
-  color: black;
-  margin-top: 40rpx;
-}
-
-.arrow {
-  margin-top: 10rpx;
-  width: 100rpx;
-  height: 100rpx;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  transition: all 0.3s;
-}
-
-.arrow:active {
-  animation: rotate 0.3s linear;
-}
-
-.copy-button {
-  margin-left: 20rpx;
-  width: 60rpx;
-  height: 60rpx;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  transition: all 0.3s;
-}
-
-.copy-button:active {
-  animation: scale 0.3s ease-in-out;
-}
-
-.login-button {
-  margin-top: 15rpx;
-  padding: 0 30rpx;
-  font-size: 36rpx;
-  height: 100rpx;
-  text-align: center;
-  font-style: normal;
-  text-transform: none;
-  font-family: PingFang SC, PingFang SC;
-  font-weight: 800;
-}
-
-.qr-rode-view {
-  margin-top: 20rpx;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  width: 600rpx;
-  height: 650rpx;
-  justify-content: center;
-  align-items: center;
-  padding: 20rpx;
-  border-radius: 10rpx;
-}
-
-.info-section {
-  background-color: white;
-  border-radius: 10rpx;
-  padding-left: 40rpx;
-  padding-right: 40rpx;
-}
-
-.info-item {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  height: 80rpx;
-  font-family: PingFang SC, PingFang SC;
-  font-weight: 500;
-  font-size: 30rpx;
-  color: #303030;
-  line-height: 30rpx;
-  text-align: left;
-  font-style: normal;
-  text-transform: none;
-}
-
-.label {
-  font-family: PingFang SC, PingFang SC;
-  font-weight: 500;
-  font-size: 30rpx;
-  color: #303030;
-  line-height: 30rpx;
-  text-align: left;
-  text-transform: none;
-}
-
-.value {
-  text-align: right;
-  margin-left: 50rpx;
-  font-family: PingFang SC, PingFang SC;
-  font-weight: 500;
-  font-size: 30rpx;
-  color: #A4A4A4;
-  line-height: 3rpx;
-  text-align: left;
-  text-transform: none;
-}
-
-.footer {
-  width: auto;
-  padding: 20rpx;
-  text-align: center;
-}
-
-.footer-link {
-  text-align: center;
-  font-size: 32rpx;
-  line-height: 60rpx;
-  height: 60rpx;
-  font-family: PingFang SC, PingFang SC;
-  font-weight: 500;
-  color: #F94B4F;
-  font-style: normal;
-  text-transform: none;
-  text-decoration: none;
-}
-
-.divider {
-  height: 1rpx;
-  background-color: #eee;
-  margin: 10rpx 0;
-}
-
-/* 自定义导航栏样式 */
-.nav-bar {
-  width: 100%;
-  background-color: #F8F8F8;
+.ambient-bg {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 999;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, hsla(200, 80%, 50%, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 80%, hsla(280, 60%, 40%, 0.1), transparent 40%);
 }
 
-.nav-content {
+.scroll-content {
+  height: 100vh;
+  box-sizing: border-box;
   position: relative;
-  height: 44px;
+  z-index: 1;
+}
+
+.page-content {
+  padding: 30rpx;
+  padding-bottom: 60rpx;
+}
+
+.qr-section {
   display: flex;
-  align-items: center;
   justify-content: center;
+  margin-bottom: 40rpx;
 }
 
-.left-icon {
-  position: absolute;
-  left: 16rpx;
-  height: 44px;
-  width: 44px;
+.qr-card {
+  padding: 40rpx;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s;
+}
+
+.refresh-btn {
+  margin-top: 30rpx;
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 10rpx 20rpx;
 }
 
-.left-icon image {
-  width: 20px;
-  height: 20px;
+.refresh-text {
+  font-size: 26rpx;
+  margin-left: 10rpx;
 }
 
-.nav-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #000;
+.icon-sync-alt {
+  font-size: 32rpx;
 }
 
-.custom-nav {
+.info-section {
+  border-radius: 24rpx;
+  padding: 0 30rpx;
+  margin-bottom: 60rpx;
+  transition: all 0.3s;
+}
+
+.info-item {
+  height: 110rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.picker-full {
   width: 100%;
-  background-image: linear-gradient(#FCD3D3, #FCDEDE);
-  position: fixed;
-  top: 0;
-  z-index: 999;
 }
 
-.nav-content {
-  height: 44px;
+.picker-row {
   display: flex;
   align-items: center;
-  padding: 0 15px;
-}
-
-.back-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  color: var(--darkGray);
-}
-
-.nav-title {
-  flex: 1;
-  text-align: center;
-  color: var(--darkGray);
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* 添加渐变导航栏样式 */
-:deep(.u-navbar__content) {
-  background-image: linear-gradient(#FCD3D3, #FCDEDE) !important;
-  background-color: transparent !important;
-}
-
-
-/* 移除旧的样式 */
-.custom-nav,
-.nav-bar,
-.nav-content,
-.back-icon,
-.left-icon,
-.nav-title,
-.up-navbar,
-.up-navbar__content {
-  display: none;
-}
-
-/* 添加旋转动画关键帧 */
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 添加缩放动画关键帧 */
-@keyframes scale {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.8);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.picker {
+  justify-content: space-between;
   width: 100%;
-  display: flex;
-  align-items: center;
+  height: 110rpx;
 }
 
 .label {
-  color: #888;
-  min-width: 150rpx;
+  font-size: 30rpx;
+  font-weight: 500;
 }
 
-.endlabel {
-  margin-left: 20rpx;
-  color: #888;
-  font-size: 24rpx;
+.value-container {
+  display: flex;
+  align-items: center;
 }
 
 .value {
-  margin-left: 50rpx;
-  color: #303030;
+  font-size: 30rpx;
+  margin-right: 10rpx;
 }
+
+.value.highlight {
+  font-weight: bold;
+  font-size: 34rpx;
+  letter-spacing: 2rpx;
+}
+
+.copy-btn {
+  padding: 10rpx;
+  margin-left: 10rpx;
+}
+
+.icon-arrow-right {
+  font-size: 24rpx;
+}
+
+.divider {
+  height: 1px;
+  width: 100%;
+  transform: scaleY(0.5);
+}
+
+.login-button {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  border-radius: 45rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+/* Picker Dark Mode Support */
+:deep(.u-popup__content) {
+  background-color: v-bind(pickerBg) !important;
+}
+:deep(.u-picker) {
+  background-color: v-bind(pickerBg) !important;
+}
+:deep(.u-picker__view) {
+  background-color: v-bind(pickerBg) !important;
+}
+:deep(.u-picker__view__column__item) {
+  color: v-bind(pickerText) !important;
+}
+:deep(.u-toolbar) {
+  background-color: v-bind(pickerBg) !important;
+}
+:deep(.u-toolbar__title) {
+  color: v-bind(pickerTitle) !important;
+}
+
+/* #ifdef H5 */
+:global(.u-popup .u-toolbar) {
+  background-color: var(--picker-bg-card) !important;
+}
+:global(.u-popup .u-toolbar__title) {
+  color: var(--picker-text-color) !important;
+}
+:global(.u-popup .u-toolbar__wrapper__cancel) {
+  color: var(--picker-border-color) !important;
+}
+:global(.u-picker__view) {
+  background-color: var(--picker-bg-card) !important;
+}
+:global(.u-picker-column-item) {
+  color: var(--picker-text-color) !important;
+}
+/* #endif */
 </style>
 
+<!-- Non-scoped styles for H5 Picker overrides -->
+<style>
+/* #ifdef H5 */
+.uni-picker-view-mask {
+  background-image: linear-gradient(180deg, var(--picker-bg-card) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, var(--picker-bg-card) 100%) !important;
+}
+
+.uni-picker-view-indicator::before,
+.uni-picker-view-indicator::after {
+  border-color: var(--picker-border-color) !important;
+}
+
+.u-picker__view__column__item {
+  color: var(--picker-text-color) !important;
+}
+/* #endif */
+</style>

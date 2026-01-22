@@ -138,8 +138,7 @@
 				{
 					"path": "pages/qrcode/index",
 					"style": {
-						"navigationBarTitleText": "二维码界面",
-						"statusBarBackgroundColor": "#FCDEDE"
+						"navigationStyle": "custom"
 					}
 				},
 				{

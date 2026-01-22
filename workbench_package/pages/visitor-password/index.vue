@@ -4,125 +4,129 @@
     <view class="ambient-bg"></view>
     
     <!-- 自定义导航栏 -->
-    <custom-navbar title="临时访客密码" />
+    <custom-navbar title="临时访客密码" :showBack="true" />
     
-    <view class="content-wrapper" :style="{ paddingTop: navbarHeight + 'px' }">
-      <view class="title" :style="{ color: theme.textPrimary, background: theme.bgCard }">设备</view>
-      <!-- 滚动视图用于设备按钮 -->
-      <scroll-view scroll-y="true" class="scroll-container" :style="{ background: theme.bgCard }">
-        <view v-for="(item, index) in deviceList" :key="index" class="flex flex-direction">
-          <button 
-            :class="['cu-btn login-button']" 
-            :style="item.selected ? { background: theme.colorAccent, color: '#fff' } : { background: theme.bgInput, color: theme.textSecondary, borderColor: theme.borderColor }"
-            @tap="toggleSelection(item.id)"
-          >{{ item.name }}</button>
+    <scroll-view scroll-y class="scroll-content" :style="{ paddingTop: navbarHeight + 'px' }">
+      <view class="page-content">
+        <view class="title" :style="{ color: theme.textPrimary }">设备</view>
+        <!-- 设备列表 -->
+        <view class="device-list">
+          <view v-for="(item, index) in deviceList" :key="index" class="device-item">
+            <button 
+              :class="['cu-btn login-button']" 
+              :style="item.selected ? { background: theme.colorAccent, color: '#fff' } : { background: theme.bgInput, color: theme.textSecondary, borderColor: theme.borderColor }"
+              @tap="toggleSelection(item.id)"
+            >{{ item.name }}</button>
+          </view>
         </view>
-      </scroll-view>
-      <view class="divider-botton" :style="{ background: theme.bgCard }"></view>
-      <view class="divider_40rpx" :style="{ background: 'transparent' }"></view>
-      <view class="info-section" :style="{ background: 'transparent', padding: '0 32rpx' }">
         
-        <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">开始时间</text>
-          <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showStartPicker = true">
-            <text class="iconfont icon-clock icon" :style="{ color: theme.textSecondary }"></text>
-            <view class="picker-field" :style="{ color: theme.textPrimary }">
-              {{ formatDateTime(startDateTime) }}
+        <view class="divider-botton"></view>
+        <view class="divider_40rpx"></view>
+        
+        <view class="info-section">
+          
+          <view class="form-group">
+            <text class="form-label" :style="{ color: theme.textSecondary }">开始时间</text>
+            <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showStartPicker = true">
+              <text class="iconfont icon-clock icon" :style="{ color: theme.textSecondary }"></text>
+              <view class="picker-field" :style="{ color: theme.textPrimary }">
+                {{ formatDateTime(startDateTime) }}
+              </view>
+              <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
             </view>
-            <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
+            <up-datetime-picker
+              ref="startPickerRef"
+              :show="showStartPicker"
+              v-model="startDateTime"
+              mode="datetime"
+              :formatter="formatter"
+              :min-date="currentTime"
+              @confirm="onStartTimeConfirm"
+              @cancel="showStartPicker = false"
+              @close="showStartPicker = false"
+              :show-seconds="true"
+              :confirmColor="theme.colorAccent"
+              :cancelColor="theme.textSecondary"
+              :maskStyle="pickerMaskStyle"
+            ></up-datetime-picker>
           </view>
-          <up-datetime-picker
-            ref="startPickerRef"
-            :show="showStartPicker"
-            v-model="startDateTime"
-            mode="datetime"
-            :formatter="formatter"
-            :min-date="currentTime"
-            @confirm="onStartTimeConfirm"
-            @cancel="showStartPicker = false"
-            @close="showStartPicker = false"
-            :show-seconds="true"
-            :confirmColor="theme.colorAccent"
-            :cancelColor="theme.textSecondary"
-            :maskStyle="pickerMaskStyle"
-          ></up-datetime-picker>
-        </view>
 
-        <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">结束时间</text>
-          <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showEndPicker = true">
-            <text class="iconfont icon-clock icon" :style="{ color: theme.textSecondary }"></text>
-            <view class="picker-field" :style="{ color: theme.textPrimary }">
-              {{ formatDateTime(endDateTime) }}
+          <view class="form-group">
+            <text class="form-label" :style="{ color: theme.textSecondary }">结束时间</text>
+            <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showEndPicker = true">
+              <text class="iconfont icon-clock icon" :style="{ color: theme.textSecondary }"></text>
+              <view class="picker-field" :style="{ color: theme.textPrimary }">
+                {{ formatDateTime(endDateTime) }}
+              </view>
+              <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
             </view>
-            <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
+            <up-datetime-picker
+              ref="endPickerRef"
+              :show="showEndPicker"
+              v-model="endDateTime"
+              mode="datetime"
+              :formatter="formatter"
+              :min-date="startDateTime"
+              :max-date="maxEndTime"
+              @confirm="onEndTimeConfirm"
+              @cancel="showEndPicker = false"
+              @close="showEndPicker = false"
+              :show-seconds="true"
+              :confirmColor="theme.colorAccent"
+              :cancelColor="theme.textSecondary"
+              :maskStyle="pickerMaskStyle"
+            ></up-datetime-picker>
           </view>
-          <up-datetime-picker
-            ref="endPickerRef"
-            :show="showEndPicker"
-            v-model="endDateTime"
-            mode="datetime"
-            :formatter="formatter"
-            :min-date="startDateTime"
-            :max-date="maxEndTime"
-            @confirm="onEndTimeConfirm"
-            @cancel="showEndPicker = false"
-            @close="showEndPicker = false"
-            :show-seconds="true"
-            :confirmColor="theme.colorAccent"
-            :cancelColor="theme.textSecondary"
-            :maskStyle="pickerMaskStyle"
-          ></up-datetime-picker>
-        </view>
 
-        <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">有效次数</text>
-          <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showValidTimesPicker = true">
-            <text class="iconfont icon-calendar-check icon" :style="{ color: theme.textSecondary }"></text>
-            <view class="picker-field" :style="{ color: theme.textPrimary }">
-              {{ validTimes }} 次 {{ validTimes == 0 ? '(无限次)' : '' }}
+          <view class="form-group">
+            <text class="form-label" :style="{ color: theme.textSecondary }">有效次数</text>
+            <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showValidTimesPicker = true">
+              <text class="iconfont icon-calendar-check icon" :style="{ color: theme.textSecondary }"></text>
+              <view class="picker-field" :style="{ color: theme.textPrimary }">
+                {{ validTimes }} 次 {{ validTimes == 0 ? '(无限次)' : '' }}
+              </view>
+              <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
             </view>
-            <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
+            <up-picker
+              :show="showValidTimesPicker"
+              :columns="validTimesColumns"
+              :defaultIndex="[validTimes]"
+              keyName="text"
+              @confirm="onValidTimesConfirm"
+              @cancel="showValidTimesPicker = false"
+              @close="showValidTimesPicker = false"
+              :confirmColor="theme.colorAccent"
+              :cancelColor="theme.textSecondary"
+              :maskStyle="pickerMaskStyle"
+            ></up-picker>
           </view>
-          <up-picker
-            :show="showValidTimesPicker"
-            :columns="validTimesColumns"
-            :defaultIndex="[validTimes]"
-            keyName="text"
-            @confirm="onValidTimesConfirm"
-            @cancel="showValidTimesPicker = false"
-            @close="showValidTimesPicker = false"
-            :confirmColor="theme.colorAccent"
-            :cancelColor="theme.textSecondary"
-            :maskStyle="pickerMaskStyle"
-          ></up-picker>
-        </view>
 
-        <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">开门密码</text>
-          <view class="input-with-icon" :style="{ background: theme.bgCard }">
-            <text class="iconfont icon-lock icon" :style="{ color: theme.textSecondary }"></text>
-            <view class="picker-field" :style="{ color: theme.textPrimary }">
-              {{ doorPassword }}
+          <view class="form-group">
+            <text class="form-label" :style="{ color: theme.textSecondary }">开门密码</text>
+            <view class="input-with-icon" :style="{ background: theme.bgCard }">
+              <text class="iconfont icon-lock icon" :style="{ color: theme.textSecondary }"></text>
+              <view class="picker-field" :style="{ color: theme.textPrimary }">
+                {{ doorPassword }}
+              </view>
+              <view class="copy-btn" @tap="copyPassword" :style="{ color: theme.colorAccent }">复制</view>
             </view>
-            <view class="copy-btn" @tap="copyPassword" :style="{ color: theme.colorAccent }">复制</view>
           </view>
-        </view>
 
+        </view>
+        <view class="flex flex-direction button-view">
+          <button 
+            class="cu-btn login-button" 
+            :style="{ background: 'transparent', color: theme.colorAccent, border: '1px solid ' + theme.colorAccent }"
+            @tap="refresh"
+          >刷新</button>
+          <button 
+            class="cu-btn login-button" 
+            :style="{ background: theme.colorAccent, color: '#fff' }"
+            @tap="shareKeys"
+          >保存并分享钥匙</button>
+        </view>
       </view>
-      <view class="flex flex-direction button-view" :style="{ background: 'transparent' }">
-        <button 
-          class="cu-btn login-button" 
-          :style="{ background: 'transparent', color: theme.colorAccent, border: '1px solid ' + theme.colorAccent }"
-          @tap="refresh"
-        >刷新</button>
-        <button 
-          class="cu-btn login-button" 
-          :style="{ background: theme.colorAccent, color: '#fff' }"
-          @tap="shareKeys"
-        >保存并分享钥匙</button>
-      </view>
-    </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -396,8 +400,10 @@ onReady(() => {
 @import '@/static/fonts/iconfont.css';
 
 .container {
+  width: 100%;
   min-height: 100vh;
   position: relative;
+  overflow: hidden;
 }
 
 .ambient-bg {
@@ -413,10 +419,15 @@ onReady(() => {
     radial-gradient(circle at 80% 80%, hsla(280, 60%, 40%, 0.1), transparent 40%);
 }
 
-.content-wrapper {
-  padding-bottom: 40rpx;
+.scroll-content {
+  height: 100vh;
+  box-sizing: border-box;
   position: relative;
   z-index: 1;
+}
+
+.page-content {
+  padding-bottom: 60rpx;
 }
 
 .title {
@@ -427,41 +438,37 @@ onReady(() => {
   font-size: 34rpx;
   line-height: 34rpx;
   text-align: left;
+  margin-bottom: 20rpx;
 }
 
-.scroll-container {
-  max-height: 380rpx;
-  padding: 20rpx 40rpx;
+.device-list {
+  padding: 0 32rpx;
+  max-height: 400rpx;
+  overflow-y: auto;
 }
 
-.flex {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.flex-direction {
-  flex-direction: column;
+.device-item {
+  margin-bottom: 20rpx;
 }
 
 .login-button {
   padding: 0 30rpx;
   height: 84rpx;
   width: 100%;
-  margin-top: 17rpx;
   font-family: PingFang SC, PingFang SC;
   font-weight: 500;
   font-size: 28rpx;
-  line-height: 28rpx;
+  line-height: 84rpx;
+  border-radius: 12rpx;
 }
 
 .divider-botton {
   width: 100%;
-  height: 60rpx;
+  height: 40rpx;
 }
 
 .info-section {
-  margin-top: 20rpx;
+  padding: 0 32rpx;
 }
 
 .form-group {
@@ -493,22 +500,26 @@ onReady(() => {
 
 .picker-field {
   flex: 1;
-  font-size: 28rpx;
+  font-size: 30rpx;
 }
 
 .picker-arrow {
-  font-size: 24rpx;
+  font-size: 28rpx;
+  margin-left: 10rpx;
 }
 
 .copy-btn {
-  font-size: 24rpx;
+  font-size: 28rpx;
+  font-weight: 500;
   padding: 10rpx 20rpx;
-  border-radius: 30rpx;
-  background: rgba(0,0,0,0.05);
 }
 
 .button-view {
-  margin: 40rpx;
+  margin-top: 60rpx;
+  padding: 0 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
 }
 
 .divider_40rpx {
@@ -517,36 +528,39 @@ onReady(() => {
 
 /* Picker Dark Mode Support */
 :deep(.u-popup__content) {
-  background: v-bind(pickerBg) !important;
-  border-radius: 28rpx 28rpx 0 0 !important;
+  background-color: v-bind(pickerBg) !important;
 }
 :deep(.u-picker) {
-  background: v-bind(pickerBg) !important;
+  background-color: v-bind(pickerBg) !important;
 }
 :deep(.u-picker__view) {
-  background: v-bind(pickerBg) !important;
+  background-color: v-bind(pickerBg) !important;
 }
 :deep(.u-picker__view__column__item) {
   color: v-bind(pickerText) !important;
 }
 :deep(.u-toolbar) {
-  background: v-bind(pickerBg) !important;
+  background-color: v-bind(pickerBg) !important;
 }
 :deep(.u-toolbar__title) {
   color: v-bind(pickerTitle) !important;
 }
 
-/* H5/Web Specific Overrides for Picker Mask and Indicator */
 /* #ifdef H5 */
-:deep(.uni-picker-view-mask) {
-  background-image: v-bind(pickerMask) !important;
+:global(.u-popup .u-toolbar) {
+  background-color: var(--picker-bg-card) !important;
 }
-:deep(.uni-picker-view-indicator) {
-  height: 44px !important; /* Ensure match itemHeight */
+:global(.u-popup .u-toolbar__title) {
+  color: var(--picker-text-color) !important;
 }
-:deep(.uni-picker-view-indicator::before),
-:deep(.uni-picker-view-indicator::after) {
-  border-color: v-bind(pickerBorder) !important;
+:global(.u-popup .u-toolbar__wrapper__cancel) {
+  color: var(--picker-border-color) !important;
+}
+:global(.u-picker__view) {
+  background-color: var(--picker-bg-card) !important;
+}
+:global(.u-picker-column-item) {
+  color: var(--picker-text-color) !important;
 }
 /* #endif */
 </style>
