@@ -14,7 +14,7 @@ export default defineConfig({
 	server: {
 		proxy: {
 			'/yefiot': {
-				target: 'https://xy.yefiot.com',
+				target: 'https://test2.yefiot.com',
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path

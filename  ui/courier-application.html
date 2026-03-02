@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快递员申请 - 优福智家管理 APP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 
+         * 优福智家管理 APP 浅色配色方案
+         * ------------------------------------------
+         * 主背景色 (Dominant 60%): hsl(220, 20%, 97%) - 云雾白
+         * 支撑色 (Support 30%): hsl(220, 25%, 20%) - 墨玉黑
+         * 点缀色 (Accent 10%): hsl(210, 100%, 50%) - 清澈蓝
+         * 次要文字色: hsl(220, 10%, 55%) - 烟灰色
+         * 成功色: hsl(145, 65%, 42%) - 翠绿色
+         * 警告色: hsl(35, 95%, 50%) - 琥珀橙
+         * 卡片背景: hsl(0, 0%, 100%) - 纯白
+         */
+        
+        :root {
+            --color-dominant: hsl(220, 20%, 97%);
+            --color-support: hsl(220, 25%, 20%);
+            --color-accent: hsl(210, 100%, 50%);
+            --color-text-secondary: hsl(220, 10%, 55%);
+            --color-success: hsl(145, 65%, 42%);
+            --color-warning: hsl(35, 95%, 50%);
+            --color-card: hsl(0, 0%, 100%);
+            --color-glass: rgba(255, 255, 255, 0.8);
+            --color-glass-border: rgba(0, 0, 0, 0.06);
+            --color-divider: hsl(220, 15%, 92%);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #e8ecf4 0%, #f5f7fa 50%, #eef1f5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 单个手机屏幕 */
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: var(--color-dominant);
+            border-radius: 40px;
+            border: 1px solid rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 
+                0 25px 80px -20px rgba(0,0,0,0.15),
+                0 15px 35px -15px rgba(0,0,0,0.1);
+        }
+        
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            scrollbar-width: none;
+            background: var(--color-dominant);
+        }
+        
+        .phone-screen::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px 10px;
+            background: transparent;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .status-time {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-support);
+        }
+        
+        .status-icons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .status-icons i {
+            font-size: 14px;
+            color: var(--color-support);
+        }
+
+        /* 页面内容区域 */
+        .page-content {
+            padding: 0 24px 40px;
+        }
+        
+        /* 导航头部 */
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0 20px;
+        }
+        
+        .nav-back {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-card);
+            border-radius: 12px;
+            color: var(--color-support);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .nav-back:hover {
+            background: var(--color-divider);
+        }
+        
+        .nav-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--color-support);
+        }
+        
+        .nav-action {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* 表单组 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        /* 输入框样式 */
+        .input-field {
+            width: 100%;
+            background: var(--color-card);
+            border: 1px solid var(--color-divider);
+            border-radius: 14px;
+            padding: 16px 20px;
+            color: var(--color-support);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .input-field::placeholder {
+            color: var(--color-text-secondary);
+        }
+        
+        .input-field:focus {
+            border-color: var(--color-accent);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* 主按钮 */
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--color-accent) 0%, hsl(220, 90%, 55%) 100%);
+            border: none;
+            border-radius: 14px;
+            padding: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 8px 24px -8px rgba(59, 130, 246, 0.5);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px -8px rgba(59, 130, 246, 0.6);
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* 环境光背景 - 浅色版 */
+        .ambient-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, hsla(210, 100%, 70%, 0.08), transparent 40%),
+                radial-gradient(circle at 80% 80%, hsla(280, 80%, 70%, 0.05), transparent 40%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <div class="ambient-bg"></div>
+            <div class="status-bar">
+                <span class="status-time">9:41</span>
+                <div class="status-icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-full"></i>
+                </div>
+            </div>
+            
+            <div class="nav-header page-content">
+                <div class="nav-back"><i class="fas fa-arrow-left"></i></div>
+                <span class="nav-title">快递员申请</span>
+                <div class="nav-action"></div>
+            </div>
+            
+            <div class="page-content">
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-shipping-fast" style="font-size: 36px; color: var(--color-accent);"></i>
+                    </div>
+                    <h1 style="font-size: 22px; font-weight: 700; color: var(--color-support); margin-bottom: 8px;">成为合作快递员</h1>
+                    <p style="font-size: 14px; color: var(--color-text-secondary);">请填写真实有效的信息</p>
+                </div>
+
+                <!-- 申请表单 -->
+                <form>
+                    <div class="form-group">
+                        <label class="form-label" for="name">姓名</label>
+                        <input type="text" id="name" class="input-field" placeholder="请输入您的真实姓名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="mobile">手机号</label>
+                        <input type="tel" id="mobile" class="input-field" placeholder="请输入您的11位手机号码">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="remark">备注</label>
+                        <textarea id="remark" class="input-field" placeholder="选填，如快递公司、负责区域等" style="height: 100px; resize: none;"></textarea>
+                    </div>
+
+                    <div style="margin-top: 40px;">
+                        <button type="submit" class="btn-primary">提交申请</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5107116 */
-  src: url('iconfont.ttf?t=1767963383670') format('truetype');
+  src: url('iconfont.ttf?t=1772450902200') format('truetype');
 }
 
 .iconfont {
@@ -9,6 +9,14 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-shipping-fast:before {
+  content: "\f0b3";
+}
+
+.icon-40one:before {
+  content: "\e66a";
 }
 
 .icon-saoyisao:before {

@@ -63,6 +63,12 @@
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">报修服务</text>
             </view>
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-application/index')">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+                <text class="iconfont icon-shipping-fast"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请</text>
+            </view>
             <!-- 链接到旧的"我的房屋"页面 -->
             <view class="feature-item" @click="handleNavigate('/pages/device/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">

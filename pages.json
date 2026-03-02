@@ -167,6 +167,12 @@
 					"style": {
 						"navigationStyle": "custom"
 					}
+				},
+				{
+					"path": "pages/courier-application/index",
+					"style": {
+						"navigationStyle": "custom"
+					}
 				}				
 			]
 		}

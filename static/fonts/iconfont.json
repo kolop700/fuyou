@@ -6,6 +6,20 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "5634358",
+      "name": "shipping-fast",
+      "font_class": "shipping-fast",
+      "unicode": "f0b3",
+      "unicode_decimal": 61619
+    },
+    {
+      "icon_id": "322957",
+      "name": "user",
+      "font_class": "40one",
+      "unicode": "e66a",
+      "unicode_decimal": 58986
+    },
+    {
       "icon_id": "2593614",
       "name": "扫一扫",
       "font_class": "saoyisao",

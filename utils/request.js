@@ -1,7 +1,7 @@
 // 根据环境设置baseURL
 const BASE_URL = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
   ? '' // 开发环境下H5使用代理
-  : 'https://xy.yefiot.com'; // 其他环境使用完整URL
+  : 'http://test2.yefiot.com'; // 其他环境使用完整URL
 
 const request = ({
     url, // 请求url

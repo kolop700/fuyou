@@ -144,7 +144,7 @@ const handleLogin = async () => {
     return
   }
 
-  if (form.value.password.length < 6) {
+  if (form.value.password.length < 3) {
     uni.showToast({
       title: '密码长度至少6位',
       icon: 'none',
