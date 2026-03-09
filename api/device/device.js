@@ -22,6 +22,30 @@ export default {
     })
   },
 
+  // 保存快递员申请
+  saveCourier(data, options = {}) {
+    return request({
+      url: '/locker/save_courier', // 直接使用提供的路径
+      method: 'post',
+      data,
+      ...defaultOptions,
+      ...options
+    })
+  },
+
+  // 获取快递员申请记录
+  getCourierHistory(userId, options = {}) {
+    return request({
+      url: '/locker/get_courier_list',
+      method: 'post', // 假设与项目其他部分保持一致
+      data: {
+        user_id: userId
+      },
+      ...defaultOptions,
+      ...options
+    })
+  },
+
   // 发送开门请求
   openDoor(params, options = {}) {
     return request({
@@ -39,6 +63,19 @@ export default {
       url: BASE_API + 'getUnitLike/',
       method: 'post',
       data,
+      ...defaultOptions,
+      ...options
+    })
+  },
+
+  // 获取社区列表
+  getCommunityList(name = '', options = {}) {
+    return request({
+      url: BASE_API + 'openSQL/',
+      method: 'post',
+      data: {
+        sql: `SELECT comm_id, comm_name as unitname FROM t_community WHERE comm_name LIKE ''%${name}%''`
+      },
       ...defaultOptions,
       ...options
     })

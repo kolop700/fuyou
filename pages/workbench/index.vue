@@ -45,7 +45,7 @@
         <view class="section">
           <text class="section-title" :style="{ color: theme.textSecondary }">生活服务</text>
           <view class="feature-grid">
-            <view class="feature-item">
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/locker/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
                 <text class="iconfont icon-user-friends"></text>
               </view>
@@ -106,6 +106,12 @@
                 <text class="iconfont icon-file-invoice-dollar"></text>
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">物业缴费</text>
+            </view>
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-history/index')">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #34d399, #059669);">
+                <text class="iconfont icon-fa-id-card"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请记录</text>
             </view>
           </view>
         </view>

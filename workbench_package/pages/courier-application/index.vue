@@ -35,6 +35,17 @@
               />
             </view>
           </view>
+
+          <view class="form-group">
+            <text class="form-label" :style="{ color: theme.textSecondary }">选择小区</text>
+            <view class="input-with-icon" :style="{ background: theme.bgCard }" @click="showCommunitySearch">
+              <text class="iconfont icon-fa-building icon" :style="{ color: theme.textSecondary }"></text>
+              <view class="picker-field" :class="{ 'placeholder': !form.communityName }" :style="{ color: form.communityName ? theme.textPrimary : theme.textSecondary }">
+                {{ form.communityName || '请选择您负责的小区' }}
+              </view>
+              <text class="iconfont icon-arrow-down picker-arrow" :style="{ color: theme.textSecondary }"></text>
+            </view>
+          </view>
           
           <view class="form-group">
             <text class="form-label" :style="{ color: theme.textSecondary }">手机号</text>
@@ -75,23 +86,60 @@
         </view>
       </view>
     </scroll-view>
+
+    <!-- 小区搜索弹窗 -->
+    <uni-popup ref="communityPopup" type="bottom">
+      <view class="popup-content" :style="{ background: theme.bgCard, color: theme.textPrimary }">
+        <view class="popup-header">
+          <input 
+            class="search-input" 
+            v-model="communitySearchText"
+            placeholder="请输入小区名称搜索"
+            placeholder-class="input-placeholder"
+            :style="{ background: theme.bgInput, color: theme.textPrimary }"
+          />
+          <button class="search-btn" @click="searchCommunities">搜索</button>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <view 
+            v-for="item in communityResults" 
+            :key="item.comm_id"
+            class="popup-option"
+            @click="selectCommunity(item)"
+          >
+            {{ item.unitname }}
+          </view>
+          <view v-if="communityResults.length === 0" class="no-results" :style="{ color: theme.textSecondary }">
+            没有搜索结果
+          </view>
+        </scroll-view>
+      </view>
+    </uni-popup>
+
   </view>
 </template>
 
 <script setup>
-import { computed, ref, reactive } from 'vue'
+import { computed, ref, reactive, getCurrentInstance } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/store/modules/theme'
 import { useThemeVars } from '@/utils/themeConfig'
 
+const { proxy } = getCurrentInstance()
 const themeStore = useThemeStore()
+const userStore = proxy.$store.user.useUserStore()
 const theme = computed(() => useThemeVars(themeStore.isDark()))
 
+const communityPopup = ref(null)
+const communitySearchText = ref('')
+const communityResults = ref([])
+
 const navbarHeight = ref(0)
-const focusField = ref('')
 
 const form = reactive({
   name: '',
+  communityId: '',
+  communityName: '',
   mobile: '',
   remark: ''
 })
@@ -101,13 +149,83 @@ onLoad(() => {
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
 })
 
-const submitApplication = () => {
-  // TODO: 在这里实现表单验证和提交逻辑
-  console.log('Form submitted:', form)
-  uni.showToast({
-    title: '申请已提交',
-    icon: 'success'
-  })
+const showCommunitySearch = () => {
+  communityPopup.value.open()
+}
+
+const searchCommunities = async () => {
+  if (!communitySearchText.value) {
+    uni.showToast({ title: '请输入小区名称', icon: 'none' })
+    return
+  }
+  try {
+    const res = await proxy.$api.device.getCommunityList(communitySearchText.value)
+    if (res.data && res.data.length > 0) {
+      communityResults.value = res.data
+    } else {
+      communityResults.value = []
+      uni.showToast({ title: '未找到相关小区', icon: 'none' })
+    }
+  } catch (error) {
+    console.error('搜索小区失败:', error)
+    uni.showToast({ title: '搜索失败', icon: 'none' })
+  }
+}
+
+const selectCommunity = (community) => {
+  form.communityId = community.comm_id
+  form.communityName = community.unitname
+  communityPopup.value.close()
+}
+
+const submitApplication = async () => {
+  if (!form.name) {
+    return uni.showToast({ title: '请输入姓名', icon: 'none' })
+  }
+  if (!form.communityId) {
+    return uni.showToast({ title: '请选择小区', icon: 'none' })
+  }
+  if (!form.mobile || !/^1[3-9]\d{9}$/.test(form.mobile)) {
+    return uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+  }
+
+  const params = {
+    comm_id: form.communityId,
+    courier_id: 0, // 新增申请时，ID通常为0
+    user_id: userStore.userInfo.user_id,
+    name: form.name,
+    mobile: form.mobile,
+    status: "0", // 默认为未启用
+    remark: form.remark
+  }
+
+  try {
+    const res = await proxy.$api.device.saveCourier(params)
+    if (res.code === "0") {
+      uni.showToast({
+        title: '申请已提交',
+        icon: 'success'
+      })
+      setTimeout(() => uni.navigateBack(), 1500)
+    } else {
+      uni.showToast({ title: res.msg || '申请失败', icon: 'none' })
+    }
+  } catch (error) {
+    console.error('提交申请失败:', error)
+    if (error.statusCode === 454) {
+      uni.showToast({
+        title: '您已经申请过该小区',
+        icon: 'none',
+        duration: 3000
+      });
+    } else {
+      uni.showToast({
+        title: error.msg || '申请失败，请重试',
+        icon: 'none',
+        duration: 3000
+      });
+    }
+  }
 }
 </script>
 
@@ -195,6 +313,13 @@ const submitApplication = () => {
   z-index: 2;
 }
 
+.picker-arrow {
+  position: absolute;
+  right: 32rpx;
+  font-size: 24rpx;
+  transition: transform 0.3s ease;
+}
+
 .input-field {
   width: 100%;
   height: 96rpx;
@@ -204,6 +329,16 @@ const submitApplication = () => {
   outline: none;
   background: transparent;
   transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.picker-field {
+  flex: 1;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 32rpx 0 84rpx;
+  font-size: 30rpx;
   box-sizing: border-box;
 }
 
@@ -241,5 +376,61 @@ const submitApplication = () => {
 
 .btn-primary:active {
   transform: scale(0.98);
+}
+
+/* 弹窗样式 */
+.popup-content {
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 32rpx;
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-header {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  height: 80rpx;
+  padding: 0 32rpx;
+  border-radius: 20rpx;
+  background: #007AFF;
+  color: white;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-body {
+  flex: 1;
+}
+
+.popup-option {
+  padding: 24rpx;
+  border-bottom: 1px solid;
+  border-color: rgba(128, 128, 128, 0.2);
+  font-size: 30rpx;
+}
+
+.popup-option:active {
+  background-color: rgba(128, 128, 128, 0.1);
+}
+
+.no-results {
+  text-align: center;
+  padding: 40rpx;
+  font-size: 28rpx;
 }
 </style>

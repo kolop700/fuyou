@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快递员申请记录 - 优福智家管理 APP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 
+         * 优福智家管理 APP 浅色配色方案
+         * ------------------------------------------
+         * 主背景色 (Dominant 60%): hsl(220, 20%, 97%) - 云雾白
+         * 支撑色 (Support 30%): hsl(220, 25%, 20%) - 墨玉黑
+         * 点缀色 (Accent 10%): hsl(210, 100%, 50%) - 清澈蓝
+         * 次要文字色: hsl(220, 10%, 55%) - 烟灰色
+         * 成功色: hsl(145, 65%, 42%) - 翠绿色
+         * 警告色: hsl(35, 95%, 50%) - 琥珀橙
+         * 驳回色: hsl(0, 80%, 60%) - 猩红色
+         * 卡片背景: hsl(0, 0%, 100%) - 纯白
+         */
+        
+        :root {
+            --color-dominant: hsl(220, 20%, 97%);
+            --color-support: hsl(220, 25%, 20%);
+            --color-accent: hsl(210, 100%, 50%);
+            --color-text-secondary: hsl(220, 10%, 55%);
+            --color-success: hsl(145, 65%, 42%);
+            --color-warning: hsl(35, 95%, 50%);
+            --color-rejected: hsl(0, 80%, 60%);
+            --color-card: hsl(0, 0%, 100%);
+            --color-glass: rgba(255, 255, 255, 0.8);
+            --color-glass-border: rgba(0, 0, 0, 0.06);
+            --color-divider: hsl(220, 15%, 92%);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #e8ecf4 0%, #f5f7fa 50%, #eef1f5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 单个手机屏幕 */
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: var(--color-dominant);
+            border-radius: 40px;
+            border: 1px solid rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 
+                0 25px 80px -20px rgba(0,0,0,0.15),
+                0 15px 35px -15px rgba(0,0,0,0.1);
+        }
+        
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            scrollbar-width: none;
+            background: var(--color-dominant);
+        }
+        
+        .phone-screen::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px 10px;
+            background: transparent;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .status-time {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-support);
+        }
+        
+        .status-icons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .status-icons i {
+            font-size: 14px;
+            color: var(--color-support);
+        }
+
+        /* 页面内容区域 */
+        .page-content {
+            padding: 0 24px 40px;
+        }
+        
+        /* 导航头部 */
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0 20px;
+        }
+        
+        .nav-back {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-card);
+            border-radius: 12px;
+            color: var(--color-support);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .nav-back:hover {
+            background: var(--color-divider);
+        }
+        
+        .nav-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--color-support);
+        }
+        
+        .nav-action {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* 记录列表 */
+        .record-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .record-card {
+            background: var(--color-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--color-divider);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .record-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.07);
+        }
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .record-info {
+             display: flex;
+             align-items: center;
+             gap: 12px;
+        }
+        .record-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-support);
+        }
+        .record-status {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .status-approved {
+            background-color: hsla(145, 65%, 42%, 0.1);
+            color: var(--color-success);
+        }
+        .status-pending {
+            background-color: hsla(35, 95%, 50%, 0.1);
+            color: var(--color-warning);
+        }
+        .status-rejected {
+            background-color: hsla(0, 80%, 60%, 0.1);
+            color: var(--color-rejected);
+        }
+        .record-body {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+        .record-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .record-item i {
+            width: 16px;
+            text-align: center;
+            color: var(--color-text-secondary);
+        }
+        .record-footer {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-divider);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            text-align: right;
+        }
+
+
+        /* 环境光背景 - 浅色版 */
+        .ambient-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, hsla(210, 100%, 70%, 0.08), transparent 40%),
+                radial-gradient(circle at 80% 80%, hsla(280, 80%, 70%, 0.05), transparent 40%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <div class="ambient-bg"></div>
+            <div class="status-bar">
+                <span class="status-time">9:41</span>
+                <div class="status-icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-full"></i>
+                </div>
+            </div>
+            
+            <div class="nav-header page-content">
+                <div class="nav-back"><i class="fas fa-arrow-left"></i></div>
+                <span class="nav-title">申请记录</span>
+                <div class="nav-action"></div>
+            </div>
+            
+            <div class="page-content">
+                <div class="record-list">
+                    <!-- 记录卡片 1: 已通过 -->
+                    <div class="record-card">
+                        <div class="record-header">
+                           <div class="record-info">
+                                <span class="record-name">张三</span>
+                           </div>
+                           <span class="record-status status-approved">已通过</span>
+                        </div>
+                        <div class="record-body">
+                            <div class="record-item">
+                                <i class="fas fa-phone-alt"></i>
+                                <span>188****8888</span>
+                            </div>
+                            <div class="record-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span>顺丰速运 - 负责A区</span>
+                            </div>
+                        </div>
+                        <div class="record-footer">
+                            申请于 2023-04-10 14:30
+                        </div>
+                    </div>
+
+                    <!-- 记录卡片 2: 审核中 -->
+                    <div class="record-card">
+                        <div class="record-header">
+                            <div class="record-info">
+                                <span class="record-name">李四</span>
+                           </div>
+                           <span class="record-status status-pending">审核中</span>
+                        </div>
+                        <div class="record-body">
+                            <div class="record-item">
+                                <i class="fas fa-phone-alt"></i>
+                                <span>139****1234</span>
+                            </div>
+                             <div class="record-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span>暂无备注信息</span>
+                            </div>
+                        </div>
+                         <div class="record-footer">
+                            申请于 2023-04-12 09:15
+                        </div>
+                    </div>
+
+                    <!-- 记录卡片 3: 已驳回 -->
+                    <div class="record-card">
+                        <div class="record-header">
+                             <div class="record-info">
+                                <span class="record-name">王五</span>
+                           </div>
+                           <span class="record-status status-rejected">已驳回</span>
+                        </div>
+                        <div class="record-body">
+                            <div class="record-item">
+                                <i class="fas fa-phone-alt"></i>
+                                <span>150****5678</span>
+                            </div>
+                             <div class="record-item">
+                                <i class="fas fa-comment-dots"></i>
+                                <span>备注：中通快递</span>
+                            </div>
+                        </div>
+                        <div class="record-footer">
+                           申请于 2023-04-08 18:00
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

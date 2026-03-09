@@ -173,6 +173,18 @@
 					"style": {
 						"navigationStyle": "custom"
 					}
+				},
+				{
+					"path": "pages/courier-history/index",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/locker/index",
+					"style": {
+						"navigationStyle": "custom"
+					}
 				}				
 			]
 		}
