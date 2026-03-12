@@ -45,19 +45,19 @@
         <view class="section">
           <text class="section-title" :style="{ color: theme.textSecondary }">生活服务</text>
           <view class="feature-grid">
-            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/locker/index')">
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/visitor-password/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
                 <text class="iconfont icon-user-friends"></text>
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">访客管理</text>
             </view>
-            <view class="feature-item">
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/locker/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
                 <text class="iconfont icon-box"></text>
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">快递柜</text>
             </view>
-            <view class="feature-item">
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/repair/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
                 <text class="iconfont icon-tools"></text>
               </view>

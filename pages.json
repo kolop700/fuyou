@@ -185,6 +185,54 @@
 					"style": {
 						"navigationStyle": "custom"
 					}
+				},
+				{
+					"path": "pages/locker/courier-deposit",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/locker/temp-storage",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/locker/deposit-success",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/locker/pickup",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/locker/storage-records",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/repair/index",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/repair/report",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/repair/my-repairs",
+					"style": {
+						"navigationStyle": "custom"
+					}
 				}				
 			]
 		}

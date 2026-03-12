@@ -6,6 +6,41 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "11398754",
+      "name": "clipboard-list",
+      "font_class": "clipboard-list",
+      "unicode": "e618",
+      "unicode_decimal": 58904
+    },
+    {
+      "icon_id": "44773812",
+      "name": "screwdriver-wrench",
+      "font_class": "screwdriver-wrench",
+      "unicode": "eaf4",
+      "unicode_decimal": 60148
+    },
+    {
+      "icon_id": "3152526",
+      "name": "fa-barcode",
+      "font_class": "fa-barcode",
+      "unicode": "e875",
+      "unicode_decimal": 59509
+    },
+    {
+      "icon_id": "44772907",
+      "name": "box-archive",
+      "font_class": "box-archive",
+      "unicode": "e9a3",
+      "unicode_decimal": 59811
+    },
+    {
+      "icon_id": "44772909",
+      "name": "boxes-packing",
+      "font_class": "boxes-packing",
+      "unicode": "e9a4",
+      "unicode_decimal": 59812
+    },
+    {
       "icon_id": "5634358",
       "name": "shipping-fast",
       "font_class": "shipping-fast",

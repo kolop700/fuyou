@@ -1,6 +1,6 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5107116 */
-  src: url('iconfont.ttf?t=1772450902200') format('truetype');
+  src: url('iconfont.ttf?t=1773325776606') format('truetype');
 }
 
 .iconfont {
@@ -9,6 +9,26 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-clipboard-list:before {
+  content: "\e618";
+}
+
+.icon-screwdriver-wrench:before {
+  content: "\eaf4";
+}
+
+.icon-fa-barcode:before {
+  content: "\e875";
+}
+
+.icon-box-archive:before {
+  content: "\e9a3";
+}
+
+.icon-boxes-packing:before {
+  content: "\e9a4";
 }
 
 .icon-shipping-fast:before {
