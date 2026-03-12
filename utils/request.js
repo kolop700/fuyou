@@ -91,6 +91,12 @@ const request = ({
 
                 // 业务逻辑码处理
                 const { code, Code } = res.data;
+
+                // 如果code字段不存在，也视为成功（兼容直接返回数据的接口）
+                if (code === undefined && Code === undefined) {
+                    return resolve(res.data);
+                }
+
                 if (code === "0" || Code === "OK") {
                     return resolve(res.data);
                 }

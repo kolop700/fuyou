@@ -34,12 +34,13 @@ export default {
   },
 
   // 获取快递员申请记录
-  getCourierHistory(userId, options = {}) {
+  getCourierHistory(userId, page = 1, size = 50, options = {}) {
     return request({
-      url: '/locker/get_courier_list',
-      method: 'post', // 假设与项目其他部分保持一致
-      data: {
-        user_id: userId
+      url: '/locker/qry_courier',
+      method: 'get',
+      params: { // GET请求使用params
+        page,
+        size
       },
       ...defaultOptions,
       ...options

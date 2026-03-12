@@ -14,7 +14,7 @@
       <view v-if="!isLoading && historyList.length > 0" class="list-container">
         <view 
           v-for="item in historyList" 
-          :key="item.courier_id"
+          :key="item.id"
           class="history-card" 
           :style="{ background: theme.bgCard, borderColor: theme.dividerColor, boxShadow: theme.shadowCard }"
         >
@@ -22,15 +22,11 @@
             <view class="record-info">
                 <text class="record-name" :style="{ color: theme.textPrimary }">{{ item.name }}</text>
             </view>
-            <view class="record-status" :style="getStatusStyle(item.status)">
-                <text>{{ formatStatus(item.status) }}</text>
+            <view class="record-status" :style="getStatusStyle(item.status.value)">
+                <text>{{ item.status.label }}</text>
             </view>
           </view>
           <view class="card-body">
-            <view class="record-item">
-                <text class="iconfont icon-fa-building" :style="{ color: theme.textSecondary }"></text>
-                <text :style="{ color: theme.textSecondary }">{{ item.comm_name }}</text>
-            </view>
             <view class="record-item">
                 <text class="iconfont icon-phone" :style="{ color: theme.textSecondary }"></text>
                 <text :style="{ color: theme.textSecondary }">{{ item.mobile }}</text>
@@ -39,9 +35,6 @@
                 <text class="iconfont icon-fa-comments" :style="{ color: theme.textSecondary }"></text>
                 <text :style="{ color: theme.textSecondary }">{{ item.remark }}</text>
             </view>
-          </view>
-          <view class="card-footer" :style="{ borderTopColor: theme.dividerColor }">
-            <text :style="{ color: theme.textTertiary }">申请于 {{ formatDate(item.create_time) }}</text>
           </view>
         </view>
       </view>
@@ -68,72 +61,50 @@ import { useThemeVars } from '@/utils/themeConfig';
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
+const userStore = proxy.$store.user.useUserStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
 const historyList = ref([]);
 const isLoading = ref(true);
+const isRefreshing = ref(false);
 
-// Mock Data
-const mockData = [
-  {
-    courier_id: 1,
-    name: '张三',
-    comm_name: '幸福花园小区',
-    mobile: '188****8888',
-    remark: '顺丰速运 - 负责A区',
-    status: 1, // 已通过
-    create_time: '2023-04-10T14:30:00Z'
-  },
-  {
-    courier_id: 2,
-    name: '李四',
-    comm_name: '未来城',
-    mobile: '139****1234',
-    remark: '',
-    status: 0, // 审核中
-    create_time: '2023-04-12T09:15:00Z'
-  },
-  {
-    courier_id: 3,
-    name: '王五',
-    comm_name: '阳光海岸',
-    mobile: '150****5678',
-    remark: '中通快递',
-    status: 2, // 已驳回
-    create_time: '2023-04-08T18:00:00Z'
+const fetchHistory = async () => {
+  const showLoading = !isRefreshing.value;
+  try {
+    const userId = userStore.userInfo.user_id;
+    const res = await proxy.$api.device.getCourierHistory(userId, 1, 50, { showLoading });
+    if (res.items) {
+      historyList.value = res.items.sort((a, b) => b.id - a.id);
+    } else {
+      historyList.value = [];
+    }
+  } catch (error) {
+    console.error('获取申请记录失败:', error);
+  } finally {
+    isLoading.value = false;
+    isRefreshing.value = false;
   }
-];
-
-const formatStatus = (status) => {
-  const statusMap = {
-    0: '审核中',
-    1: '已通过',
-    2: '已驳回'
-  };
-  return statusMap[status] || '未知';
 };
 
-const getStatusStyle = (status) => {
+const onRefresh = async () => {
+  isRefreshing.value = true;
+  await fetchHistory();
+};
+
+const getStatusStyle = (statusValue) => {
   const styleMap = {
-    0: { background: theme.value.getBadgeBackground('warning'), color: theme.value.colorWarning }, // 审核中
-    1: { background: theme.value.getBadgeBackground('success'), color: theme.value.colorSuccess }, // 已通过
-    2: { background: theme.value.getBadgeBackground('error'), color: theme.value.colorError }    // 已驳回
+    0: { background: theme.value.getBadgeBackground('warning'), color: theme.value.colorWarning }, // 未启用
+    1: { background: theme.value.getBadgeBackground('success'), color: theme.value.colorSuccess }, // 已启用
   };
-  return styleMap[status] || { background: theme.value.getBadgeBackground('info'), color: theme.value.colorInfo };
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return styleMap[statusValue] || { background: theme.value.getBadgeBackground('info'), color: theme.value.colorInfo };
 };
 
 onLoad(() => {
+  themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
-  historyList.value = mockData;
-  isLoading.value = false;
+  fetchHistory();
 });
 </script>
 
