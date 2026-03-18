@@ -117,23 +117,23 @@ const toggleRemember = () => {
 // 登录处理
 const handleLogin = async () => {
   // 手机号验证
-  if (!form.value.user_account) {
-    uni.showToast({
-      title: '请输入手机号',
-      icon: 'none',
-      duration: 2000
-    })
-    return
-  }
+  // if (!form.value.user_account) {
+  //   uni.showToast({
+  //     title: '请输入手机号',
+  //     icon: 'none',
+  //     duration: 2000
+  //   })
+  //   return
+  // }
 
-  if (!/^1[3-9]\d{9}$/.test(form.value.user_account)) {
-    uni.showToast({
-      title: '请输入正确的手机号',
-      icon: 'none',
-      duration: 2000
-    })
-    return
-  }
+  // if (!/^1[3-9]\d{9}$/.test(form.value.user_account)) {
+  //   uni.showToast({
+  //     title: '请输入正确的手机号',
+  //     icon: 'none',
+  //     duration: 2000
+  //   })
+  //   return
+  // }
 
   if (!form.value.password) {
     uni.showToast({
@@ -144,14 +144,14 @@ const handleLogin = async () => {
     return
   }
 
-  if (form.value.password.length < 3) {
-    uni.showToast({
-      title: '密码长度至少6位',
-      icon: 'none',
-      duration: 2000
-    })
-    return
-  }
+  // if (form.value.password.length < 3) {
+  //   uni.showToast({
+  //     title: '密码长度至少6位',
+  //     icon: 'none',
+  //     duration: 2000
+  //   })
+  //   return
+  // }
 
   try {
     const loginData = {
