@@ -5,38 +5,42 @@
 
     <view class="page-content" :style="{ paddingTop: navbarHeight + 'px' }">
       <view class="form-container">
-        <!-- 快递柜选择 -->
+        <!-- 快递柜 ID（写死为 1） -->
         <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">快递柜</text>
+          <text class="form-label" :style="{ color: theme.textSecondary }">快递柜编号</text>
           <view class="picker-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
-            <picker @change="bindLockerChange" :value="lockerIndex" :range="lockerList" style="width: 100%;">
-              <view class="picker-content">
-                <text class="picker-text" :style="{ color: theme.textPrimary }">
-                  {{ lockerList[lockerIndex] }}
-                </text>
-                <text class="iconfont icon-arrow-right picker-icon" :style="{ color: theme.textTertiary }"></text>
-              </view>
-            </picker>
+            <text class="picker-text" :style="{ color: theme.textPrimary }">{{ lockerName || '快递柜 #' + lockerId }}</text>
           </view>
         </view>
 
         <!-- 柜格型号 -->
         <view class="form-group">
           <text class="form-label" :style="{ color: theme.textSecondary }">柜格型号</text>
-          <view class="spec-grid">
+          <view class="spec-list">
             <view 
-              v-for="(item, index) in sizeOptions" 
-              :key="index"
-              class="spec-item"
-              :class="{ active: selectedSize === item.value }"
+              v-for="(item) in sizeOptions" 
+              :key="item.id"
+              class="spec-row"
+              :class="{ active: selectedSpecId === item.id, disabled: item.idle_count === 0 }"
               :style="{ 
-                background: selectedSize === item.value ? theme.getBadgeBackground('warning') : theme.bgCard,
-                borderColor: selectedSize === item.value ? theme.colorWarning : theme.borderColor,
-                color: selectedSize === item.value ? theme.colorWarning : theme.textPrimary
+                background: selectedSpecId === item.id ? theme.getBadgeBackground('warning') : theme.bgCard,
+                borderColor: selectedSpecId === item.id ? theme.colorWarning : theme.borderColor,
+                opacity: item.idle_count === 0 ? 0.45 : 1
               }"
-              @tap="selectSize(item.value)"
+              @tap="selectSize(item)"
             >
-              <text class="spec-text">{{ item.label }}</text>
+              <!-- 左侧：选中圆点 -->
+              <view class="spec-radio" :style="{ borderColor: selectedSpecId === item.id ? theme.colorWarning : theme.borderColor }">
+                <view v-if="selectedSpecId === item.id" class="spec-radio-dot" :style="{ background: theme.colorWarning }"></view>
+              </view>
+              <!-- 中间：规格名 -->
+              <text class="spec-name" :style="{ color: item.idle_count === 0 ? theme.textTertiary : selectedSpecId === item.id ? theme.colorWarning : theme.textPrimary }">{{ item.name }}</text>
+              <!-- 右侧：数量标签 -->
+              <view class="spec-badge" :style="{ background: item.idle_count === 0 ? theme.bgSecondary : theme.getBadgeBackground('success') }">
+                <text class="spec-badge-text" :style="{ color: item.idle_count === 0 ? theme.textTertiary : theme.colorSuccess }">
+                  {{ item.idle_count === 0 ? '已满' : '剩余 ' + item.idle_count + ' 格' }}
+                </text>
+              </view>
             </view>
           </view>
         </view>
@@ -92,59 +96,79 @@ const themeStore = proxy.$store.theme.useThemeStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
+const lockerId = ref(1); // 快递柜 ID，目前写死为 1
+const lockerName = ref('');
 
 // 表单数据
-const lockerIndex = ref(0);
-const lockerList = ['幸福里小区 A栋-01号柜', '幸福里小区 B栋-02号柜'];
-const selectedSize = ref('s');
+const selectedSpecId = ref(null);
 const duration = ref(1);
-const totalCost = ref(2.00);
+const sizeOptions = ref([]); // 从接口获取
 
-const sizeOptions = [
-  { label: '小号', value: 's', price: 2 },
-  { label: '中号', value: 'm', price: 3 },
-  { label: '大号', value: 'l', price: 4 },
-  { label: '超大号', value: 'xl', price: 6 },
-  { label: '文件柜', value: 'doc', price: 1 },
-  { label: '生鲜柜', value: 'fresh', price: 5 }
-];
+const fetchLockerInfo = async (id) => {
+  try {
+    const res = await proxy.$api.locker.getLockerInfo(id, { showLoading: false });
+    // 检查快递柜是否已启用
+    if (res?.status?.value !== 1) {
+      uni.showModal({
+        title: '快递柜不可用',
+        content: `「${res?.name || '该快递柜'}」当前状态为「${res?.status?.label || '未启用'}」，暂时无法使用`,
+        showCancel: false,
+        confirmText: '返回',
+        success: () => uni.navigateBack()
+      });
+      return;
+    }
+    lockerName.value = res?.name || `快递柜 #${id}`;
+    const specs = res?.specs || [];
+    sizeOptions.value = specs;
+    const first = specs.find(s => s.idle_count > 0);
+    selectedSpecId.value = first ? first.id : null;
+  } catch (e) {
+    uni.showToast({ title: '获取格口信息失败', icon: 'none' });
+  }
+};
 
-onLoad(() => {
+onLoad((options) => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
+  if (options && options.locker_id) {
+    lockerId.value = Number(options.locker_id);
+  }
+  fetchLockerInfo(lockerId.value);
 });
 
-const bindLockerChange = (e) => {
-  lockerIndex.value = e.detail.value;
+const selectSize = (item) => {
+  if (item.idle_count === 0) return;
+  selectedSpecId.value = item.id;
 };
 
-const selectSize = (value) => {
-  selectedSize.value = value;
-  calculateCost();
-};
+const calculateCost = () => {}; // 保留占位，费用由后端定价
 
-const calculateCost = () => {
-  const selectedOption = sizeOptions.find(opt => opt.value === selectedSize.value);
-  const pricePerHour = selectedOption ? selectedOption.price : 2;
-  const hours = parseInt(duration.value) || 0;
-  totalCost.value = pricePerHour * hours;
-};
-
-const submitStorage = () => {
+const submitStorage = async () => {
+  if (!selectedSpecId.value) {
+    uni.showToast({ title: '请选择柜格型号', icon: 'none' });
+    return;
+  }
   if (!duration.value || duration.value <= 0) {
     uni.showToast({ title: '请输入有效的存货时长', icon: 'none' });
     return;
   }
-  
+
   uni.showLoading({ title: '处理中...' });
-  setTimeout(() => {
-    uni.hideLoading();
-    // 跳转到成功/倒计时页面
-    uni.navigateTo({
-      url: '/workbench_package/pages/locker/deposit-success'
+  try {
+    await proxy.$api.locker.tempStorage({
+      spec_id: selectedSpecId.value,
+      duration: parseInt(duration.value)
     });
-  }, 1500);
+    uni.hideLoading();
+    uni.navigateTo({
+      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}`
+    });
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: e?.msg || '操作失败，请重试', icon: 'none' });
+  }
 };
 </script>
 
@@ -217,25 +241,68 @@ const submitStorage = () => {
   font-size: 40rpx;
 }
 
-/* 规格选择网格 */
-.spec-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+/* 规格选择列表 */
+.spec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.spec-row {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-radius: 24rpx;
+  border: 1.5px solid transparent;
+  transition: all 0.2s ease;
   gap: 24rpx;
 }
 
-.spec-item {
-  height: 88rpx;
-  border-radius: 20rpx;
+.spec-row:active {
+  transform: scale(0.99);
+}
+
+.spec-row.disabled {
+  pointer-events: none;
+}
+
+/* 单选圆点 */
+.spec-radio {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 2px solid;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease;
+}
+
+.spec-radio-dot {
+  width: 22rpx;
+  height: 22rpx;
+  border-radius: 50%;
   transition: all 0.2s ease;
 }
 
-.spec-text {
-  font-size: 28rpx;
+/* 规格名 */
+.spec-name {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+/* 数量标签 */
+.spec-badge {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+}
+
+.spec-badge-text {
+  font-size: 22rpx;
   font-weight: 600;
 }
 

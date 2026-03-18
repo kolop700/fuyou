@@ -85,32 +85,46 @@ const themeStore = proxy.$store.theme.useThemeStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
+const lockerId = ref(1); // 快递柜 ID，目前写死为 1
 const currentTab = ref('courier');
-
-// 模拟数据
-const courierRecords = [
-  { trackingNumber: '...7890', time: '03-11 09:42', status: 'stored' },
-  { trackingNumber: '...1234', time: '03-10 11:05', status: 'picked' },
-  { trackingNumber: '...5678', time: '03-09 14:20', status: 'picked' }
-];
-
-const tempRecords = [
-  { time: '03-10 18:20', status: 'picked' },
-  { time: '03-08 09:15', status: 'picked' }
-];
+const courierRecords = ref([]);
+const tempRecords = ref([]);
+const loading = ref(false);
 
 const currentList = computed(() => {
-  return currentTab.value === 'courier' ? courierRecords : tempRecords;
+  return currentTab.value === 'courier' ? courierRecords.value : tempRecords.value;
 });
 
-onLoad(() => {
+const fetchRecords = async () => {
+  loading.value = true;
+  try {
+    const res = await proxy.$api.locker.getRecords({ type: currentTab.value }, { showLoading: false });
+    const list = res?.list || res?.data || [];
+    if (currentTab.value === 'courier') {
+      courierRecords.value = list;
+    } else {
+      tempRecords.value = list;
+    }
+  } catch (e) {
+    // 接口异常时保持空列表
+  } finally {
+    loading.value = false;
+  }
+};
+
+onLoad((options) => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
+  if (options && options.locker_id) {
+    lockerId.value = Number(options.locker_id);
+  }
+  fetchRecords();
 });
 
 const switchTab = (tab) => {
   currentTab.value = tab;
+  fetchRecords();
 };
 </script>
 

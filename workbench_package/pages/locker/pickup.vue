@@ -57,28 +57,37 @@ const themeStore = proxy.$store.theme.useThemeStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
+const lockerId = ref(1); // 快递柜 ID，目前写死为 1
 const pickupCode = ref('');
 
-onLoad(() => {
+onLoad((options) => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
+  if (options && options.locker_id) {
+    lockerId.value = Number(options.locker_id);
+  }
 });
 
-const submitPickup = () => {
+const submitPickup = async () => {
   if (!pickupCode.value || pickupCode.value.length < 4) {
     uni.showToast({ title: '请输入有效的取件码', icon: 'none' });
     return;
   }
-  
+
   uni.showLoading({ title: '验证中...' });
-  setTimeout(() => {
-    uni.hideLoading();
-    // 跳转到成功页面
-    uni.navigateTo({
-      url: '/workbench_package/pages/locker/deposit-success'
+  try {
+    await proxy.$api.locker.pickup({
+      pickup_code: pickupCode.value
     });
-  }, 1500);
+    uni.hideLoading();
+    uni.navigateTo({
+      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}`
+    });
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: e?.msg || '取件码错误，请重试', icon: 'none' });
+  }
 };
 </script>
 

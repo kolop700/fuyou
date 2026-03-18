@@ -105,27 +105,29 @@ onLoad(() => {
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
 });
 
+const LOCKER_ID = 1 // 快递柜 ID，目前写死
+
 const handleCourierDeposit = () => {
   uni.navigateTo({
-    url: '/workbench_package/pages/locker/courier-deposit'
+    url: `/workbench_package/pages/locker/courier-deposit?locker_id=${LOCKER_ID}`
   });
 };
 
 const handleTempStorage = () => {
   uni.navigateTo({
-    url: '/workbench_package/pages/locker/temp-storage'
+    url: `/workbench_package/pages/locker/temp-storage?locker_id=${LOCKER_ID}`
   });
 };
 
 const handlePickup = () => {
   uni.navigateTo({
-    url: '/workbench_package/pages/locker/pickup'
+    url: `/workbench_package/pages/locker/pickup?locker_id=${LOCKER_ID}`
   });
 };
 
 const handleRecords = () => {
   uni.navigateTo({
-    url: '/workbench_package/pages/locker/storage-records'
+    url: `/workbench_package/pages/locker/storage-records?locker_id=${LOCKER_ID}`
   });
 };
 </script>
