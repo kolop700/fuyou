@@ -13,8 +13,8 @@
 
       <!-- 状态文本 -->
       <view class="text-section">
-        <text class="title" :style="{ color: theme.textPrimary }">柜门已打开</text>
-        <text class="subtitle" :style="{ color: theme.textSecondary }">请尽快存入物品并关闭柜门</text>
+        <text class="title" :style="{ color: theme.textPrimary }">{{ pageTitle }}</text>
+        <text class="subtitle" :style="{ color: theme.textSecondary }">{{ pageSubtitle }}</text>
       </view>
 
       <!-- 倒计时圆环 -->
@@ -36,9 +36,10 @@
           :style="{ background: theme.colorSuccess, boxShadow: '0 10px 30px -10px ' + theme.colorSuccess }"
           @tap="handleSuccess"
         >
-          存货成功
+          {{ primaryButtonText }}
         </button>
         <button 
+          v-if="pageMode !== 'pickup'"
           class="btn-ghost" 
           :style="{ color: theme.textSecondary }"
           @tap="handleCancel"
@@ -52,6 +53,7 @@
 
 <script setup>
 import { ref, computed, getCurrentInstance, onMounted, onUnmounted } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { useThemeStore } from '@/store/modules/theme';
 import { useThemeVars } from '@/utils/themeConfig';
 
@@ -60,7 +62,19 @@ const themeStore = proxy.$store.theme.useThemeStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const countdown = ref(60);
+const comptRecordNo = ref('');
+const submitting = ref(false);
+const pageMode = ref('deposit');
 let timer = null;
+
+onLoad((options) => {
+  comptRecordNo.value = options?.compt_record_no ? decodeURIComponent(options.compt_record_no) : '';
+  pageMode.value = options?.mode || 'deposit';
+});
+
+const pageTitle = computed(() => pageMode.value === 'pickup' ? '柜门已打开' : '柜门已打开');
+const pageSubtitle = computed(() => pageMode.value === 'pickup' ? '请尽快取出包裹并关闭柜门' : '请尽快存入物品并关闭柜门');
+const primaryButtonText = computed(() => pageMode.value === 'pickup' ? '完成取件' : '存货成功');
 
 onMounted(() => {
   themeStore.loadTheme();
@@ -83,20 +97,56 @@ const startCountdown = () => {
   }, 1000);
 };
 
-const handleSuccess = () => {
-  uni.showToast({ title: '存货成功', icon: 'success' });
-  setTimeout(() => {
-    uni.navigateBack({ delta: 2 }); // 返回到首页
-  }, 1500);
+const finishDeposit = async (op, successText) => {
+  if (submitting.value) return;
+
+  if (!comptRecordNo.value) {
+    uni.showToast({ title: '缺少存货记录号，无法完成操作', icon: 'none' });
+    return false;
+  }
+
+  submitting.value = true;
+  uni.showLoading({ title: '处理中...' });
+
+  try {
+    await proxy.$api.locker.endDeposit({
+      compt_record_no: comptRecordNo.value,
+      op
+    });
+    uni.hideLoading();
+    uni.showToast({ title: successText, icon: 'success' });
+    setTimeout(() => {
+      uni.navigateBack({ delta: 2 });
+    }, 1500);
+    return true;
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: e?.msg || '操作失败，请重试', icon: 'none' });
+    return false;
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const handleSuccess = async () => {
+  if (pageMode.value === 'pickup') {
+    uni.showToast({ title: '取件完成', icon: 'success' });
+    setTimeout(() => {
+      uni.navigateBack({ delta: 2 });
+    }, 1500);
+    return;
+  }
+
+  await finishDeposit('1', '存货成功');
 };
 
 const handleCancel = () => {
   uni.showModal({
     title: '确认取消',
     content: '取消后将无法继续存货，确定要取消吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        uni.navigateBack();
+        await finishDeposit('0', '已取消存货');
       }
     }
   });

@@ -162,6 +162,10 @@ const scanCode = () => {
   });
 };
 
+const getComptRecordNo = (res) => {
+  return res?.compt_record_no || res?.data?.compt_record_no || res?.record?.compt_record_no || '';
+};
+
 const submitDeposit = async () => {
   if (!selectedSpecId.value) {
     uni.showToast({ title: '请选择柜格型号', icon: 'none' });
@@ -178,14 +182,16 @@ const submitDeposit = async () => {
 
   uni.showLoading({ title: '处理中...' });
   try {
-    await proxy.$api.locker.courierDeposit({
+    const res = await proxy.$api.locker.courierDeposit({
+      locker_id: lockerId.value,
       spec_id: selectedSpecId.value,
-      tracking_number: trackingNumber.value,
-      phone: phoneNumber.value
+      tracking_no: trackingNumber.value,
+      customer_phone: phoneNumber.value
     });
+    const comptRecordNo = getComptRecordNo(res);
     uni.hideLoading();
     uni.navigateTo({
-      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}`
+      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&compt_record_no=${encodeURIComponent(comptRecordNo)}`
     });
   } catch (e) {
     uni.hideLoading();

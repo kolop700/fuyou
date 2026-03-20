@@ -82,6 +82,19 @@ export default {
     })
   },
 
+  // 获取当前用户所属小区列表
+  getUserCommunityList(userId, options = {}) {
+    return request({
+      url: BASE_API + 'openSQL/',
+      method: 'post',
+      data: {
+        sql: `SELECT * FROM v_room_ad_user WHERE user_id =  ''${userId}''`
+      },
+      ...defaultOptions,
+      ...options
+    })
+  },
+
   // 获取房间列表
   getRoomList(unit_id, options = {}) {
     return request({

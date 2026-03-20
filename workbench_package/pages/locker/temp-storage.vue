@@ -93,6 +93,7 @@ import { useThemeVars } from '@/utils/themeConfig';
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
+const userStore = proxy.$store.user.useUserStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
@@ -145,6 +146,16 @@ const selectSize = (item) => {
 
 const calculateCost = () => {}; // 保留占位，费用由后端定价
 
+const getOpenId = () => {
+  const userInfo = userStore.userInfo || {};
+
+  return userInfo.openid || userInfo.wx_openid || userInfo.open_id || uni.getStorageSync('openid') || '0';
+};
+
+const getComptRecordNo = (res) => {
+  return res?.compt_record_no || res?.data?.compt_record_no || res?.record?.compt_record_no || '';
+};
+
 const submitStorage = async () => {
   if (!selectedSpecId.value) {
     uni.showToast({ title: '请选择柜格型号', icon: 'none' });
@@ -157,13 +168,16 @@ const submitStorage = async () => {
 
   uni.showLoading({ title: '处理中...' });
   try {
-    await proxy.$api.locker.tempStorage({
+    const res = await proxy.$api.locker.tempStorage({
+      openid: getOpenId(),
+      locker_id: lockerId.value,
       spec_id: selectedSpecId.value,
-      duration: parseInt(duration.value)
+      hours: parseInt(duration.value, 10)
     });
+    const comptRecordNo = getComptRecordNo(res);
     uni.hideLoading();
     uni.navigateTo({
-      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}`
+      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&compt_record_no=${encodeURIComponent(comptRecordNo)}`
     });
   } catch (e) {
     uni.hideLoading();

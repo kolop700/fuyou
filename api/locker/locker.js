@@ -15,39 +15,89 @@ export default {
   },
 
   // 快递员存件 —— 开柜
-  courierDeposit(data, options = {}) {
+  courierBeginDeposit(data, options = {}) {
+    const {
+      tracking_number,
+      tracking_no,
+      phone,
+      customer_phone,
+      ...rest
+    } = data || {}
+
     return request({
-      url: '/locker/courier_deposit',
+      url: '/locker/courier_begin_deposit',
       method: 'post',
       data: {
         locker_id: LOCKER_ID,
-        ...data
+        tracking_no: tracking_no || tracking_number || '',
+        customer_phone: customer_phone || phone || '',
+        ...rest
       },
       ...options
     })
   },
 
+  // 兼容旧调用
+  courierDeposit(data, options = {}) {
+    return this.courierBeginDeposit(data, options)
+  },
+
   // 临时存货 —— 开柜
-  tempStorage(data, options = {}) {
+  tempBeginDeposit(data, options = {}) {
+    const {
+      duration,
+      hours,
+      openid,
+      ...rest
+    } = data || {}
+
     return request({
-      url: '/locker/temp_storage',
+      url: '/locker/temp_begin_deposit',
       method: 'post',
       data: {
         locker_id: LOCKER_ID,
-        ...data
+        openid: openid || '0',
+        hours: Number(hours ?? duration ?? 0),
+        ...rest
       },
+      ...options
+    })
+  },
+
+  // 兼容旧调用
+  tempStorage(data, options = {}) {
+    return this.tempBeginDeposit(data, options)
+  },
+
+  // 结束存货
+  endDeposit(data, options = {}) {
+    return request({
+      url: '/locker/end_deposit',
+      method: 'post',
+      data,
       ...options
     })
   },
 
   // 取件 —— 输入取件码开柜
   pickup(data, options = {}) {
+    const {
+      pickup_code,
+      pick_code,
+      tracking_number,
+      tracking_no,
+      openid,
+      ...rest
+    } = data || {}
+
     return request({
       url: '/locker/pickup',
       method: 'post',
       data: {
-        locker_id: LOCKER_ID,
-        ...data
+        openid: openid || '0',
+        pick_code: pick_code || pickup_code || '',
+        tracking_no: tracking_no || tracking_number || '',
+        ...rest
       },
       ...options
     })

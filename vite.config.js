@@ -24,6 +24,12 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
                 rewrite: (path) => path.replace(/^\/locker/, '/api/locker')
+			},
+			'/repair': {
+				target: 'http://test2.yefiot.com',
+				changeOrigin: true,
+				secure: false,
+                rewrite: (path) => path.replace(/^\/repair/, '/api/repair')
 			}
 		}
 	}

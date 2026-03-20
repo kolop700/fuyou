@@ -233,6 +233,12 @@
 					"style": {
 						"navigationStyle": "custom"
 					}
+				},
+				{
+					"path": "pages/repair/detail",
+					"style": {
+						"navigationStyle": "custom"
+					}
 				}				
 			]
 		}

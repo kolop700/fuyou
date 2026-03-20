@@ -26,6 +26,16 @@ const errorMessages = {
     464: '设备返回错误'
 };
 
+const getErrorMessage = (payload, fallback = '请求失败，请稍后重试') => {
+    if (!payload) return fallback;
+
+    if (typeof payload === 'string') {
+        return payload;
+    }
+
+    return payload.detail || payload.message || payload.msg || fallback;
+};
+
 const request = ({
     url, // 请求url
     method, // 请求方式：get/post/put/delete
@@ -66,7 +76,10 @@ const request = ({
 
                 // 优先处理HTTP状态码错误
                 if (res.statusCode && res.statusCode !== 200) {
-                    const errorMsg = errorMessages[res.statusCode] || '请求失败，请稍后重试';
+                    const errorMsg = getErrorMessage(
+                        res.data,
+                        errorMessages[res.statusCode] || '请求失败，请稍后重试'
+                    );
 
                     // 只对全局错误码进行统一提示
                     if (globalErrorCodes.includes(res.statusCode)) {
@@ -86,7 +99,7 @@ const request = ({
                         }, 1500);
                     }
                     // 将错误继续传递下去，以便业务层捕获
-                    return reject({ msg: errorMsg, ...res });
+                    return reject({ ...res.data, ...res, msg: errorMsg });
                 }
 
                 // 业务逻辑码处理
@@ -102,7 +115,7 @@ const request = ({
                 }
 
                 // 对于业务逻辑错误，直接拒绝Promise，让调用方自行处理
-                return reject(res.data);
+                return reject({ ...res.data, msg: getErrorMessage(res.data) });
             },
             // 接口调用失败的回调函数
             fail(error) {

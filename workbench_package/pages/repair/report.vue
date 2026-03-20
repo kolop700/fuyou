@@ -8,10 +8,10 @@
         <view class="form-group">
           <text class="form-label" :style="{ color: theme.textSecondary }">所属小区</text>
           <view class="picker-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
-            <picker @change="bindCommunityChange" :value="communityIndex" :range="communityList">
+            <picker class="picker-trigger" @change="bindCommunityChange" :value="communityIndex" :range="communityNames">
               <view class="picker-content">
                 <text class="picker-text" :style="{ color: theme.textPrimary }">
-                  {{ communityList[communityIndex] }}
+                  {{ communityNames[communityIndex] || '请选择小区' }}
                 </text>
                 <text class="iconfont icon-arrow-right picker-icon" :style="{ color: theme.textTertiary }"></text>
               </view>
@@ -19,24 +19,18 @@
           </view>
         </view>
 
-        <!-- 报修类型 -->
+        <!-- 标题 -->
         <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">报修类型</text>
-          <view class="type-grid">
-            <view 
-              v-for="(type, index) in repairTypes" 
-              :key="index"
-              class="type-item"
-              :class="{ active: selectedType === type.value }"
-              :style="{ 
-                background: selectedType === type.value ? theme.getBadgeBackground('info') : theme.bgCard,
-                borderColor: selectedType === type.value ? theme.colorInfo : theme.borderColor,
-                color: selectedType === type.value ? theme.colorInfo : theme.textSecondary
-              }"
-              @tap="selectType(type.value)"
-            >
-              {{ type.label }}
-            </view>
+          <text class="form-label" :style="{ color: theme.textSecondary }">报修标题</text>
+          <view class="input-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+            <input
+              class="form-input"
+              type="text"
+              v-model="title"
+              placeholder="请输入报修标题"
+              :placeholder-style="'color: ' + theme.textTertiary"
+              :style="{ color: theme.textPrimary }"
+            />
           </view>
         </view>
 
@@ -54,16 +48,37 @@
 
         <!-- 上传照片 -->
         <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">上传照片</text>
+          <view class="upload-header">
+            <text class="form-label" :style="{ color: theme.textSecondary }">上传照片</text>
+            <text class="upload-tip" :style="{ color: theme.textTertiary }">{{ imageList.length }}/2</text>
+          </view>
           <view class="upload-container">
             <view 
+              v-if="imageList.length < 2"
               class="upload-btn" 
-              :style="{ borderColor: theme.borderColor }"
+              :style="{ borderColor: theme.borderColor, background: theme.bgCard }"
               @tap="chooseImage"
             >
-              <text class="iconfont icon-camera" :style="{ color: theme.textTertiary }"></text>
+              <uni-icons type="plusempty" :size="34" :color="theme.textTertiary" />
             </view>
-            <!-- 这里省略了图片预览逻辑，实际开发中需要实现 -->
+            <view
+              v-for="(item, index) in imageList"
+              :key="item.path + index"
+              class="preview-item"
+            >
+              <image
+                class="preview-image"
+                :src="item.path"
+                mode="aspectFill"
+                @tap="previewImage(index)"
+              />
+              <view
+                class="remove-image-btn"
+                @tap.stop="removeImage(index)"
+              >
+                ×
+              </view>
+            </view>
           </view>
         </view>
 
@@ -105,6 +120,19 @@
         </button>
       </view>
     </view>
+
+    <t-cropper
+      mode="free"
+      :imageUrl="cropImageUrl"
+      :width="600"
+      :height="600"
+      :maxWidth="900"
+      :maxHeight="900"
+      :scaleRatio="0.85"
+      :delay="150"
+      @cancel="handleCropCancel"
+      @confirm="handleCropConfirm"
+    />
   </view>
 </template>
 
@@ -113,64 +141,379 @@ import { ref, computed, getCurrentInstance } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useThemeStore } from '@/store/modules/theme';
 import { useThemeVars } from '@/utils/themeConfig';
+import TCropper from '@/uni_modules/t-cropper/components/t-cropper/t-cropper.vue';
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
+const userStore = proxy.$store.user.useUserStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
+// base64 会比原文件更大，因此这里把原始图片目标压到更低，尽量控制最终上传体积
+const MAX_UPLOAD_IMAGE_SIZE = 120 * 1024;
 
 const navbarHeight = ref(0);
 
 // 表单数据
 const communityIndex = ref(0);
-const communityList = ['幸福里小区', '阳光花园'];
-const selectedType = ref('electric');
+const communityList = ref([]);
+const title = ref('');
 const description = ref('');
-const contactName = ref('王先生');
-const contactPhone = ref('13800138000');
+const contactName = ref('');
+const contactPhone = ref('');
+const imageList = ref([]);
+const cropImageUrl = ref('');
 
-const repairTypes = [
-  { label: '水电维修', value: 'electric' },
-  { label: '家电维修', value: 'appliance' },
-  { label: '公共设施', value: 'public' }
-];
+const communityNames = computed(() => communityList.value.map(item => item.comm_name));
+const selectedCommunity = computed(() => communityList.value[communityIndex.value] || null);
 
-onLoad(() => {
+onLoad(async () => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
+  contactName.value = userStore.userInfo?.user_name || '';
+  contactPhone.value = userStore.userInfo?.user_acct || '';
+  await fetchCommunityList();
 });
 
 const bindCommunityChange = (e) => {
-  communityIndex.value = e.detail.value;
+  communityIndex.value = Number(e.detail.value);
 };
 
-const selectType = (value) => {
-  selectedType.value = value;
+const fetchCommunityList = async () => {
+  try {
+    const userId = userStore.userInfo?.user_id;
+
+    if (!userId) {
+      communityList.value = [];
+      return;
+    }
+
+    const res = await proxy.$api.device.getUserCommunityList(userId, { showLoading: false });
+    const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+    const communityMap = new Map();
+
+    list.forEach(item => {
+      const commId = Number(item.comm_id);
+
+      if (!commId || communityMap.has(commId)) return;
+
+      communityMap.set(commId, {
+        comm_id: commId,
+        comm_name: item.comm_name || `小区 ${commId}`
+      });
+    });
+
+    communityList.value = Array.from(communityMap.values());
+    communityIndex.value = 0;
+  } catch (error) {
+    communityList.value = [];
+  }
 };
 
 const chooseImage = () => {
+  if (imageList.value.length >= 2) {
+    uni.showToast({ title: '最多上传2张图片', icon: 'none' });
+    return;
+  }
+
   uni.chooseImage({
     count: 1,
+    sizeType: ['compressed'],
     success: (res) => {
-      console.log('Selected image:', res.tempFilePaths);
+      const filePath = res.tempFilePaths?.[0];
+
+      if (!filePath) return;
+
+      if (typeof uni.compressImage === 'function') {
+        uni.showLoading({ title: '处理中...', mask: true });
+        uni.compressImage({
+          src: filePath,
+          quality: 80,
+          success: (compressRes) => {
+            cropImageUrl.value = compressRes.tempFilePath || filePath;
+          },
+          fail: () => {
+            cropImageUrl.value = filePath;
+          },
+          complete: () => {
+            uni.hideLoading();
+          }
+        });
+        return;
+      }
+
+      cropImageUrl.value = filePath;
     }
   });
 };
 
-const submitReport = () => {
+const previewImage = (index) => {
+  uni.previewImage({
+    current: index,
+    urls: imageList.value.map(item => item.path)
+  });
+};
+
+const removeImage = (index) => {
+  imageList.value.splice(index, 1);
+};
+
+const handleCropCancel = () => {
+  cropImageUrl.value = '';
+};
+
+const handleCropConfirm = (res) => {
+  const tempFilePath = res?.tempFilePath;
+
+  if (!tempFilePath) {
+    cropImageUrl.value = '';
+    uni.showToast({ title: '裁剪失败，请重试', icon: 'none' });
+    return;
+  }
+
+  imageList.value.push({
+    path: tempFilePath,
+    name: `repair_${Date.now()}.jpg`
+  });
+  cropImageUrl.value = '';
+};
+
+const getBase64FromPath = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const fs = uni.getFileSystemManager && uni.getFileSystemManager();
+
+    if (fs && fs.readFile) {
+      fs.readFile({
+        filePath,
+        encoding: 'base64',
+        success: (res) => resolve(res.data),
+        fail: reject
+      });
+      return;
+    }
+
+    if (typeof fetch !== 'function' || typeof FileReader === 'undefined') {
+      reject(new Error('当前环境不支持读取图片'));
+      return;
+    }
+
+    fetch(filePath)
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = String(reader.result || '');
+          resolve(result.includes(',') ? result.split(',')[1] : result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      })
+      .catch(reject);
+  });
+};
+
+const getFileSize = (filePath) => {
+  return new Promise((resolve) => {
+    if (typeof uni.getFileInfo !== 'function') {
+      resolve(null);
+      return;
+    }
+
+    uni.getFileInfo({
+      filePath,
+      success: (res) => resolve(Number(res.size) || null),
+      fail: () => resolve(null)
+    });
+  });
+};
+
+const blobToBase64 = (blob, quality = 0.92, scale = 1) => {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') {
+      reject(new Error('当前环境不支持图片压缩'));
+      return;
+    }
+
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(blob);
+
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.floor(image.width * scale));
+      canvas.height = Math.max(1, Math.floor(image.height * scale));
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('当前环境不支持图片压缩'));
+        return;
+      }
+
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((compressedBlob) => {
+        URL.revokeObjectURL(objectUrl);
+
+        if (!compressedBlob) {
+          reject(new Error('图片压缩失败'));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = String(reader.result || '');
+          resolve({
+            size: compressedBlob.size,
+            data: result.includes(',') ? result.split(',')[1] : result
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedBlob);
+      }, 'image/jpeg', quality);
+    };
+
+    image.onerror = (error) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    };
+    image.src = objectUrl;
+  });
+};
+
+const compressBlobToTargetBase64 = async (blob) => {
+  const attempts = [
+    { quality: 0.82, scale: 0.85 },
+    { quality: 0.72, scale: 0.72 },
+    { quality: 0.62, scale: 0.62 },
+    { quality: 0.52, scale: 0.55 },
+    { quality: 0.42, scale: 0.48 },
+    { quality: 0.32, scale: 0.4 },
+    { quality: 0.22, scale: 0.32 }
+  ];
+
+  let bestResult = null;
+
+  for (const attempt of attempts) {
+    const result = await blobToBase64(blob, attempt.quality, attempt.scale);
+
+    if (!bestResult || result.size < bestResult.size) {
+      bestResult = result;
+    }
+
+    if (result.size <= MAX_UPLOAD_IMAGE_SIZE) {
+      return result.data;
+    }
+  }
+
+  return bestResult?.data || '';
+};
+
+const compressImagePathToTarget = async (filePath) => {
+  const originalSize = await getFileSize(filePath);
+  if (originalSize && originalSize <= MAX_UPLOAD_IMAGE_SIZE) {
+    return filePath;
+  }
+
+  if (typeof uni.compressImage !== 'function') {
+    return filePath;
+  }
+
+  const qualities = [60, 40, 25, 15, 8];
+  let bestPath = filePath;
+  let bestSize = originalSize || Number.MAX_SAFE_INTEGER;
+  let currentPath = filePath;
+
+  for (const quality of qualities) {
+    const compressedPath = await new Promise((resolve) => {
+      uni.compressImage({
+        src: currentPath,
+        quality,
+        success: (res) => resolve(res.tempFilePath || currentPath),
+        fail: () => resolve(currentPath)
+      });
+    });
+
+    const compressedSize = await getFileSize(compressedPath);
+    if (compressedSize && compressedSize < bestSize) {
+      bestSize = compressedSize;
+      bestPath = compressedPath;
+    }
+    currentPath = compressedPath;
+
+    if (compressedSize && compressedSize <= MAX_UPLOAD_IMAGE_SIZE) {
+      return compressedPath;
+    }
+  }
+
+  return bestPath;
+};
+
+const getUploadImageData = async (filePath) => {
+  const canUseCanvasCompress = typeof document !== 'undefined' && typeof fetch === 'function' && typeof FileReader !== 'undefined';
+
+  if (canUseCanvasCompress) {
+    const response = await fetch(filePath);
+    const blob = await response.blob();
+
+    if (blob.size <= MAX_UPLOAD_IMAGE_SIZE) {
+      const base64 = await getBase64FromPath(filePath);
+      return base64;
+    }
+
+    return await compressBlobToTargetBase64(blob);
+  }
+
+  const compressedPath = await compressImagePathToTarget(filePath);
+  return await getBase64FromPath(compressedPath);
+};
+
+const buildImagesPayload = async () => {
+  const files = [];
+
+  for (const item of imageList.value) {
+    const data = await getUploadImageData(item.path);
+    const filename = item.name || item.path.split('/').pop() || `repair_${Date.now()}.jpg`;
+    files.push({ filename, data });
+  }
+
+  return files;
+};
+
+const submitReport = async () => {
+  if (!selectedCommunity.value?.comm_id) {
+    uni.showToast({ title: '请选择所属小区', icon: 'none' });
+    return;
+  }
+  if (!title.value.trim()) {
+    uni.showToast({ title: '请填写报修标题', icon: 'none' });
+    return;
+  }
   if (!description.value) {
     uni.showToast({ title: '请填写详细描述', icon: 'none' });
     return;
   }
-  
+  if (!contactPhone.value) {
+    uni.showToast({ title: '请填写联系电话', icon: 'none' });
+    return;
+  }
+
   uni.showLoading({ title: '提交中...' });
-  setTimeout(() => {
+  try {
+    const images = await buildImagesPayload();
+    await proxy.$api.repair.report({
+      comm_id: selectedCommunity.value.comm_id,
+      title: title.value.trim(),
+      description: description.value,
+      contact: [String(contactName.value || '').trim(), String(contactPhone.value || '').trim()].filter(Boolean).join(' '),
+      images
+    });
     uni.hideLoading();
     uni.showToast({ title: '提交成功', icon: 'success' });
     setTimeout(() => {
       uni.navigateBack();
     }, 1500);
-  }, 1000);
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: e?.msg || '提交失败，请重试', icon: 'none' });
+  }
 };
 </script>
 
@@ -204,6 +547,17 @@ const submitReport = () => {
   display: block;
 }
 
+.upload-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.upload-tip {
+  font-size: 24rpx;
+  margin-bottom: 16rpx;
+}
+
 .picker-wrapper, .input-wrapper {
   height: 96rpx;
   border-radius: 24rpx;
@@ -211,6 +565,13 @@ const submitReport = () => {
   align-items: center;
   padding: 0 32rpx;
   border: 1px solid transparent;
+}
+
+.picker-trigger {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .picker-content {
@@ -233,28 +594,6 @@ const submitReport = () => {
   height: 100%;
 }
 
-/* 报修类型网格 */
-.type-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24rpx;
-}
-
-.type-item {
-  height: 80rpx;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26rpx;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.type-item.active {
-  font-weight: 600;
-}
-
 .form-textarea {
   width: 100%;
   height: 200rpx;
@@ -267,6 +606,7 @@ const submitReport = () => {
 
 .upload-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 24rpx;
 }
 
@@ -280,9 +620,38 @@ const submitReport = () => {
   justify-content: center;
 }
 
+.preview-image {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 16rpx;
+}
+
+.preview-item {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  line-height: 1;
+}
+
 .icon-camera {
   font-size: 48rpx;
 }
+
 
 .footer-section {
   padding: 32rpx 48rpx;

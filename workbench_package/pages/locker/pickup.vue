@@ -23,10 +23,22 @@
               class="code-input" 
               type="text" 
               v-model="pickupCode" 
-              placeholder="••••••" 
+              placeholder="输入取件码" 
               :placeholder-style="'color: ' + theme.textTertiary"
               :style="{ color: theme.textPrimary }"
-              maxlength="6"
+            />
+          </view>
+        </view>
+
+        <view class="input-section secondary-input">
+          <view class="input-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+            <input 
+              class="tracking-input" 
+              type="text" 
+              v-model="trackingNo" 
+              placeholder="输入快递单号" 
+              :placeholder-style="'color: ' + theme.textTertiary"
+              :style="{ color: theme.textPrimary }"
             />
           </view>
         </view>
@@ -54,11 +66,13 @@ import { useThemeVars } from '@/utils/themeConfig';
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
+const userStore = proxy.$store.user.useUserStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
 const lockerId = ref(1); // 快递柜 ID，目前写死为 1
 const pickupCode = ref('');
+const trackingNo = ref('');
 
 onLoad((options) => {
   themeStore.loadTheme();
@@ -69,20 +83,32 @@ onLoad((options) => {
   }
 });
 
+const getOpenId = () => {
+  const userInfo = userStore.userInfo || {};
+
+  return userInfo.openid || userInfo.wx_openid || userInfo.open_id || uni.getStorageSync('openid') || '0';
+};
+
 const submitPickup = async () => {
   if (!pickupCode.value || pickupCode.value.length < 4) {
     uni.showToast({ title: '请输入有效的取件码', icon: 'none' });
+    return;
+  }
+  if (!trackingNo.value) {
+    uni.showToast({ title: '请输入快递单号', icon: 'none' });
     return;
   }
 
   uni.showLoading({ title: '验证中...' });
   try {
     await proxy.$api.locker.pickup({
-      pickup_code: pickupCode.value
+      openid: getOpenId(),
+      pick_code: pickupCode.value,
+      tracking_no: trackingNo.value
     });
     uni.hideLoading();
     uni.navigateTo({
-      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}`
+      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&mode=pickup`
     });
   } catch (e) {
     uni.hideLoading();
@@ -144,6 +170,10 @@ const submitPickup = async () => {
   margin-bottom: 64rpx;
 }
 
+.secondary-input {
+  margin-top: -24rpx;
+}
+
 .input-wrapper {
   height: 120rpx;
   border-radius: 24rpx;
@@ -157,10 +187,16 @@ const submitPickup = async () => {
 .code-input {
   width: 100%;
   height: 100%;
-  font-size: 48rpx;
+  font-size: 40rpx;
   text-align: center;
-  letter-spacing: 0.5em;
   font-weight: 700;
+}
+
+.tracking-input {
+  width: 100%;
+  height: 100%;
+  font-size: 32rpx;
+  text-align: center;
 }
 
 .action-section {
