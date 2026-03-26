@@ -76,14 +76,14 @@ const initVersion = () => {
 // 处理用户协议点击
 const handleUserAgreement = () => {
   uni.navigateTo({
-    url: '/user_package/pages/agreement/user'
+    url: `/user_package/pages/webview?title=${encodeURIComponent('用户协议')}&url=${encodeURIComponent('http://fuyou.yefiot.com/user.html')}`
   })
 }
 
 // 处理隐私政策点击
 const handlePrivacyPolicy = () => {
   uni.navigateTo({
-    url: '/user_package/pages/agreement/privacy'
+    url: `/user_package/pages/webview?title=${encodeURIComponent('隐私政策')}&url=${encodeURIComponent('http://fuyou.yefiot.com/privacy.html')}`
   })
 }
 

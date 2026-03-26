@@ -12,12 +12,12 @@
     </view>
     <!-- webview 区域 -->
     <web-view :src="url" style="flex: 1; width: 100%; min-height: 800rpx;" />
-    <!-- 全屏按钮 -->
+    <!-- 全屏按钮
     <view style="width: 100%; display: flex; justify-content: center; margin: 30rpx 0;">
       <button @click="toggleFullScreen" style="width: 60%; background: #FF0036; color: #fff; font-size: 32rpx; border-radius: 12rpx;">
         {{ isFullScreen ? '退出全屏' : '全屏' }}
       </button>
-    </view>
+    </view> -->
   </view>
 </template>
 

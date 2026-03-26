@@ -118,6 +118,7 @@
           <text class="link-text-inline" :style="{ color: theme.colorAccent }" @click="openUserAgreement">《用户协议》</text>
           <text class="agreement-text" :style="{ color: theme.textSecondary }"> 和 </text>
           <text class="link-text-inline" :style="{ color: theme.colorAccent }" @click="openPrivacyPolicy">《隐私政策》</text>
+          <text class="agreement-text" :style="{ color: theme.textSecondary }">，否则将退出应用。</text>
         </view>
 
         <!-- 提交按钮 -->
@@ -361,12 +362,16 @@ const handleSubmit = async () => {
 
 // 打开用户协议
 const openUserAgreement = () => {
-  uni.navigateTo({ url: '/user_package/pages/agreement/user' })
+  uni.navigateTo({
+    url: `/user_package/pages/webview?title=${encodeURIComponent('用户协议')}&url=${encodeURIComponent('http://fuyou.yefiot.com/user.html')}`
+  })
 }
 
 // 打开隐私政策
 const openPrivacyPolicy = () => {
-  uni.navigateTo({ url: '/user_package/pages/agreement/privacy' })
+  uni.navigateTo({
+    url: `/user_package/pages/webview?title=${encodeURIComponent('隐私政策')}&url=${encodeURIComponent('http://fuyou.yefiot.com/privacy.html')}`
+  })
 }
 
 // 返回登录页

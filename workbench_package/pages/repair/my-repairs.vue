@@ -30,6 +30,8 @@
         :refresher-background="themeStore.isDark() ? '#0d1520' : '#f1f5f9'"
         :refresher-default-style="themeStore.isDark() ? 'white' : 'black'"
         @refresherrefresh="handleRefresh"
+        @scrolltolower="loadMore"
+        :lower-threshold="80"
       >
         <view class="list-content">
           <view
@@ -68,6 +70,10 @@
           <view v-if="!repairList.length && !loading" class="empty-state" :style="{ color: theme.textTertiary }">
             暂无报修记录
           </view>
+
+          <view v-if="repairList.length" class="load-more" :style="{ color: theme.textTertiary }">
+            {{ loadMoreText }}
+          </view>
         </view>
       </scroll-view>
     </view>
@@ -89,8 +95,13 @@ const navbarHeight = ref(0);
 const currentFilter = ref('all');
 const repairList = ref([]);
 const loading = ref(false);
+const loadingMore = ref(false);
 const refreshing = ref(false);
 const currentCommunityId = ref(0);
+const page = ref(1);
+const size = ref(10);
+const total = ref(0);
+const pages = ref(0);
 
 const filters = [
   { label: '全部', value: 'all' },
@@ -108,13 +119,13 @@ onLoad(async () => {
 
 onShow(async () => {
   if (currentCommunityId.value) {
-    await fetchRepairList();
+    await fetchRepairList(true);
   }
 });
 
 const initPage = async () => {
   await fetchCurrentCommunityId();
-  await fetchRepairList();
+  await fetchRepairList(true);
 };
 
 const fetchCurrentCommunityId = async () => {
@@ -134,19 +145,34 @@ const fetchCurrentCommunityId = async () => {
   }
 };
 
-const fetchRepairList = async () => {
+const loadMoreText = computed(() => {
+  if (loadingMore.value) return '加载中...';
+  if (pages.value > 0 && page.value >= pages.value) return '没有更多了';
+  return '上拉加载更多';
+});
+
+const fetchRepairList = async (reset = false) => {
   if (!currentCommunityId.value) {
     repairList.value = [];
     return;
   }
 
-  loading.value = true;
+  if (reset) {
+    page.value = 1;
+    total.value = 0;
+    pages.value = 0;
+    loading.value = true;
+  } else {
+    if (loadingMore.value) return;
+    if (pages.value > 0 && page.value >= pages.value) return;
+    loadingMore.value = true;
+  }
 
   try {
     const params = {
       comm_id: currentCommunityId.value,
-      page: 1,
-      size: 50
+      page: reset ? 1 : page.value + 1,
+      size: size.value
     };
 
     if (currentFilter.value !== 'all') {
@@ -154,24 +180,38 @@ const fetchRepairList = async () => {
     }
 
     const res = await proxy.$api.repair.qry(params, { showLoading: false });
-    repairList.value = Array.isArray(res?.items) ? res.items : [];
+    const list = Array.isArray(res?.items) ? res.items : [];
+
+    total.value = Number(res?.total || 0);
+    page.value = Number(res?.page || params.page);
+    size.value = Number(res?.size || size.value);
+    pages.value = Number(res?.pages || 0);
+
+    repairList.value = reset ? list : [...repairList.value, ...list];
   } catch (e) {
-    repairList.value = [];
+    if (reset) {
+      repairList.value = [];
+    }
     uni.showToast({ title: e?.msg || '获取报修记录失败', icon: 'none' });
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 };
 
 const handleRefresh = async () => {
   refreshing.value = true;
-  await fetchRepairList();
+  await fetchRepairList(true);
   refreshing.value = false;
 };
 
 const changeFilter = async (value) => {
   currentFilter.value = value;
-  await fetchRepairList();
+  await fetchRepairList(true);
+};
+
+const loadMore = async () => {
+  await fetchRepairList(false);
 };
 
 const openDetail = (item) => {
@@ -398,5 +438,11 @@ const formatTime = (value) => {
   padding: 120rpx 0;
   text-align: center;
   font-size: 28rpx;
+}
+
+.load-more {
+  padding: 8rpx 0 24rpx;
+  text-align: center;
+  font-size: 24rpx;
 }
 </style>
