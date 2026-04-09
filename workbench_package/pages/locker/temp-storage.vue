@@ -77,11 +77,40 @@
         </button>
       </view>
     </view>
+
+    <!-- 支付确认弹窗 -->
+    <view class="modal-overlay" v-if="showPaymentConfirm"></view>
+    <view class="confirm-modal" :class="{ 'modal-show': showPaymentConfirm }" :style="{ background: theme.bgCard }">
+      <view class="modal-header">
+        <text class="modal-title" :style="{ color: theme.textPrimary }">确认支付状态</text>
+      </view>
+      
+      <view class="modal-body">
+        <text class="modal-desc" :style="{ color: theme.textSecondary }">请在微信/支付宝内完成支付，支付成功后点击下方按钮确认。</text>
+      </view>
+      
+      <view class="modal-footer">
+        <button 
+          class="btn-cancel" 
+          :style="{ background: theme.bgSecondary, color: theme.textSecondary }"
+          @tap="cancelPayment"
+        >
+          重新支付
+        </button>
+        <button 
+          class="btn-confirm" 
+          :style="{ background: theme.colorAccentGradient, color: '#fff' }"
+          @tap="checkPaymentStatus"
+        >
+          已完成支付
+        </button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, getCurrentInstance } from 'vue';
+import { ref, computed, getCurrentInstance, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useThemeVars } from '@/utils/themeConfig';
 
@@ -97,6 +126,21 @@ const lockerName = ref('');
 const selectedSpecId = ref(null);
 const duration = ref(1);
 const sizeOptions = ref([]); // 从接口获取
+
+const showPaymentConfirm = ref(false);
+const currentComptRecordNo = ref('');
+let pollTimer = null; // 轮询定时器
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+};
+
+onUnmounted(() => {
+  stopPolling();
+});
 
 const fetchLockerInfo = async (id) => {
   try {
@@ -172,6 +216,17 @@ const invokeTempDepositPayment = (paymentInfo) => {
   });
 };
 
+const startPolling = () => {
+  stopPolling(); // 确保不重复启动
+  pollTimer = setInterval(async () => {
+    if (showPaymentConfirm.value) {
+      await checkPaymentStatus(false);
+    } else {
+      stopPolling();
+    }
+  }, 2000); // 每 2 秒查一次
+};
+
 const submitStorage = async () => {
   if (!selectedSpecId.value) {
     uni.showToast({ title: '请选择柜格型号', icon: 'none' });
@@ -197,23 +252,147 @@ const submitStorage = async () => {
       throw new Error('缺少存货记录号，无法确认支付状态');
     }
 
-    await invokeTempDepositPayment(res);
+    currentComptRecordNo.value = comptRecordNo;
 
+    // 隐藏 loading，并在跳转支付前直接显示确认弹窗
+    // 这样当用户从微信/支付宝切回 APP 时，弹窗就已经展示在页面上了
     uni.hideLoading();
+    showPaymentConfirm.value = true;
+    
+    // 开启后台轮询，防止用户点击错误或者忘记点击
+    startPolling();
 
-    setTimeout(() => {
-      uni.navigateTo({
-        url: `/workbench_package/pages/locker/payment-wait?compt_record_no=${encodeURIComponent(comptRecordNo)}`
-      });
-    }, 400);
+    try {
+      // 唤起 APP 支付
+      await invokeTempDepositPayment(res);
+    } catch (paymentErr) {
+      // 如果用户取消了支付，或者支付出错，我们不直接抛出异常
+      // 而是允许用户通过弹窗上的按钮去主动查单，或者选择“重新支付”
+      console.log('前端支付接口回调未成功:', paymentErr);
+    }
+
   } catch (e) {
     uni.hideLoading();
-    const errMsg = e?.errMsg || e?.msg || e?.message || '支付失败，请重试';
-    const isCancel = String(errMsg).toLowerCase().includes('cancel');
-    uni.showToast({
-      title: isCancel ? '已取消支付' : errMsg,
-      icon: 'none'
+    const errMsg = e?.errMsg || e?.msg || e?.message || '提交失败，请重试';
+    uni.showToast({ title: errMsg, icon: 'none' });
+  }
+};
+
+const cancelPayment = async () => {
+  stopPolling();
+  showPaymentConfirm.value = false;
+  
+  if (!currentComptRecordNo.value) return;
+
+  // 在重新支付前，先查一下是不是其实已经支付成功了
+  uni.showLoading({ title: '正在确认状态...' });
+  try {
+    const res = await proxy.$api.locker.qryComptRecord({
+      page: 1,
+      size: 50,
+      compt_record_no: currentComptRecordNo.value,
+      bill_id: 0
+    }, { showLoading: false });
+    
+    const items = Array.isArray(res?.items) ? res.items : [];
+    const record = items.find(item => item?.compt_record_no === currentComptRecordNo.value) || items[0] || null;
+    
+    let payStatus = '';
+    if (record?.storage_pay_sta) {
+      const statusObj = record.storage_pay_sta;
+      if (typeof statusObj === 'object') {
+        payStatus = String(statusObj.value !== undefined ? statusObj.value : (statusObj.label ? statusObj.label.match(/[0-4]/)?.[0] : '')).trim();
+      } else {
+        payStatus = String(statusObj).match(/[0-4]/)?.[0] || String(statusObj).trim();
+      }
+    }
+    
+    uni.hideLoading();
+
+    if (payStatus === '2') {
+      // 如果实际上已经支付成功了，直接跳开柜，防止用户重复支付
+      uni.showToast({ title: '您已支付成功', icon: 'success' });
+      setTimeout(() => {
+        uni.redirectTo({
+          url: `/workbench_package/pages/locker/deposit-success?mode=deposit&compt_record_no=${encodeURIComponent(currentComptRecordNo.value)}`
+        });
+      }, 1000);
+      return;
+    }
+
+    // 如果确实没支付成功，跳转到收银台页面进行重新支付
+    // 注意：由于之前已经生成了订单，重新支付不应该再次调用 tempBeginDeposit
+    // 而是应该跳转到一个专门的收银台页面，或者调用继续支付的接口
+    uni.navigateTo({
+      url: `/workbench_package/pages/payment/cashier?compt_record_no=${encodeURIComponent(currentComptRecordNo.value)}`
     });
+
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: '状态确认失败，请重试', icon: 'none' });
+  }
+};
+
+const checkPaymentStatus = async (showLoader = true) => {
+  // 注意如果是在模板中绑定的 @tap="checkPaymentStatus"，默认参数 event 是一个对象，会导致 showLoader 变为 true，这是符合预期的
+  const isShowLoader = typeof showLoader === 'boolean' ? showLoader : true;
+  
+  if (!currentComptRecordNo.value) return;
+  
+  if (isShowLoader) {
+    uni.showLoading({ title: '正在确认...' });
+  }
+  
+  try {
+    const res = await proxy.$api.locker.qryComptRecord({
+      page: 1,
+      size: 50,
+      compt_record_no: currentComptRecordNo.value,
+      bill_id: 0
+    }, { showLoading: false });
+    
+    const items = Array.isArray(res?.items) ? res.items : [];
+    const record = items.find(item => item?.compt_record_no === currentComptRecordNo.value) || items[0] || null;
+    
+    let payStatus = '';
+    if (record?.storage_pay_sta) {
+      const statusObj = record.storage_pay_sta;
+      if (typeof statusObj === 'object') {
+        payStatus = String(statusObj.value !== undefined ? statusObj.value : (statusObj.label ? statusObj.label.match(/[0-4]/)?.[0] : '')).trim();
+      } else {
+        payStatus = String(statusObj).match(/[0-4]/)?.[0] || String(statusObj).trim();
+      }
+    }
+    
+    if (isShowLoader) {
+      uni.hideLoading();
+    }
+    
+    if (payStatus === '2') {
+      stopPolling();
+      showPaymentConfirm.value = false;
+      if (isShowLoader) {
+        uni.showToast({ title: '支付成功', icon: 'success' });
+      }
+      setTimeout(() => {
+        uni.redirectTo({
+          url: `/workbench_package/pages/locker/deposit-success?mode=deposit&compt_record_no=${encodeURIComponent(currentComptRecordNo.value)}`
+        });
+      }, isShowLoader ? 1000 : 0);
+    } else {
+      if (isShowLoader) {
+        uni.showToast({
+          title: '尚未查询到支付成功状态，请稍后再试',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    }
+  } catch (e) {
+    if (isShowLoader) {
+      uni.hideLoading();
+      uni.showToast({ title: '查询状态失败，请重试', icon: 'none' });
+    }
   }
 };
 </script>
@@ -374,5 +553,88 @@ const submitStorage = async () => {
 .action-btn:active {
   transform: scale(0.98);
   opacity: 0.9;
+}
+
+/* 支付确认弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.confirm-modal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 32rpx 32rpx 0 0;
+  z-index: 1001;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.confirm-modal.modal-show {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32rpx;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 64rpx 48rpx;
+  text-align: center;
+}
+
+.modal-desc {
+  font-size: 30rpx;
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  padding: 32rpx;
+  gap: 24rpx;
+}
+
+.btn-cancel, .btn-confirm {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+
+.btn-cancel::after, .btn-confirm::after {
+  display: none;
+}
+
+.btn-cancel:active, .btn-confirm:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
