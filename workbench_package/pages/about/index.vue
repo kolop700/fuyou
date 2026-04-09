@@ -1,47 +1,59 @@
 <template>
   <view class="page-container">
-    <!-- 菜单列表 -->
-    <view class="cu-list menu">
-      <view class="menu-item" @tap="handleUserAgreement">
-        <view class="content">
-          <text>用户协议</text>
-        </view>
-        <view class="right-icon">
-          <image src="/static/icons/icon_right.png" mode="aspectFit"></image>
-        </view>
-      </view>
-
-      <view class="menu-item" @tap="handlePrivacyPolicy">
-        <view class="content">
-          <text>隐私政策</text>
-        </view>
-        <view class="right-icon">
-          <image src="/static/icons/icon_right.png" mode="aspectFit"></image>
+    <scroll-view scroll-y class="page-scroll">
+      <view class="hero-card">
+        <image class="hero-logo" src="/static/logo.png" mode="aspectFit"></image>
+        <text class="app-name">福优智家</text>
+        <text class="app-desc">智慧社区服务平台，连接门禁、报修、快递柜与住户日常生活。</text>
+        <view class="version-pill">
+          <text>当前版本 v{{ appVersion }}</text>
         </view>
       </view>
 
-      <view class="menu-item" @tap="handleVersion">
-        <view class="content">
-          <text>程序版本</text>
+      <view class="menu-card">
+        <view class="menu-item" @tap="handleUserAgreement">
+          <view class="content">
+            <text>用户协议</text>
+          </view>
+          <view class="right-icon">
+            <image src="/static/icons/icon_right.png" mode="aspectFit"></image>
+          </view>
         </view>
-        <view class="right-text">
-          <text>v{{ appVersion }}</text>
+
+        <view class="menu-item" @tap="handlePrivacyPolicy">
+          <view class="content">
+            <text>隐私政策</text>
+          </view>
+          <view class="right-icon">
+            <image src="/static/icons/icon_right.png" mode="aspectFit"></image>
+          </view>
+        </view>
+
+        <view class="menu-item" @tap="handleVersion">
+          <view class="content">
+            <text>程序版本</text>
+          </view>
+          <view class="right-text">
+            <text>v{{ appVersion }}</text>
+          </view>
+        </view>
+
+        <view class="menu-item" @tap="handleAccountDelete">
+          <view class="content">
+            <text class="delete-text">注销账号</text>
+          </view>
+          <view class="right-icon">
+            <image src="/static/icons/icon_right.png" mode="aspectFit"></image>
+          </view>
         </view>
       </view>
 
-      <!-- 注销账号选项 -->
-      <view 
-        class="menu-item" 
-        @tap="handleAccountDelete"
-      >
-        <view class="content">
-          <text class="delete-text">注销账号</text>
-        </view>
-        <view class="right-icon">
-          <image src="/static/icons/icon_right.png" mode="aspectFit"></image>
-        </view>
+      <view class="footer-card">
+        <text class="footer-company">{{ companyName }}</text>
+        <text class="footer-copy">Copyright © {{ currentYear }}</text>
+        <text class="footer-rights">All Rights Reserved</text>
       </view>
-    </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -54,40 +66,38 @@ const userStore = proxy.$store.user.useUserStore()
 const { userType } = storeToRefs(userStore)
 
 const appVersion = ref('')
+const companyName = ref('内蒙古优福运营管理有限公司')
+const currentYear = new Date().getFullYear()
 
 // 初始化版本号
 const initVersion = () => {
   // #ifdef APP-PLUS
   appVersion.value = plus.runtime.version
   // #endif
-  
+
   // #ifdef MP-WEIXIN
   const accountInfo = uni.getAccountInfoSync()
   appVersion.value = accountInfo.miniProgram.version
   // #endif
-  
-  // 如果以上都不匹配，设置默认版本
+
   if (!appVersion.value) {
     const systemInfo = uni.getSystemInfoSync()
     appVersion.value = systemInfo.appVersion || '1.0.0'
   }
 }
 
-// 处理用户协议点击
 const handleUserAgreement = () => {
   uni.navigateTo({
     url: `/user_package/pages/webview?title=${encodeURIComponent('用户协议')}&url=${encodeURIComponent('http://fuyou.yefiot.com/user.html')}`
   })
 }
 
-// 处理隐私政策点击
 const handlePrivacyPolicy = () => {
   uni.navigateTo({
     url: `/user_package/pages/webview?title=${encodeURIComponent('隐私政策')}&url=${encodeURIComponent('http://fuyou.yefiot.com/privacy.html')}`
   })
 }
 
-// 处理版本信息点击
 const handleVersion = () => {
   uni.showToast({
     title: `当前版本：${appVersion.value}`,
@@ -95,7 +105,6 @@ const handleVersion = () => {
   })
 }
 
-// 账号注销
 const handleAccountDelete = () => {
   uni.showModal({
     title: '注销账号',
@@ -111,7 +120,6 @@ const handleAccountDelete = () => {
             title: '账号注销成功',
             icon: 'success'
           })
-          // 跳转到主页，然后跳转到登录页
           setTimeout(() => {
             uni.reLaunch({
               url: '/pages/index/index',
@@ -142,74 +150,150 @@ onMounted(() => {
 
 <style lang="scss">
 page {
-  background: #F5F5F5;
+  background: linear-gradient(180deg, #f5f9ff 0%, #eef3fb 100%);
   height: 100vh;
 }
 
 .page-container {
-  padding: 20rpx;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+}
+
+.page-scroll {
+  height: 100vh;
+}
+
+.hero-card,
+.menu-card,
+.footer-card {
+  margin: 24rpx;
+  border-radius: 32rpx;
   box-sizing: border-box;
 }
 
-.cu-list.menu {
-  background: #FFFFFF;
-  border-radius: 12rpx;
+.hero-card {
+  padding: 48rpx 36rpx 40rpx;
+  background: linear-gradient(135deg, #14213d 0%, #1f4f8f 100%);
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 20rpx 60rpx rgba(20, 33, 61, 0.18);
+}
+
+.hero-logo {
+  width: 128rpx;
+  height: 128rpx;
+  margin: 0 auto 20rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 16rpx;
+  box-sizing: border-box;
+}
+
+.app-name {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.app-desc {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.version-pill {
+  margin: 28rpx auto 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 184rpx;
+  padding: 14rpx 26rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 24rpx;
+}
+
+.menu-card,
+.footer-card {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16rpx 48rpx rgba(32, 78, 146, 0.08);
+}
+
+.menu-card {
   overflow: hidden;
-  margin-bottom: auto;
-  
-  .menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 32rpx 24rpx;
-    position: relative;
-    
-    // 分割线
-    &:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      left: 24rpx;
-      right: 24rpx;
-      bottom: 0;
-      height: 1px;
-      background-color: #EEEEEE;
-      transform: scaleY(0.5);
-    }
-    
-    .content {
-      flex: 1;
-      text {
-        font-size: 28rpx;
-        color: #333333;
-        font-weight: 400;
-      }
-    }
-    
-    .right-icon {
-      width: 32rpx;
-      height: 32rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      image {
-        width: 100%;
-        height: 100%;
-      }
-    }
-  }
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 24rpx;
+  position: relative;
+}
+
+.menu-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 0;
+  height: 1px;
+  background-color: #e8edf5;
+  transform: scaleY(0.5);
+}
+
+.content {
+  flex: 1;
+}
+
+.content text {
+  font-size: 28rpx;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.right-icon {
+  width: 32rpx;
+  height: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-icon image {
+  width: 100%;
+  height: 100%;
 }
 
 .right-text {
   font-size: 28rpx;
-  color: #999;
+  color: #94a3b8;
   margin-right: 10rpx;
 }
 
 .delete-text {
-  color: #FF0000 !important;
+  color: #ef4444 !important;
 }
-</style> 
+
+.footer-card {
+  padding: 28rpx 24rpx 44rpx;
+  margin-bottom: 36rpx;
+  text-align: center;
+}
+
+.footer-company {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.footer-copy,
+.footer-rights {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+</style>

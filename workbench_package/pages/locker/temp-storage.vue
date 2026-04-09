@@ -47,28 +47,23 @@
 
         <!-- 存货时长 -->
         <view class="form-group">
-          <text class="form-label" :style="{ color: theme.textSecondary }">存货时长 (小时)</text>
-          <view class="input-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
-            <input 
-              class="form-input" 
-              type="number" 
-              v-model="duration" 
-              placeholder="输入整数小时" 
-              :placeholder-style="'color: ' + theme.textTertiary"
-              :style="{ color: theme.textPrimary }"
-              @input="calculateCost"
-            />
+        <text class="form-label" :style="{ color: theme.textSecondary }">存货时长 (小时)</text>
+        <view class="input-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+          <input 
+            class="form-input" 
+            type="number" 
+            v-model="duration" 
+            placeholder="请输入整数小时" 
+            :placeholder-style="'color: ' + theme.textTertiary"
+            :style="{ color: theme.textPrimary }"
+            @input="handleDurationInput"
+          />
             <view class="icon-wrapper">
               <text class="iconfont icon-fa-clock input-icon" :style="{ color: theme.textSecondary }"></text>
             </view>
           </view>
         </view>
 
-        <!-- 费用提示 -->
-        <view class="cost-card" :style="{ background: theme.getBadgeBackground('info'), color: theme.colorInfo }">
-          <text class="cost-amount">费用: ¥{{ totalCost.toFixed(2) }}</text>
-          <text class="cost-desc">小号柜 2元/小时</text>
-        </view>
       </view>
 
       <!-- 底部按钮 -->
@@ -78,7 +73,7 @@
           :style="{ background: theme.colorAccentGradient, boxShadow: theme.shadowButton }"
           @tap="submitStorage"
         >
-          开始存货并支付
+          开始存货
         </button>
       </view>
     </view>
@@ -88,12 +83,10 @@
 <script setup>
 import { ref, computed, getCurrentInstance } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import { useThemeStore } from '@/store/modules/theme';
 import { useThemeVars } from '@/utils/themeConfig';
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
-const userStore = proxy.$store.user.useUserStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
@@ -144,16 +137,39 @@ const selectSize = (item) => {
   selectedSpecId.value = item.id;
 };
 
-const calculateCost = () => {}; // 保留占位，费用由后端定价
-
-const getOpenId = () => {
-  const userInfo = userStore.userInfo || {};
-
-  return userInfo.openid || userInfo.wx_openid || userInfo.open_id || uni.getStorageSync('openid') || '0';
+const handleDurationInput = (event) => {
+  const rawValue = event?.detail?.value ?? duration.value;
+  const integerValue = String(rawValue).replace(/[^\d]/g, '');
+  duration.value = integerValue;
 };
 
 const getComptRecordNo = (res) => {
   return res?.compt_record_no || res?.data?.compt_record_no || res?.record?.compt_record_no || '';
+};
+
+const invokeTempDepositPayment = (paymentInfo) => {
+  return new Promise((resolve, reject) => {
+    // #ifdef APP-PLUS
+    uni.requestPayment({
+      provider: 'wxpay',
+      orderInfo: {
+        appid: paymentInfo?.appId || '',
+        partnerid: paymentInfo?.partnerId || '',
+        prepayid: paymentInfo?.prepayId || '',
+        package: paymentInfo?.packageValue || 'Sign=WXPay',
+        noncestr: paymentInfo?.nonceStr || '',
+        timestamp: String(paymentInfo?.timestamp || ''),
+        sign: paymentInfo?.sign || ''
+      },
+      success: (res) => resolve(res),
+      fail: (error) => reject(error)
+    });
+    // #endif
+
+    // #ifndef APP-PLUS
+    reject(new Error('当前平台不支持直接调用微信支付'));
+    // #endif
+  });
 };
 
 const submitStorage = async () => {
@@ -161,27 +177,43 @@ const submitStorage = async () => {
     uni.showToast({ title: '请选择柜格型号', icon: 'none' });
     return;
   }
-  if (!duration.value || duration.value <= 0) {
-    uni.showToast({ title: '请输入有效的存货时长', icon: 'none' });
+  const hours = parseInt(duration.value, 10);
+  if (!Number.isInteger(hours) || hours <= 0) {
+    uni.showToast({ title: '请输入有效的整数小时', icon: 'none' });
     return;
   }
+  uni.showLoading({ title: '提交中...' });
 
-  uni.showLoading({ title: '处理中...' });
   try {
-    const res = await proxy.$api.locker.tempStorage({
-      openid: getOpenId(),
+    const res = await proxy.$api.locker.tempBeginDeposit({
       locker_id: lockerId.value,
       spec_id: selectedSpecId.value,
-      hours: parseInt(duration.value, 10)
+      hours
     });
+
     const comptRecordNo = getComptRecordNo(res);
+
+    if (!comptRecordNo) {
+      throw new Error('缺少存货记录号，无法确认支付状态');
+    }
+
+    await invokeTempDepositPayment(res);
+
     uni.hideLoading();
-    uni.navigateTo({
-      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&compt_record_no=${encodeURIComponent(comptRecordNo)}`
-    });
+
+    setTimeout(() => {
+      uni.navigateTo({
+        url: `/workbench_package/pages/locker/payment-wait?compt_record_no=${encodeURIComponent(comptRecordNo)}`
+      });
+    }, 400);
   } catch (e) {
     uni.hideLoading();
-    uni.showToast({ title: e?.msg || '操作失败，请重试', icon: 'none' });
+    const errMsg = e?.errMsg || e?.msg || e?.message || '支付失败，请重试';
+    const isCancel = String(errMsg).toLowerCase().includes('cancel');
+    uni.showToast({
+      title: isCancel ? '已取消支付' : errMsg,
+      icon: 'none'
+    });
   }
 };
 </script>
@@ -318,26 +350,6 @@ const submitStorage = async () => {
 .spec-badge-text {
   font-size: 22rpx;
   font-weight: 600;
-}
-
-/* 费用卡片 */
-.cost-card {
-  padding: 32rpx;
-  border-radius: 24rpx;
-  text-align: center;
-  margin-top: 48rpx;
-}
-
-.cost-amount {
-  font-size: 36rpx;
-  font-weight: 700;
-  display: block;
-  margin-bottom: 8rpx;
-}
-
-.cost-desc {
-  font-size: 24rpx;
-  opacity: 0.8;
 }
 
 /* 底部按钮 */

@@ -20,7 +20,8 @@
         "modules" : {
             "Barcode" : {},
             "Bluetooth" : {},
-            "Camera" : {}
+            "Camera" : {},
+            "Payment" : {}
         },
         /* 应用发布信息 */
         "distribute" : {
@@ -81,7 +82,14 @@
                         "UniversalLinks" : "https://xy.yefiot.com/app/"
                     }
                 },
-                "oauth" : {}
+                "oauth" : {},
+                "payment" : {
+                    "weixin" : {
+                        "__platform__" : [ "android" ],
+                        "appid" : "wx8ea71b7e50187f1d",
+                        "UniversalLinks" : "https://xy.yefiot.com/app/"
+                    }
+                }
             },
             "icons" : {
                 "android" : {

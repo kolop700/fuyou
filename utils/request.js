@@ -3,7 +3,7 @@ import { useUserStore } from '@/store/modules/user';
 // 根据环境设置baseURL
 const BASE_URL = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
   ? '' // 开发环境下H5使用代理
-  : 'http://test2.yefiot.com'; // 其他环境使用完整URL
+  : 'https://test2.yefiot.com'; // 其他环境使用完整URL，App 端使用 HTTPS 避免明文请求被拦截
 
 // 错误代码-消息映射表
 const errorMessages = {
@@ -36,6 +36,25 @@ const getErrorMessage = (payload, fallback = '请求失败，请稍后重试') =
     return payload.detail || payload.message || payload.msg || fallback;
 };
 
+const normalizeRequestUrl = (url = '') => {
+    if (!url) return url;
+
+    // H5 开发环境走 vite 代理，保留原始路径
+    if (process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5') {
+        return url;
+    }
+
+    if (url.startsWith('/locker/')) {
+        return url.replace(/^\/locker\//, '/api/locker/');
+    }
+
+    if (url.startsWith('/repair/')) {
+        return url.replace(/^\/repair\//, '/api/repair/');
+    }
+
+    return url;
+};
+
 const request = ({
     url, // 请求url
     method, // 请求方式：get/post/put/delete
@@ -66,7 +85,7 @@ const request = ({
             };
         }
         uni.request({
-            url: BASE_URL + url,
+            url: BASE_URL + normalizeRequestUrl(url),
             data: method === 'get' ? params : data,
             method: method,
             header: headers,

@@ -205,6 +205,12 @@
 					}
 				},
 				{
+					"path": "pages/locker/payment-wait",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
 					"path": "pages/locker/pickup",
 					"style": {
 						"navigationStyle": "custom"
@@ -236,6 +242,18 @@
 				},
 				{
 					"path": "pages/repair/detail",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/payment/cashier",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "pages/payment/success",
 					"style": {
 						"navigationStyle": "custom"
 					}

@@ -51,15 +51,20 @@ export default {
       ...rest
     } = data || {}
 
+    const payload = {
+      locker_id: LOCKER_ID,
+      hours: Number(hours ?? duration ?? 0),
+      ...rest
+    }
+
+    if (openid) {
+      payload.openid = openid
+    }
+
     return request({
       url: '/locker/temp_begin_deposit',
       method: 'post',
-      data: {
-        locker_id: LOCKER_ID,
-        openid: openid || '0',
-        hours: Number(hours ?? duration ?? 0),
-        ...rest
-      },
+      data: payload,
       ...options
     })
   },
@@ -113,6 +118,23 @@ export default {
         ...params
       },
       ...options
+    })
+  },
+
+  // 存货记录查询
+  qryComptRecord(params = {}, options = {}) {
+    console.log('[locker.qryComptRecord] request params:', params)
+    return request({
+      url: '/locker/qry_compt_record',
+      method: 'get',
+      params,
+      ...options
+    }).then((res) => {
+      console.log('[locker.qryComptRecord] response data:', res)
+      return res
+    }).catch((error) => {
+      console.log('[locker.qryComptRecord] response error:', error)
+      throw error
     })
   }
 }

@@ -101,12 +101,12 @@
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">投诉建议</text>
             </view>
-            <view class="feature-item">
+         <!--   <view class="feature-item">
               <view class="feature-icon" style="background: linear-gradient(135deg, #84cc16, #65a30d);">
                 <text class="iconfont icon-file-invoice-dollar"></text>
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">物业缴费</text>
-            </view>
+            </view> -->
             <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-history/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #34d399, #059669);">
                 <text class="iconfont icon-fa-id-card"></text>
