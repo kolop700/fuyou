@@ -1,9 +1,5 @@
 import { useUserStore } from '@/store/modules/user'
-
-// 使用与 request.js 相同的基础URL配置
-const BASE_URL = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
-  ? '' // 开发环境下H5使用代理
-  : 'https://xy.yefiot.com' // 其他环境使用完整URL
+import deviceApi from '@/api/device/device'
 
 // 门禁工具类
 export default {
@@ -50,6 +46,10 @@ export default {
     }
     if (arrstr.length == 1) arrstr = '0' + arrstr
     return ('H' + pkg + arrstr + 'W').toUpperCase()
+  },
+
+  normalizeMac(mac = '') {
+    return mac.toString().replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
   },
 
   // 生成最终的 doorpkg 数据包
@@ -102,6 +102,84 @@ export default {
     return 'yfn03'
   },
 
+  handleOpenResponse(res, door) {
+    const responseMac = res?.mac || ''
+    const expectedMac = door?.door_mac || ''
+    const msgInfo = res?.data?.[0]?.msg_info
+
+    console.log('开门响应:', {
+      mac: responseMac,
+      expectedMac,
+      msg_info: msgInfo,
+      data: res?.data
+    })
+
+    if (responseMac && this.normalizeMac(responseMac) !== this.normalizeMac(expectedMac)) {
+      console.warn('开门响应设备不匹配:', {
+        expectedMac,
+        responseMac
+      })
+      uni.showToast({
+        title: '开门失败!',
+        icon: 'error',
+        duration: 3000
+      })
+      throw false
+    }
+
+    switch (msgInfo) {
+      case 'HD2BB69W':
+        uni.showToast({
+          title: '开门成功!',
+          icon: 'success',
+          duration: 3000
+        })
+        return true
+
+      case 'HD3BB68W':
+        uni.showToast({
+          title: '数据同步成功!',
+          icon: 'none',
+          duration: 1000
+        })
+        return true
+
+      case 'HD3AA79W':
+        uni.showToast({
+          title: `数据同步失败(${msgInfo})!`,
+          icon: 'none',
+          duration: 3000
+        })
+        throw false
+
+      case 'HD2AA78W':
+        uni.showToast({
+          title: `开门失败(${msgInfo})!`,
+          icon: 'none',
+          duration: 3000
+        })
+        throw false
+
+      default:
+        if (!msgInfo) {
+          const fallbackMessage = res?.msg || res?.message || '开门失败!'
+          uni.showToast({
+            title: fallbackMessage,
+            icon: 'error',
+            duration: 3000
+          })
+          throw false
+        }
+
+        uni.showToast({
+          title: '开门成功!',
+          icon: 'none',
+          duration: 3000
+        })
+        return true
+    }
+  },
+
   // 开门方法
   async openDoor(door) {
     try {
@@ -114,7 +192,7 @@ export default {
           title: '请先登录！',
           icon: 'none'
         })
-        return false
+        throw false
       }
 
       // 格式化数据
@@ -154,92 +232,35 @@ export default {
         mask: true
       })
 
-      // 使用原生请求
-      return new Promise((resolve, reject) => {
-        uni.request({
-          url: `${BASE_URL}/yefiot/v1/mqttpost/`,
-          method: 'POST',
-          data: {
-            type,
-            mac: door.door_mac,
-            cmd: "0",
-            sn: "APP"+Date.now().toString(),
-            info: doorpkg
-          },
-          success: (res) => {
-            if (res.statusCode === 200 && res.data) {
-              if (res.data.mac === door.door_mac) {
-                const { msg_info } = res.data.data[0]
-                console.log('开门响应:', msg_info)
-
-                switch (msg_info) {
-                  case 'HD3BB68W':
-                    uni.showToast({
-                      title: '数据同步成功!',
-                      icon: 'none',
-                      duration: 1000
-                    })
-                    reject(true)
-                    break
-
-                  case 'HD3AA79W':
-                    uni.showToast({
-                      title: `数据同步失败(${msg_info})!`,
-                      icon: 'none',
-                      duration: 3000
-                    })
-                    reject(false)
-                    break
-
-                  case 'HD2AA78W':
-                    uni.showToast({
-                      title: `开门失败(${msg_info})!`,
-                      icon: 'none',
-                      duration: 3000
-                    })
-                    reject(false)
-                    break
-
-                  default:
-                    // 其他情况认为是开门成功
-                    uni.showToast({
-                      title: '开门成功!',
-                      icon: 'none',
-                      duration: 3000
-                    })
-                    resolve(true)
-                }
-              } else {
-                uni.showToast({
-                  title: '开门失败!',
-                  icon: 'error',
-                  duration: 3000
-                })
-                reject(false)
-              }
-            } else {
-              reject(new Error('请求失败'))
-            }
-          },
-          fail: (err) => {
-            console.error('开门请求失败:', err)
-            reject(err)
-          },
-          complete: () => {
-            uni.hideLoading()
-          }
-        })
+      const response = await deviceApi.openDoor({
+        type,
+        mac: door.door_mac,
+        cmd: '0',
+        sn: 'APP' + Date.now().toString(),
+        info: doorpkg
+      }, {
+        showLoading: false
       })
 
+      return this.handleOpenResponse(response, door)
     } catch (error) {
-      uni.hideLoading()
+      if (error === false || error === true) {
+        throw error
+      }
+
+      if (error?.data || error?.mac) {
+        return this.handleOpenResponse(error, door)
+      }
+
       uni.showToast({
         title: '开门失败!',
         icon: 'error',
         duration: 3000
       })
       console.error('开门失败:', error)
-      return false
+      throw false
+    } finally {
+      uni.hideLoading()
     }
   }
-} 
+}

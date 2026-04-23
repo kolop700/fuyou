@@ -182,12 +182,19 @@ const submitDeposit = async () => {
 
   uni.showLoading({ title: '处理中...' });
   try {
-    const res = await proxy.$api.locker.courierDeposit({
+    const requestParams = {
       locker_id: lockerId.value,
       spec_id: selectedSpecId.value,
       tracking_no: trackingNumber.value,
       customer_phone: phoneNumber.value
-    });
+    };
+
+    console.log('[courier-deposit] courierBeginDeposit params:', requestParams);
+
+    const res = await proxy.$api.locker.courierBeginDeposit(requestParams);
+
+    console.log('[courier-deposit] courierBeginDeposit response:', res);
+
     const comptRecordNo = getComptRecordNo(res);
     uni.hideLoading();
     uni.navigateTo({

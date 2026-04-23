@@ -129,6 +129,7 @@ const sizeOptions = ref([]); // 从接口获取
 
 const showPaymentConfirm = ref(false);
 const currentComptRecordNo = ref('');
+const currentPaymentInfo = ref(null);
 let pollTimer = null; // 轮询定时器
 
 const stopPolling = () => {
@@ -191,22 +192,55 @@ const getComptRecordNo = (res) => {
   return res?.compt_record_no || res?.data?.compt_record_no || res?.record?.compt_record_no || '';
 };
 
+const normalizePayStatus = (status) => {
+  if (!status) return '';
+  if (typeof status === 'object') {
+    if (status.value !== undefined && status.value !== null) {
+      return String(status.value).trim();
+    }
+    if (status.label) {
+      return String(status.label).match(/[0-4]/)?.[0] || '';
+    }
+    return '';
+  }
+  return String(status).match(/[0-4]/)?.[0] || String(status).trim();
+};
+
+const getRecordPayStatus = (record) => {
+  return normalizePayStatus(record?.storage_pay_sta);
+};
+
+const getTargetRecord = (res) => {
+  const items = Array.isArray(res?.items) ? res.items : [];
+  return items.find(item => item?.compt_record_no === currentComptRecordNo.value) || items[0] || null;
+};
+
 const invokeTempDepositPayment = (paymentInfo) => {
   return new Promise((resolve, reject) => {
+    const orderInfo = {
+      appid: paymentInfo?.appId || '',
+      partnerid: paymentInfo?.partnerId || '',
+      prepayid: paymentInfo?.prepayId || '',
+      package: paymentInfo?.packageValue || 'Sign=WXPay',
+      noncestr: paymentInfo?.nonceStr || '',
+      timestamp: String(paymentInfo?.timestamp || ''),
+      sign: paymentInfo?.sign || ''
+    };
+
+    console.log('[temp-storage] requestPayment orderInfo:', orderInfo);
+
     // #ifdef APP-PLUS
     uni.requestPayment({
       provider: 'wxpay',
-      orderInfo: {
-        appid: paymentInfo?.appId || '',
-        partnerid: paymentInfo?.partnerId || '',
-        prepayid: paymentInfo?.prepayId || '',
-        package: paymentInfo?.packageValue || 'Sign=WXPay',
-        noncestr: paymentInfo?.nonceStr || '',
-        timestamp: String(paymentInfo?.timestamp || ''),
-        sign: paymentInfo?.sign || ''
+      orderInfo,
+      success: (res) => {
+        console.log('[temp-storage] requestPayment success:', res);
+        resolve(res);
       },
-      success: (res) => resolve(res),
-      fail: (error) => reject(error)
+      fail: (error) => {
+        console.log('[temp-storage] requestPayment fail:', error);
+        reject(error);
+      }
     });
     // #endif
 
@@ -237,14 +271,20 @@ const submitStorage = async () => {
     uni.showToast({ title: '请输入有效的整数小时', icon: 'none' });
     return;
   }
+  const requestParams = {
+    locker_id: lockerId.value,
+    spec_id: selectedSpecId.value,
+    hours
+  };
+
+  console.log('[temp-storage] tempBeginDeposit params:', requestParams);
+
   uni.showLoading({ title: '提交中...' });
 
   try {
-    const res = await proxy.$api.locker.tempBeginDeposit({
-      locker_id: lockerId.value,
-      spec_id: selectedSpecId.value,
-      hours
-    });
+    const res = await proxy.$api.locker.tempBeginDeposit(requestParams);
+
+    console.log('[temp-storage] tempBeginDeposit response:', res);
 
     const comptRecordNo = getComptRecordNo(res);
 
@@ -253,6 +293,7 @@ const submitStorage = async () => {
     }
 
     currentComptRecordNo.value = comptRecordNo;
+    currentPaymentInfo.value = res;
 
     // 隐藏 loading，并在跳转支付前直接显示确认弹窗
     // 这样当用户从微信/支付宝切回 APP 时，弹窗就已经展示在页面上了
@@ -270,42 +311,38 @@ const submitStorage = async () => {
       // 而是允许用户通过弹窗上的按钮去主动查单，或者选择“重新支付”
       console.log('前端支付接口回调未成功:', paymentErr);
     }
-
   } catch (e) {
     uni.hideLoading();
-    const errMsg = e?.errMsg || e?.msg || e?.message || '提交失败，请重试';
-    uni.showToast({ title: errMsg, icon: 'none' });
+    uni.showToast({ title: e?.message || '提交失败，请重试', icon: 'none' });
   }
 };
 
 const cancelPayment = async () => {
   stopPolling();
-  showPaymentConfirm.value = false;
   
   if (!currentComptRecordNo.value) return;
 
   // 在重新支付前，先查一下是不是其实已经支付成功了
   uni.showLoading({ title: '正在确认状态...' });
   try {
-    const res = await proxy.$api.locker.qryComptRecord({
+    const requestParams = {
       page: 1,
       size: 50,
       compt_record_no: currentComptRecordNo.value,
       bill_id: 0
-    }, { showLoading: false });
+    };
+
+    console.log('[temp-storage] cancelPayment qryComptRecord params:', requestParams);
+
+    const res = await proxy.$api.locker.qryComptRecord(requestParams, { showLoading: false });
+
+    console.log('[temp-storage] cancelPayment qryComptRecord response:', res);
     
-    const items = Array.isArray(res?.items) ? res.items : [];
-    const record = items.find(item => item?.compt_record_no === currentComptRecordNo.value) || items[0] || null;
-    
-    let payStatus = '';
-    if (record?.storage_pay_sta) {
-      const statusObj = record.storage_pay_sta;
-      if (typeof statusObj === 'object') {
-        payStatus = String(statusObj.value !== undefined ? statusObj.value : (statusObj.label ? statusObj.label.match(/[0-4]/)?.[0] : '')).trim();
-      } else {
-        payStatus = String(statusObj).match(/[0-4]/)?.[0] || String(statusObj).trim();
-      }
-    }
+    const record = getTargetRecord(res);
+    const payStatus = getRecordPayStatus(record);
+
+    console.log('[temp-storage] cancelPayment matched record:', record);
+    console.log('[temp-storage] cancelPayment pay status:', payStatus);
     
     uni.hideLoading();
 
@@ -320,12 +357,22 @@ const cancelPayment = async () => {
       return;
     }
 
-    // 如果确实没支付成功，跳转到收银台页面进行重新支付
-    // 注意：由于之前已经生成了订单，重新支付不应该再次调用 tempBeginDeposit
-    // 而是应该跳转到一个专门的收银台页面，或者调用继续支付的接口
-    uni.navigateTo({
-      url: `/workbench_package/pages/payment/cashier?compt_record_no=${encodeURIComponent(currentComptRecordNo.value)}`
-    });
+    if (!currentPaymentInfo.value) {
+      uni.showToast({ title: '缺少支付参数，请重新开始存货', icon: 'none' });
+      return;
+    }
+
+    console.log('[temp-storage] retry requestPayment compt_record_no:', currentComptRecordNo.value);
+    console.log('[temp-storage] retry requestPayment paymentInfo:', currentPaymentInfo.value);
+
+    showPaymentConfirm.value = true;
+    startPolling();
+
+    try {
+      await invokeTempDepositPayment(currentPaymentInfo.value);
+    } catch (paymentErr) {
+      console.log('[temp-storage] retry requestPayment callback fail:', paymentErr);
+    }
 
   } catch (e) {
     uni.hideLoading();
@@ -344,25 +391,24 @@ const checkPaymentStatus = async (showLoader = true) => {
   }
   
   try {
-    const res = await proxy.$api.locker.qryComptRecord({
+    const requestParams = {
       page: 1,
       size: 50,
       compt_record_no: currentComptRecordNo.value,
       bill_id: 0
-    }, { showLoading: false });
+    };
+
+    console.log('[temp-storage] checkPaymentStatus params:', requestParams);
+
+    const res = await proxy.$api.locker.qryComptRecord(requestParams, { showLoading: false });
+
+    console.log('[temp-storage] checkPaymentStatus response:', res);
     
-    const items = Array.isArray(res?.items) ? res.items : [];
-    const record = items.find(item => item?.compt_record_no === currentComptRecordNo.value) || items[0] || null;
-    
-    let payStatus = '';
-    if (record?.storage_pay_sta) {
-      const statusObj = record.storage_pay_sta;
-      if (typeof statusObj === 'object') {
-        payStatus = String(statusObj.value !== undefined ? statusObj.value : (statusObj.label ? statusObj.label.match(/[0-4]/)?.[0] : '')).trim();
-      } else {
-        payStatus = String(statusObj).match(/[0-4]/)?.[0] || String(statusObj).trim();
-      }
-    }
+    const record = getTargetRecord(res);
+    const payStatus = getRecordPayStatus(record);
+
+    console.log('[temp-storage] checkPaymentStatus matched record:', record);
+    console.log('[temp-storage] checkPaymentStatus pay status:', payStatus);
     
     if (isShowLoader) {
       uni.hideLoading();
@@ -389,6 +435,7 @@ const checkPaymentStatus = async (showLoader = true) => {
       }
     }
   } catch (e) {
+    console.log('[temp-storage] checkPaymentStatus error:', e);
     if (isShowLoader) {
       uni.hideLoading();
       uni.showToast({ title: '查询状态失败，请重试', icon: 'none' });

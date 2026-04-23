@@ -199,6 +199,15 @@ const currentIndex = ref(0) // 当前展示的设备索引
 const isPressed = ref(false) // 按钮按压状态
 const btnTouchStartX = ref(0) // 按钮区域触摸起始点
 
+const openAgreementPopup = () => {
+  if (!agreementPopup.value?.open) {
+    console.warn('协议弹窗未就绪，暂不打开')
+    return
+  }
+
+  agreementPopup.value.open()
+}
+
 // 轮播列表（常用设备 + 全部设备）
 const carouselList = computed(() => {
   const list = [...commonDevices.value]
@@ -587,14 +596,14 @@ const checkFirstOpen = () => {
   // #ifdef APP-PLUS
   const platform = uni.getSystemInfoSync().osName
   if (platform === 'ios' && !agreementStore.checkAgreement()) {
-    agreementPopup.value.open()
+    openAgreementPopup()
     return
   }
   // #endif
   
   // #ifdef H5
   if (!agreementStore.checkAgreement()) {
-    agreementPopup.value.open()
+    openAgreementPopup()
     return
   }
   // #endif
@@ -614,9 +623,6 @@ onLoad(() => {
   navbarHeight.value = 44
   // #endif
   
-  // 检查是否首次打开
-  checkFirstOpen()
-  
   // 检查版本更新
   // #ifdef APP-PLUS
   checkAppUpdate()
@@ -624,6 +630,10 @@ onLoad(() => {
   
   // 加载开门次数
   loadDeviceOpenCounts()
+})
+
+onMounted(() => {
+  checkFirstOpen()
 })
 
 onShow(() => {

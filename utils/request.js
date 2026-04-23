@@ -3,7 +3,7 @@ import { useUserStore } from '@/store/modules/user';
 // 根据环境设置baseURL
 const BASE_URL = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
   ? '' // 开发环境下H5使用代理
-  : 'https://test2.yefiot.com'; // 其他环境使用完整URL，App 端使用 HTTPS 避免明文请求被拦截
+  : 'https://fuyou.yefiot.com'; // 其他环境使用完整URL，App 端使用 HTTPS 避免明文请求被拦截
 
 // 错误代码-消息映射表
 const errorMessages = {
@@ -55,6 +55,18 @@ const normalizeRequestUrl = (url = '') => {
     return url;
 };
 
+const buildDebugUrl = (url, params) => {
+    if (!params || typeof params !== 'object') return url;
+
+    const query = Object.entries(params)
+        .filter(([, value]) => value !== undefined && value !== null && value !== '')
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&');
+
+    if (!query) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}${query}`;
+};
+
 const request = ({
     url, // 请求url
     method, // 请求方式：get/post/put/delete
@@ -84,13 +96,31 @@ const request = ({
                 UserId: userId
             };
         }
+        const requestUrl = BASE_URL + normalizeRequestUrl(url);
+        const requestData = method === 'get' ? params : data;
+        const debugUrl = method === 'get' ? buildDebugUrl(requestUrl, params) : requestUrl;
+
+        if (url?.startsWith('/locker/')) {
+            console.log('[request] locker url:', debugUrl);
+            console.log('[request] locker method:', method);
+            console.log('[request] locker params:', params);
+            console.log('[request] locker data:', data);
+            console.log('[request] locker headers:', headers);
+        }
+
         uni.request({
-            url: BASE_URL + normalizeRequestUrl(url),
-            data: method === 'get' ? params : data,
+            url: requestUrl,
+            data: requestData,
             method: method,
             header: headers,
             // 收到开发者服务器成功返回的回调函数
             success: (res) => {
+                if (url?.startsWith('/locker/')) {
+                    console.log('[request] locker response url:', debugUrl);
+                    console.log('[request] locker response status:', res.statusCode);
+                    console.log('[request] locker response data:', res.data);
+                }
+
                 const globalErrorCodes = [401, 404, 408, 500];
 
                 // 优先处理HTTP状态码错误
@@ -138,6 +168,10 @@ const request = ({
             },
             // 接口调用失败的回调函数
             fail(error) {
+                if (url?.startsWith('/locker/')) {
+                    console.log('[request] locker fail url:', debugUrl);
+                    console.log('[request] locker fail error:', error);
+                }
                 console.log('请求错误：', error);
                 uni.showToast({
                     icon: 'none',
