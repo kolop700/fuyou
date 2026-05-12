@@ -151,7 +151,11 @@ const request = ({
                     return reject({ ...res.data, ...res, msg: errorMsg });
                 }
 
-                // 业务逻辑码处理
+                // 业务逻辑码处理。部分接口成功时直接返回 null，需要先兼容空响应体。
+                if (res.data === null || res.data === undefined) {
+                    return resolve(res.data);
+                }
+
                 const { code, Code } = res.data;
 
                 // 如果code字段不存在，也视为成功（兼容直接返回数据的接口）

@@ -31,7 +31,7 @@ export default {
         mob: phone,
         msg_info: verifyCode,
         msm_type: 0,
-        sign_appid: "wx6a5561be592cc61d"
+        sign_appid: "wxe83614305a9d58f2"
       },
       ...defaultOptions,
       ...options

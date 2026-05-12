@@ -2,8 +2,8 @@
     "name" : "福优智家",
     "appid" : "__UNI__9871F9F",
     "description" : "",
-    "versionName" : "1.0.6",
-    "versionCode" : 106,
+    "versionName" : "1.0.7",
+    "versionCode" : 107,
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {
@@ -72,22 +72,27 @@
                     "NSLocationWhenInUseUsageDescription" : "需要使用位置服务以便更好地连接蓝牙设备",
                     "NSLocalNetworkUsageDescription" : "需要访问网络来进行通讯"
                 },
-                "capabilities" : {}
+                "capabilities" : {
+                        "com.apple.developer.associated-domains" : [
+                            "applinks:fuyou.yefiot.com"
+                        ]
+                },
+                "urltypes" : "app"
             },
             "sdkConfigs" : {
                 "ad" : {},
                 "share" : {
                     "weixin" : {
                         "appid" : "wx35c997a2abfc3ab6",
-                        "UniversalLinks" : "https://xy.yefiot.com/app/"
+                        "UniversalLinks" : "https://fuyou.yefiot.com/app/"
                     }
                 },
                 "oauth" : {},
                 "payment" : {
                     "weixin" : {
-                        "__platform__" : [ "android" ],
+                        "__platform__" : [ "ios", "android" ],
                         "appid" : "wx8ea71b7e50187f1d",
-                        "UniversalLinks" : "https://xy.yefiot.com/app/"
+                        "UniversalLinks" : "https://fuyou.yefiot.com/app/"
                     }
                 }
             },

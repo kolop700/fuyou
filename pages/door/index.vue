@@ -1,9 +1,20 @@
 <template>
-  <view class="door-container" :style="{ background: theme.bgPrimary }">
+  <view
+    class="door-container"
+    :class="{ 'dark-mode': isDarkMode }"
+    :style="{ background: theme.bgPrimary }"
+  >
     <!-- 自定义导航栏 -->
     <custom-navbar title="门禁设备" />
     
-    <scroll-view class="door-content" scroll-y :style="{ paddingTop: navbarHeight + 'px' }">
+    <scroll-view
+      class="door-content"
+      scroll-y
+      :style="{ paddingTop: navbarHeight + 'px' }"
+      refresher-enabled
+      :refresher-triggered="isRefreshing"
+      @refresherrefresh="onRefresh"
+    >
       <!-- Header -->
       <view class="header-section">
         <text class="page-title" :style="{ color: theme.textPrimary }">门禁设备</text>
@@ -61,36 +72,31 @@
         </view>
         
         <!-- 设备卡片 -->
-        <view 
+        <view
           v-else
-          class="device-card" 
+          class="device-card"
+          :class="{ 'device-card-offline': !device.isOnline }"
           :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }"
-          v-for="(device, index) in filteredDeviceList" 
-          :key="index"
+          v-for="(device, index) in filteredDeviceList"
+          :key="device.door_id || device.door_mac || index"
           @click="handleQuickUnlock(device)"
         >
+          <view v-if="!device.isOnline" class="offline-rail"></view>
           <view class="device-header">
-            <view class="device-icon-wrapper" :style="{ background: device.iconGradient }">
-              <text class="iconfont" :class="device.icon" style="color: #fff; font-size: 56rpx;"></text>
+            <view class="device-icon-wrapper" :class="{ 'device-icon-offline': !device.isOnline }">
+              <text class="iconfont icon-door-closed device-icon"></text>
             </view>
             <view class="device-info">
               <view class="device-title-row">
                 <text class="device-name" :style="{ color: theme.textPrimary }">{{ device.name }}</text>
-                <view class="status-indicator" :class="device.online === '1' ? 'status-online' : 'status-offline'"></view>
+                <view class="status-pill" :class="device.isOnline ? 'status-online-pill' : 'status-offline-pill'">
+                  <view class="status-indicator" :class="device.isOnline ? 'status-online' : 'status-offline'"></view>
+                  <text class="status-pill-text">{{ device.statusText }}</text>
+                </view>
               </view>
               <text class="device-location" :style="{ color: theme.textSecondary }">{{ device.location }}</text>
             </view>
             <text class="iconfont icon-fasfa-chevron-rightCopy" :style="{ color: theme.textTertiary, fontSize: '36rpx', opacity: '0.3' }"></text>
-          </view>
-          <view class="device-stats">
-            <view class="stat-item">
-              <text class="stat-label" :style="{ color: theme.textSecondary }">信号</text>
-              <text class="stat-value" :style="{ color: theme.textPrimary }">{{ device.signal }}</text>
-            </view>
-            <view class="stat-item">
-              <text class="stat-label" :style="{ color: theme.textSecondary }">状态</text>
-              <text class="stat-value" :style="{ color: theme.textPrimary }">{{ device.online === '1' ? '在线' : '离线' }}</text>
-            </view>
           </view>
         </view>
       </view>
@@ -98,21 +104,6 @@
     
     <!-- 自定义底部标签栏 -->
     <custom-tabbar />
-
-    <!-- 开门成功弹窗 -->
-    <uni-popup ref="successPopup" type="center" :mask-click="true">
-      <view class="modal-content success-modal">
-        <view class="success-content">
-          <view class="success-icon-wrapper">
-            <text class="success-icon">✓</text>
-          </view>
-          <text class="success-title">开锁成功！</text>
-          <text class="success-device" v-if="currentDevice">{{ currentDevice.name }}</text>
-          <text class="success-method">远程开门 · 门锁已打开</text>
-          <button class="success-btn" @click="closeSuccessModal">完成</button>
-        </view>
-      </view>
-    </uni-popup>
   </view>
 </template>
 
@@ -121,6 +112,8 @@ import { ref, computed, getCurrentInstance } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import doorAccessUtils from '@/utils/doorAccessUtils'
 import { useThemeVars } from '@/utils/themeConfig.js'
+import { formatDoorDevice, sortDoorDevices } from '@/utils/deviceDisplayUtils.js'
+import { showOfflinePasswordModal, showOpenDoorFailModal } from '@/utils/offlinePasswordUtils.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
@@ -128,11 +121,12 @@ const deviceStore = proxy.$store.device.useDeviceStore()
 const themeStore = proxy.$store.theme.useThemeStore()
 
 // 主题变量
-const theme = computed(() => useThemeVars(themeStore.isDark()))
+const isDarkMode = computed(() => themeStore.isDark())
+const theme = computed(() => useThemeVars(isDarkMode.value))
 
-const successPopup = ref(null)
 const currentDevice = ref(null)
 const searchKey = ref('')
+const isRefreshing = ref(false)
 
 // 导航栏高度
 const navbarHeight = ref(0)
@@ -166,75 +160,10 @@ const deviceList = computed(() => {
   }
   
   const formattedList = deviceStore.deviceList.map((device, index) => {
-    // 拼接地址：小区名 + 单元名
-    const location = `${device.comm_name || ''}${device.unit_name || ''}`.trim() || '未知位置'
-    
-    // 判断是否为单元机：检查 unit_name 或地址中是否包含"单元"
-    const isUnitDoor = (device.unit_name && device.unit_name.includes('单元')) || 
-                       location.includes('单元')
-    
-    // 根据设备类型和索引分配不同的图标和渐变色
-    let icon, iconGradient
-    
-    if (isUnitDoor) {
-      // 单元机 - 使用建筑图标
-      const unitThemes = [
-        {
-          icon: 'icon-fasfa-building',
-          iconGradient: 'linear-gradient(135deg, #34c759 0%, #30d158 100%)'
-        },
-        {
-          icon: 'icon-fasfa-building',
-          iconGradient: 'linear-gradient(135deg, #0a84ff 0%, #0066cc 100%)'
-        },
-        {
-          icon: 'icon-fasfa-building',
-          iconGradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
-        }
-      ]
-      const theme = unitThemes[index % unitThemes.length]
-      icon = theme.icon
-      iconGradient = theme.iconGradient
-    } else {
-      // 大门机 - 使用门图标
-      const gateThemes = [
-        {
-          icon: 'icon-door-open',
-          iconGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        },
-        {
-          icon: 'icon-door-open',
-          iconGradient: 'linear-gradient(135deg, #ff9500 0%, #ff6b00 100%)'
-        },
-        {
-          icon: 'icon-door-open',
-          iconGradient: 'linear-gradient(135deg, #ff2d55 0%, #ff375f 100%)'
-        }
-      ]
-      const theme = gateThemes[index % gateThemes.length]
-      icon = theme.icon
-      iconGradient = theme.iconGradient
-    }
-    
-    // 获取该设备的开门次数
-    const openCount = getDeviceOpenCount(device.door_mac)
-    
-    return {
-      ...device,
-      name: device.door_name || '门禁设备',
-      location: location,
-      icon: icon,
-      iconGradient: iconGradient,
-      signal: device.online === '1' ? '优秀' : '离线',
-      distance: '未知',
-      todayCount: 0,
-      openCount: openCount, // 开门次数
-      isUnitDoor: isUnitDoor // 保存设备类型标识
-    }
+    return formatDoorDevice(device, index, getDeviceOpenCount)
   })
-  
-  // 按开门次数排序（从高到低）
-  return formattedList.sort((a, b) => b.openCount - a.openCount)
+
+  return sortDoorDevices(formattedList)
 })
 
 // 过滤后的设备列表（支持搜索）
@@ -247,7 +176,9 @@ const filteredDeviceList = computed(() => {
   return deviceList.value.filter(device => {
     const nameMatch = device.name.toLowerCase().includes(keyword)
     const locationMatch = device.location.toLowerCase().includes(keyword)
-    return nameMatch || locationMatch
+    const macMatch = device.door_mac?.toLowerCase().includes(keyword)
+    const codeMatch = device.shortCode?.toLowerCase().includes(keyword)
+    return nameMatch || locationMatch || macMatch || codeMatch
   })
 })
 
@@ -270,12 +201,8 @@ const handleQuickUnlock = async (device) => {
   }
   
   // 检查设备是否在线
-  if (device.online !== '1') {
-    uni.showToast({
-      title: '设备离线，无法开门',
-      icon: 'none',
-      duration: 2000
-    })
+  if (!device.isOnline) {
+    showOfflinePasswordModal(device)
     return
   }
   
@@ -297,23 +224,18 @@ const handleQuickUnlock = async (device) => {
     // 开门成功后更新开门次数
     updateDeviceOpenCount(device.door_mac)
     
-    // 显示成功弹窗
-    setTimeout(() => {
-      successPopup.value.open()
-    }, 300)
+    uni.showToast({
+      title: '开门成功',
+      icon: 'success',
+      duration: 2000
+    })
   } catch (error) {
     console.error('开门失败:', error)
     uni.hideLoading()
-    
-    // 开门失败的错误提示已经在 doorAccessUtils.openDoor 中处理
-    // 这里不再重复显示
+    showOpenDoorFailModal()
+  } finally {
+    currentDevice.value = null
   }
-}
-
-// 关闭成功弹窗
-const closeSuccessModal = () => {
-  successPopup.value.close()
-  currentDevice.value = null
 }
 
 // 广告点击
@@ -334,6 +256,32 @@ const loadDeviceList = async () => {
   // 如果设备列表为空，可以在这里重新加载
   if (deviceStore.deviceList.length === 0) {
     console.log('设备列表为空，请先在设备页面添加设备')
+  }
+}
+
+const onRefresh = async () => {
+  if (!userStore.isLogin) {
+    isRefreshing.value = false
+    return
+  }
+
+  isRefreshing.value = true
+  try {
+    await userStore.updateRoomList({ showLoading: false })
+    await loadDeviceList()
+    uni.showToast({
+      title: '刷新成功',
+      icon: 'success',
+      duration: 1000
+    })
+  } catch (error) {
+    console.log('刷新门禁设备失败:', error)
+    uni.showToast({
+      title: '刷新失败',
+      icon: 'none'
+    })
+  } finally {
+    isRefreshing.value = false
   }
 }
 
@@ -412,6 +360,10 @@ onShow(async () => {
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
 }
 
+.dark-mode .search-box {
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.28);
+}
+
 .search-input {
   flex: 1;
   font-size: 28rpx;
@@ -423,6 +375,10 @@ onShow(async () => {
 .search-placeholder {
   color: #94a3b8;
   font-size: 28rpx;
+}
+
+.dark-mode .search-placeholder {
+  color: #64748b;
 }
 
 .section {
@@ -512,12 +468,38 @@ onShow(async () => {
   margin-bottom: 32rpx;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.device-card-offline {
+  background: #f8fafc !important;
+  border-color: rgba(148, 163, 184, 0.24) !important;
+  box-shadow: 0 6rpx 20rpx rgba(100, 116, 139, 0.08) !important;
+}
+
+.dark-mode .device-card-offline {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.32) !important;
+}
+
+.offline-rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8rpx;
+  background: #94a3b8;
+}
+
+.dark-mode .offline-rail {
+  background: #64748b;
 }
 
 .device-header {
   display: flex;
   align-items: center;
-  margin-bottom: 24rpx;
 }
 
 .device-icon-wrapper {
@@ -528,29 +510,114 @@ onShow(async () => {
   align-items: center;
   justify-content: center;
   margin-right: 32rpx;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+.dark-mode .device-icon-wrapper {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.24);
+}
+
+.device-icon {
+  color: #0ea5e9;
+  font-size: 58rpx;
+}
+
+.dark-mode .device-icon {
+  color: #38bdf8;
+}
+
+.device-icon-offline {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.dark-mode .device-icon-offline {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.device-icon-offline .device-icon {
+  color: #94a3b8;
 }
 
 .device-info {
   flex: 1;
+  min-width: 0;
 }
 
 .device-title-row {
   display: flex;
   align-items: center;
+  gap: 16rpx;
   margin-bottom: 8rpx;
 }
 
 .device-name {
+  flex: 1;
+  min-width: 0;
+  display: block;
   font-size: 36rpx;
   font-weight: 600;
   color: #1e293b;
-  margin-right: 16rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-indicator {
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex-shrink: 0;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+}
+
+.status-online-pill {
+  background: rgba(52, 199, 89, 0.12);
+}
+
+.dark-mode .status-online-pill {
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.status-offline-pill {
+  background: rgba(100, 116, 139, 0.14);
+}
+
+.dark-mode .status-offline-pill {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.status-pill-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.status-online-pill .status-pill-text {
+  color: #15803d;
+}
+
+.status-offline-pill .status-pill-text {
+  color: #64748b;
+}
+
+.dark-mode .status-online-pill .status-pill-text {
+  color: #86efac;
+}
+
+.dark-mode .status-offline-pill .status-pill-text {
+  color: #cbd5e1;
 }
 
 .status-online {
@@ -559,114 +626,18 @@ onShow(async () => {
 }
 
 .status-offline {
-  background: #94a3b8;
-  box-shadow: 0 0 16rpx rgba(148, 163, 184, 0.5);
+  background: #64748b;
+  box-shadow: 0 0 16rpx rgba(100, 116, 139, 0.4);
 }
 
 .device-location {
+  display: block;
   font-size: 26rpx;
   color: #64748b;
   opacity: 0.6;
-}
-
-.device-stats {
-  display: flex;
-  gap: 24rpx;
-  padding-top: 24rpx;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-}
-
-.stat-label {
-  display: block;
-  color: #64748b;
-  font-size: 22rpx;
-  margin-bottom: 8rpx;
-}
-
-.stat-value {
-  display: block;
-  color: #1e293b;
-  font-size: 26rpx;
-  font-weight: 600;
-}
-
-// 成功弹窗
-.modal-content {
-  width: 700rpx;
-  background: white;
-  border-radius: 40rpx;
-  padding: 60rpx;
-  position: relative;
-}
-.success-modal {
-  text-align: center;
-}
-
-.success-content {
-  padding: 40rpx 0;
-}
-
-.success-icon-wrapper {
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 50%;
-  background: rgba(52, 199, 89, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.success-icon {
-  font-size: 120rpx;
-  color: #34c759;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.success-title {
-  display: block;
-  font-size: 56rpx;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 32rpx 0 16rpx;
-}
-
-.success-device {
-  display: block;
-  font-size: 32rpx;
-  color: #64748b;
-  opacity: 0.6;
-  margin-bottom: 12rpx;
-}
-
-.success-method {
-  display: block;
-  font-size: 26rpx;
-  color: #64748b;
-  opacity: 0.5;
-  margin-bottom: 60rpx;
-}
-
-.success-btn {
-  width: 100%;
-  padding: 32rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 24rpx;
-  font-size: 32rpx;
-  font-weight: 600;
-  box-shadow: 0 16rpx 40rpx rgba(102, 126, 234, 0.4);
-}
-
-.success-btn::after {
-  border: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // 空设备状态
@@ -687,6 +658,10 @@ onShow(async () => {
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
+}
+
+.dark-mode .empty-device-icon {
+  background: rgba(148, 163, 184, 0.12);
 }
 
 .empty-device-title {

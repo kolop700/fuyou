@@ -201,7 +201,7 @@ const submitApplication = async () => {
 
   try {
     const res = await proxy.$api.device.saveCourier(params)
-    if (res.code === "0") {
+    if (res === null || res?.code === "0") {
       uni.showToast({
         title: '申请已提交',
         icon: 'success'

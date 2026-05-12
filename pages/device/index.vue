@@ -1,5 +1,9 @@
 <template>
-  <view class="device-container" :style="{ background: theme.bgPrimary }">
+  <view
+    class="device-container"
+    :class="{ 'dark-mode': isDarkMode }"
+    :style="{ background: theme.bgPrimary }"
+  >
     <!-- 自定义导航栏 -->
     <custom-navbar title="我的房屋" :showBack="true" />
     
@@ -45,7 +49,11 @@
         <text class="section-title" :style="{ color: theme.textPrimary }">已认证房屋</text>
         
         <!-- 空状态 -->
-        <view v-if="deviceList.length === 0" class="empty-state">
+        <view
+          v-if="deviceList.length === 0"
+          class="empty-state"
+          :style="{ background: theme.bgCard, borderColor: theme.borderColor }"
+        >
           <view class="empty-icon">
             <text class="iconfont icon-fa-home" :style="{ color: theme.textTertiary, fontSize: '80rpx' }"></text>
           </view>
@@ -54,13 +62,19 @@
         </view>
         
         <!-- 房屋卡片 -->
-        <view v-else class="device-item" v-for="(item, index) in deviceList" :key="item.roomid">
+        <view
+          v-else
+          class="device-item"
+          :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }"
+          v-for="(item, index) in deviceList"
+          :key="item.roomid"
+        >
           <view class="device-card-bg" :class="{
             'bg-success': item.statusType === 'normal',
             'bg-warning': item.statusType === 'expired',
             'bg-error': item.statusType === 'unauthorized'
           }"></view>
-          <view class="device-content">
+          <view class="house-card-content">
             <view class="device-icon-wrapper" :class="{
               'icon-success': item.statusType === 'normal',
               'icon-warning': item.statusType === 'expired',
@@ -70,7 +84,7 @@
             </view>
             <view class="device-info">
               <view class="device-title-row">
-                <text class="device-name">{{ item.name }}</text>
+                <text class="device-name" :style="{ color: theme.textPrimary }">{{ item.name }}</text>
                 <view class="status-badge" :class="{
                   'badge-success': item.statusType === 'normal',
                   'badge-warning': item.statusType === 'expired',
@@ -83,7 +97,7 @@
               <view class="device-meta">
                 <view class="meta-item">
                   <text class="iconfont icon-fa-clock-o" style="color: #94a3b8; font-size: 24rpx; margin-right: 8rpx;"></text>
-                  <text class="meta-text">{{ item.expire_date || '未设置' }}</text>
+                  <text class="meta-text" :style="{ color: theme.textSecondary }">{{ item.expire_date || '未设置' }}</text>
                 </view>
               </view>
             </view>
@@ -95,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, onMounted, computed } from 'vue'
+import { ref, getCurrentInstance, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { useThemeVars } from '@/utils/themeConfig.js'
 
@@ -104,7 +118,8 @@ const userStore = proxy.$store.user.useUserStore()
 const themeStore = proxy.$store.theme.useThemeStore()
 
 // 主题变量
-const theme = computed(() => useThemeVars(themeStore.isDark()))
+const isDarkMode = computed(() => themeStore.isDark())
+const theme = computed(() => useThemeVars(isDarkMode.value))
 
 // 房屋列表数据
 const deviceList = ref([])
@@ -315,6 +330,10 @@ onShow(async () => {
   justify-content: center;
 }
 
+.dark-mode .header-btn-add {
+  background: rgba(56, 189, 248, 0.14);
+}
+
 .section {
   padding: 0 40rpx 48rpx;
 }
@@ -406,6 +425,10 @@ onShow(async () => {
   transition: all 0.3s;
 }
 
+.dark-mode .device-item {
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.28) !important;
+}
+
 .device-card-bg {
   position: absolute;
   top: 0;
@@ -427,7 +450,7 @@ onShow(async () => {
   background: linear-gradient(180deg, #ff3b30 0%, #ff2d55 100%);
 }
 
-.device-content {
+.house-card-content {
   padding: 32rpx;
   display: flex;
   align-items: center;
@@ -510,6 +533,10 @@ onShow(async () => {
   color: #64748b;
 }
 
+.dark-mode .meta-text {
+  color: #94a3b8;
+}
+
 .status-badge {
   display: flex;
   align-items: center;
@@ -523,12 +550,24 @@ onShow(async () => {
   background: rgba(52, 199, 89, 0.15);
 }
 
+.dark-mode .badge-success {
+  background: rgba(34, 197, 94, 0.18);
+}
+
 .badge-warning {
   background: rgba(255, 149, 0, 0.15);
 }
 
+.dark-mode .badge-warning {
+  background: rgba(255, 149, 0, 0.18);
+}
+
 .badge-error {
   background: rgba(255, 59, 48, 0.15);
+}
+
+.dark-mode .badge-error {
+  background: rgba(255, 59, 48, 0.18);
 }
 
 .status-dot {
@@ -590,6 +629,10 @@ onShow(async () => {
   border: 2rpx dashed rgba(148, 163, 184, 0.3);
 }
 
+.dark-mode .empty-state {
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.24);
+}
+
 .empty-icon {
   width: 160rpx;
   height: 160rpx;
@@ -602,12 +645,20 @@ onShow(async () => {
   position: relative;
 }
 
+.dark-mode .empty-icon {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(129, 140, 248, 0.12) 100%);
+}
+
 .empty-icon::after {
   content: '';
   position: absolute;
   inset: -8rpx;
   border-radius: 50%;
   border: 2rpx dashed rgba(102, 126, 234, 0.2);
+}
+
+.dark-mode .empty-icon::after {
+  border-color: rgba(148, 163, 184, 0.22);
 }
 
 .empty-title {

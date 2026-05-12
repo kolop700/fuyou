@@ -66,7 +66,7 @@
               :autoplay="false"
               :duration="300"
             >
-              <swiper-item v-for="(device, index) in carouselList" :key="index">
+              <swiper-item v-for="(device, index) in carouselList" :key="device.door_id || device.door_mac || device.name || index">
                 <view class="device-content-wrapper">
                   <!-- 大开门按钮 -->
                   <view 
@@ -85,13 +85,14 @@
                     <!-- 设备名称 (叠加在图片下半部分) -->
                     <view class="device-name-overlay">
                       <text class="device-name-text">{{ device.name }}</text>
+                      <text v-if="!device.isAllDevices" class="device-location-text">{{ device.location }}</text>
                     </view>
                   </view>
                   
                   <!-- 在线状态指示 -->
                   <view v-if="!device.isAllDevices" class="status-indicator">
-                    <view class="status-dot" :class="device.online === '1' ? 'online' : 'offline'"></view>
-                    <text class="status-text">{{ device.online === '1' ? '设备在线' : '设备离线' }}</text>
+                    <view class="status-dot" :class="device.isOnline ? 'online' : 'offline'"></view>
+                    <text class="status-text">{{ device.statusDetail }}</text>
                   </view>
                 </view>
               </swiper-item>
@@ -179,11 +180,13 @@
 </template>
 
 <script setup>
-import { ref, computed, getCurrentInstance, onMounted } from 'vue'
+import { ref, computed, getCurrentInstance, onMounted, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import scanUtils from '@/utils/scanUtils'
 import checkVersion from '@/pages/lq-upgrade/checkVersion.js'
 import { useThemeVars } from '@/utils/themeConfig.js'
+import { formatDoorDevice, sortDoorDevices } from '@/utils/deviceDisplayUtils.js'
+import { showOfflinePasswordModal, showOpenDoorFailModal } from '@/utils/offlinePasswordUtils.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
@@ -198,6 +201,7 @@ const deviceOpenCounts = ref({}) // 存储设备开门次数
 const currentIndex = ref(0) // 当前展示的设备索引
 const isPressed = ref(false) // 按钮按压状态
 const btnTouchStartX = ref(0) // 按钮区域触摸起始点
+const HOME_DEVICE_LIMIT = 5
 
 const openAgreementPopup = () => {
   if (!agreementPopup.value?.open) {
@@ -208,6 +212,24 @@ const openAgreementPopup = () => {
   agreementPopup.value.open()
 }
 
+// 获取设备开门次数
+const getDeviceOpenCount = (doorMac) => {
+  return deviceOpenCounts.value[doorMac] || 0
+}
+
+// 获取常用设备（按使用频率排序）
+const commonDevices = computed(() => {
+  if (!deviceStore.deviceList || deviceStore.deviceList.length === 0) {
+    return []
+  }
+
+  const formattedList = deviceStore.deviceList.map((device, index) => {
+    return formatDoorDevice(device, index, getDeviceOpenCount)
+  })
+
+  return sortDoorDevices(formattedList).slice(0, HOME_DEVICE_LIMIT)
+})
+
 // 轮播列表（常用设备 + 全部设备）
 const carouselList = computed(() => {
   const list = [...commonDevices.value]
@@ -215,7 +237,8 @@ const carouselList = computed(() => {
   list.push({
     isAllDevices: true,
     name: '全部设备',
-    online: '1' // 默认在线
+    location: '查看完整门禁列表',
+    isOnline: true
   })
   return list
 })
@@ -224,6 +247,12 @@ const carouselList = computed(() => {
 const currentDevice = computed(() => {
   if (carouselList.value.length === 0) return null
   return carouselList.value[currentIndex.value] || carouselList.value[0]
+})
+
+watch(carouselList, (list) => {
+  if (currentIndex.value >= list.length) {
+    currentIndex.value = Math.max(list.length - 1, 0)
+  }
 })
 
 // 向左切换
@@ -321,59 +350,6 @@ const loadDeviceOpenCounts = () => {
   }
 }
 
-// 获取设备开门次数
-const getDeviceOpenCount = (doorMac) => {
-  return deviceOpenCounts.value[doorMac] || 0
-}
-
-// 获取常用设备（按使用频率排序）
-const commonDevices = computed(() => {
-  if (!deviceStore.deviceList || deviceStore.deviceList.length === 0) {
-    return []
-  }
-  
-  // 格式化设备列表
-  const formattedList = deviceStore.deviceList.map((device, index) => {
-    const location = `${device.comm_name || ''}${device.unit_name || ''}`.trim() || '未知位置'
-    const isUnitDoor = (device.unit_name && device.unit_name.includes('单元')) || location.includes('单元')
-    const openCount = getDeviceOpenCount(device.door_mac)
-    
-    // 图标配置
-    let icon, iconGradient
-    if (isUnitDoor) {
-      const unitThemes = [
-        { icon: 'icon-fasfa-building', iconGradient: 'linear-gradient(135deg, #34c759 0%, #30d158 100%)' },
-        { icon: 'icon-fasfa-building', iconGradient: 'linear-gradient(135deg, #0a84ff 0%, #0066cc 100%)' },
-        { icon: 'icon-fasfa-building', iconGradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' }
-      ]
-      const theme = unitThemes[index % unitThemes.length]
-      icon = theme.icon
-      iconGradient = theme.iconGradient
-    } else {
-      const gateThemes = [
-        { icon: 'icon-door-open', iconGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-        { icon: 'icon-door-open', iconGradient: 'linear-gradient(135deg, #ff9500 0%, #ff6b00 100%)' },
-        { icon: 'icon-door-open', iconGradient: 'linear-gradient(135deg, #ff2d55 0%, #ff375f 100%)' }
-      ]
-      const theme = gateThemes[index % gateThemes.length]
-      icon = theme.icon
-      iconGradient = theme.iconGradient
-    }
-    
-    return {
-      ...device,
-      name: device.door_name || '门禁设备',
-      location: location,
-      icon: icon,
-      iconGradient: iconGradient,
-      openCount: openCount
-    }
-  })
-  
-  // 按开门次数排序
-  return formattedList.sort((a, b) => b.openCount - a.openCount)
-})
-
 // 从渐变色中提取主色调
 const getIconColor = (gradient) => {
   // 从渐变中提取第一个颜色
@@ -402,12 +378,8 @@ const handleQuickOpen = async (device) => {
   }
   
   // 检查设备是否在线
-  if (device.online !== '1') {
-    uni.showToast({
-      title: '设备离线，无法开门',
-      icon: 'none',
-      duration: 2000
-    })
+  if (!device.isOnline) {
+    showOfflinePasswordModal(device)
     return
   }
   
@@ -439,7 +411,7 @@ const handleQuickOpen = async (device) => {
   } catch (error) {
     console.error('开门失败:', error)
     uni.hideLoading()
-    // 错误已经在 doorAccessUtils 中处理
+    showOpenDoorFailModal()
   }
 }
 
@@ -1141,7 +1113,7 @@ const handleAgree = () => {
 
 .device-name-overlay {
   position: absolute;
-  bottom: 110rpx;
+  bottom: 96rpx;
   left: 0;
   right: 0;
   text-align: center;
@@ -1151,12 +1123,24 @@ const handleAgree = () => {
 }
 
 .device-name-text {
-  font-size: 36rpx;
+  font-size: 34rpx;
   font-weight: 600;
   color: #fff;
   text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.6);
   width: 100%;
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-location-text {
+  display: block;
+  width: 100%;
+  margin-top: 8rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 22rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

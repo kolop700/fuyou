@@ -134,6 +134,7 @@
 import { ref, getCurrentInstance, computed, onMounted } from 'vue'
 import { onReady, onLoad } from '@dcloudio/uni-app'
 import { useThemeVars } from '@/utils/themeConfig.js'
+import { formatDoorLocation, formatDoorName } from '@/utils/deviceDisplayUtils.js'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
@@ -185,13 +186,18 @@ const currentTime = computed(() => Date.now())
 const maxEndTime = computed(() => startDateTime.value + (3 * 24 * 60 * 60 * 1000))
 
 // 方法定义
+const getDoorDisplayName = (item = {}) => {
+  return formatDoorName(item)
+}
+
 const getDeviceList = async () => {
   try {
     const response = await deviceApi.getRemoteOpenDoorList(userStore.userId)
     if (response.data && Array.isArray(response.data)) {
       deviceList.value = response.data.map(item => ({
         id: item.door_id,
-        name: item.door_name,
+        name: getDoorDisplayName(item),
+        location: formatDoorLocation(item),
         selected: false
       }))
     }
@@ -317,7 +323,8 @@ const shareKeys = async () => {
     const response = await deviceApi.saveTempKey(params)
     if (response.code === '0') {
       // 构建提示消息
-      const message = `临时访客密码\n尊敬的访客朋友您好! 请您在规定的时间内,使用app扫描设备上的二维码并输入临时访问密钥,开启相应的通行权限。时间为${startTime}至${endTime}, 您的临时开门密码为:${doorPassword.value}`
+      const deviceLocations = selectedDevices.map(device => device.location || device.name).join('、')
+      const message = `临时访客密码\n适用位置：${deviceLocations}\n尊敬的访客朋友您好! 请您在规定的时间内,使用app扫描设备上的二维码并输入临时访问密钥,开启相应的通行权限。时间为${startTime}至${endTime}, 您的临时开门密码为:${doorPassword.value}`
       // 显示模态框
       uni.showModal({
         title: '临时访客密码',
