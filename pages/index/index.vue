@@ -51,71 +51,97 @@
 
       <!-- 有设备时显示的内容 -->
       <view v-else>
-        <!-- 常用设备 - 单个展示轮播 -->
-        <view class="section">
-          <text class="section-title">常用设备</text>
+        <!-- 常用设备 -->
+        <view class="section common-device-section">
+          <view class="section-header-row">
+            <text class="section-title">常用设备</text>
+            <view class="section-action" @tap="handleAllDevices">
+              <text>全部</text>
+              <text class="iconfont icon-fasfa-chevron-rightCopy"></text>
+            </view>
+          </view>
           
           <view class="device-carousel-wrapper">
-            <!-- 中间设备展示 (使用 Swiper 替代 Transition) -->
             <swiper 
               class="device-main-display"
               :current="currentIndex"
               @change="handleSwiperChange"
-              :circular="false"
+              :circular="carouselList.length > 1"
               :indicator-dots="false"
               :autoplay="false"
-              :duration="300"
+              :duration="260"
+              previous-margin="28rpx"
+              next-margin="28rpx"
             >
               <swiper-item v-for="(device, index) in carouselList" :key="device.door_id || device.door_mac || device.name || index">
-                <view class="device-content-wrapper">
-                  <!-- 大开门按钮 -->
-                  <view 
-                    class="door-btn-wrapper"
-                    @touchstart="handlePressStart"
-                    @touchend="handlePressEnd"
-                    @touchcancel="handlePressEnd"
-                    @click="handleDeviceAction(device)"
-                  >
-                    <image 
-                      :src="isPressed && currentIndex === index ? '/static/icons/icon_index_pressed_true.png' : '/static/icons/icon_index_pressed_false.png'" 
-                      class="door-btn-img"
-                      mode="aspectFit"
-                    ></image>
-                    
-                    <!-- 设备名称 (叠加在图片下半部分) -->
-                    <view class="device-name-overlay">
-                      <text class="device-name-text">{{ device.name }}</text>
-                      <text v-if="!device.isAllDevices" class="device-location-text">{{ device.location }}</text>
+                <view
+                  class="home-device-card"
+                  :class="{
+                    'home-device-card-all': device.isAllDevices,
+                    'home-device-card-offline': !device.isAllDevices && !device.isOnline
+                  }"
+                >
+                  <view class="home-card-glow"></view>
+                  <view class="home-device-header">
+                    <view
+                      class="home-device-icon"
+                      :class="{
+                        'home-device-icon-all': device.isAllDevices,
+                        'home-device-icon-offline': !device.isAllDevices && !device.isOnline
+                      }"
+                    >
+                      <text
+                        class="iconfont"
+                        :class="device.isAllDevices ? 'icon-door-open' : 'icon-door-closed'"
+                      ></text>
+                    </view>
+
+                    <view class="home-device-info">
+                      <text class="home-device-title">{{ device.name }}</text>
+                      <text class="home-device-location">{{ device.location }}</text>
+                    </view>
+
+                    <view
+                      v-if="!device.isAllDevices"
+                      class="home-status-chip"
+                      :class="device.isOnline ? 'home-status-online' : 'home-status-offline'"
+                    >
+                      <view class="home-status-dot"></view>
+                      <text>{{ device.statusDetail }}</text>
                     </view>
                   </view>
-                  
-                  <!-- 在线状态指示 -->
-                  <view v-if="!device.isAllDevices" class="status-indicator">
-                    <view class="status-dot" :class="device.isOnline ? 'online' : 'offline'"></view>
-                    <text class="status-text">{{ device.statusDetail }}</text>
+
+                  <view class="home-device-body">
+                    <text class="home-device-desc">
+                      {{ device.isAllDevices ? '查看和管理全部门禁设备' : device.isOnline ? '设备在线，可以远程开门' : '设备离线，可查看离线密码' }}
+                    </text>
+                    <view
+                      class="home-open-button"
+                      :class="{
+                        'home-open-button-all': device.isAllDevices,
+                        'home-open-button-offline': !device.isAllDevices && !device.isOnline
+                      }"
+                      @tap.stop="handleDeviceAction(device)"
+                    >
+                      <text
+                        class="iconfont"
+                        :class="device.isAllDevices ? 'icon-door-open' : device.isOnline ? 'icon-door-closed' : 'icon-fa-key'"
+                      ></text>
+                      <text>{{ device.isAllDevices ? '查看全部' : device.isOnline ? '一键开门' : '查看离线密码' }}</text>
+                    </view>
                   </view>
                 </view>
               </swiper-item>
             </swiper>
 
-            <!-- 左侧切换按钮 (绝对定位，支持点击和滑动) -->
-            <view 
-              class="nav-btn-side left-btn" 
-              @touchstart="handleButtonTouchStart"
-              @touchend="(e) => handleButtonTouchEnd(e, true)"
-              :class="{ disabled: currentIndex === 0 }"
-            >
-              <image src="/static/icons/icon_left_index.png" class="nav-icon-img" mode="aspectFit"></image>
-            </view>
-
-            <!-- 右侧切换按钮 (绝对定位，支持点击和滑动) -->
-            <view 
-              class="nav-btn-side right-btn" 
-              @touchstart="handleButtonTouchStart"
-              @touchend="(e) => handleButtonTouchEnd(e, false)"
-              :class="{ disabled: currentIndex >= carouselList.length - 1 }"
-            >
-              <image src="/static/icons/icon_right_index.png" class="nav-icon-img" mode="aspectFit"></image>
+            <view v-if="carouselList.length > 1" class="carousel-dots">
+              <view
+                v-for="(device, index) in carouselList"
+                :key="device.door_id || device.door_mac || device.name || index"
+                class="carousel-dot"
+                :class="{ active: currentIndex === index }"
+                @tap="setCarouselIndex(index)"
+              ></view>
             </view>
           </view>
         </view>
@@ -194,13 +220,10 @@ const deviceStore = proxy.$store.device.useDeviceStore()
 const agreementStore = proxy.$store.agreement.useAgreementStore()
 const themeStore = proxy.$store.theme.useThemeStore()
 const agreementPopup = ref(null)
-const notificationCount = ref(3)
 const roomList = ref([])
 const loading = ref(false)
 const deviceOpenCounts = ref({}) // 存储设备开门次数
 const currentIndex = ref(0) // 当前展示的设备索引
-const isPressed = ref(false) // 按钮按压状态
-const btnTouchStartX = ref(0) // 按钮区域触摸起始点
 const HOME_DEVICE_LIMIT = 5
 
 const openAgreementPopup = () => {
@@ -243,31 +266,11 @@ const carouselList = computed(() => {
   return list
 })
 
-// 当前展示的设备
-const currentDevice = computed(() => {
-  if (carouselList.value.length === 0) return null
-  return carouselList.value[currentIndex.value] || carouselList.value[0]
-})
-
 watch(carouselList, (list) => {
   if (currentIndex.value >= list.length) {
     currentIndex.value = Math.max(list.length - 1, 0)
   }
 })
-
-// 向左切换
-const handlePrev = () => {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-  }
-}
-
-// 向右切换
-const handleNext = () => {
-  if (currentIndex.value < carouselList.value.length - 1) {
-    currentIndex.value++
-  }
-}
 
 // Swiper 切换事件
 const handleSwiperChange = (e) => {
@@ -277,40 +280,8 @@ const handleSwiperChange = (e) => {
   }
 }
 
-// 按钮区域触摸处理（解决按钮遮挡滑动的问题）
-const handleButtonTouchStart = (e) => {
-  btnTouchStartX.value = e.changedTouches[0].clientX
-}
-
-const handleButtonTouchEnd = (e, isLeftBtn) => {
-  const endX = e.changedTouches[0].clientX
-  const diff = endX - btnTouchStartX.value
-  const threshold = 10 // 点击阈值
-  
-  // 如果移动距离很小，视为点击
-  if (Math.abs(diff) < threshold) {
-    if (isLeftBtn) handlePrev()
-    else handleNext()
-    return
-  }
-  
-  // 否则视为滑动
-  if (diff > 0) {
-    // 右滑 -> 上一张
-    handlePrev()
-  } else {
-    // 左滑 -> 下一张
-    handleNext()
-  }
-}
-
-// 按钮按压效果
-const handlePressStart = () => {
-  isPressed.value = true
-}
-
-const handlePressEnd = () => {
-  isPressed.value = false
+const setCarouselIndex = (index) => {
+  currentIndex.value = index
 }
 
 // 处理设备操作（开门或跳转）
@@ -348,13 +319,6 @@ const loadDeviceOpenCounts = () => {
     console.error('加载开门次数失败:', e)
     deviceOpenCounts.value = {}
   }
-}
-
-// 从渐变色中提取主色调
-const getIconColor = (gradient) => {
-  // 从渐变中提取第一个颜色
-  const match = gradient.match(/#[0-9a-fA-F]{6}/)
-  return match ? match[0] : '#667eea'
 }
 
 // 更新设备开门次数
@@ -743,14 +707,44 @@ const handleAgree = () => {
   margin: 40rpx 24rpx;
 }
 
+.common-device-section {
+  margin-top: 28rpx;
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
 .section-title {
   font-size: 36rpx;
   font-weight: 600;
   color: var(--color-support);
-  margin-bottom: 24rpx;
   padding-left: 16rpx;
   border-left: 6rpx solid var(--color-accent);
   display: block;
+}
+
+.section > .section-title {
+  margin-bottom: 24rpx;
+}
+
+.section-action {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  color: var(--color-accent);
+  background: rgba(14, 132, 255, 0.1);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.section-action .iconfont {
+  font-size: 22rpx;
 }
 
 /* 玻璃拟态卡片 */
@@ -1044,148 +1038,241 @@ const handleAgree = () => {
 .device-carousel-wrapper {
   position: relative;
   width: 100%;
-  height: 520rpx; /* 确保高度足够 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.nav-btn-side {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 80rpx;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 1;
-  transition: opacity 0.3s ease;
-  
-  &.left-btn {
-    left: 10rpx;
-  }
-  
-  &.right-btn {
-    right: 10rpx;
-  }
-  
-  &.disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-  
-  &:active {
-    transform: translateY(-50%) scale(0.9);
-  }
-}
-
-.nav-icon-img {
-  width: 60rpx;
-  height: 60rpx;
+  padding-bottom: 26rpx;
 }
 
 .device-main-display {
   width: 100%;
-  height: 100%;
+  height: 360rpx;
 }
 
-.door-btn-wrapper {
-  width: 440rpx;
-  height: 440rpx;
+.home-device-card {
+  position: relative;
+  height: 320rpx;
+  margin: 0 10rpx;
+  padding: 34rpx;
+  border-radius: 36rpx;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(37, 99, 235, 0.04) 48%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: 0 18rpx 44rpx rgba(15, 23, 42, 0.08);
+  box-sizing: border-box;
+}
+
+.dark-mode .home-device-card {
+  background:
+    linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(30, 41, 59, 0.92) 54%, rgba(15, 23, 42, 0.98) 100%);
+  box-shadow: 0 18rpx 48rpx rgba(0, 0, 0, 0.34);
+}
+
+.home-device-card-offline {
+  background:
+    linear-gradient(135deg, rgba(148, 163, 184, 0.18) 0%, rgba(248, 250, 252, 0.95) 100%);
+}
+
+.dark-mode .home-device-card-offline {
+  background:
+    linear-gradient(135deg, rgba(100, 116, 139, 0.22) 0%, rgba(15, 23, 42, 0.96) 100%);
+}
+
+.home-device-card-all {
+  background:
+    linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(14, 165, 233, 0.1) 48%, rgba(255, 255, 255, 0.92) 100%);
+}
+
+.dark-mode .home-device-card-all {
+  background:
+    linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(14, 165, 233, 0.12) 48%, rgba(15, 23, 42, 0.98) 100%);
+}
+
+.home-card-glow {
+  position: absolute;
+  right: -70rpx;
+  top: -90rpx;
+  width: 260rpx;
+  height: 260rpx;
+  border-radius: 50%;
+  background: rgba(14, 165, 233, 0.18);
+  filter: blur(2rpx);
+}
+
+.home-device-card-offline .home-card-glow {
+  background: rgba(100, 116, 139, 0.16);
+}
+
+.home-device-card-all .home-card-glow {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.home-device-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+}
+
+.home-device-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 28rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s ease;
-  margin-bottom: 24rpx;
-  position: relative;
-  
-  &:active {
-    transform: scale(0.95);
-  }
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  box-shadow: 0 16rpx 30rpx rgba(37, 99, 235, 0.28);
 }
 
-.door-btn-img {
-  width: 100%;
-  height: 100%;
-}
-
-.device-name-overlay {
-  position: absolute;
-  bottom: 96rpx;
-  left: 0;
-  right: 0;
-  text-align: center;
-  z-index: 2;
-  padding: 0 80rpx; /* 收窄文字区域，避开图片透明边缘 */
-  pointer-events: none; /* 防止文字遮挡点击 */
-}
-
-.device-name-text {
-  font-size: 34rpx;
-  font-weight: 600;
+.home-device-icon .iconfont {
   color: #fff;
-  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.6);
-  width: 100%;
+  font-size: 48rpx;
+}
+
+.home-device-icon-offline {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  box-shadow: 0 16rpx 30rpx rgba(100, 116, 139, 0.2);
+}
+
+.home-device-icon-all {
+  background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+  box-shadow: 0 16rpx 30rpx rgba(16, 185, 129, 0.24);
+}
+
+.home-device-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-device-title {
   display: block;
+  color: var(--color-support);
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.device-location-text {
+.home-device-location {
   display: block;
-  width: 100%;
   margin-top: 8rpx;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 22rpx;
-  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.5);
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.status-indicator {
+.home-status-chip {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  padding: 8rpx 20rpx;
-  background: rgba(0,0,0,0.05);
-  border-radius: 20rpx;
-  
-  .dark-mode & {
-    background: rgba(255,255,255,0.05);
-  }
+  gap: 8rpx;
+  flex-shrink: 0;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
 }
 
-.status-dot {
+.home-status-online {
+  color: #16a34a;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.home-status-offline {
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.14);
+}
+
+.dark-mode .home-status-online {
+  color: #86efac;
+}
+
+.dark-mode .home-status-offline {
+  color: #cbd5e1;
+}
+
+.home-status-dot {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  
-  &.online {
-    background-color: #34c759;
-    box-shadow: 0 0 8rpx rgba(52, 199, 89, 0.5);
-  }
-  
-  &.offline {
-    background-color: #94a3b8;
-  }
+  background: currentColor;
+  box-shadow: 0 0 10rpx currentColor;
 }
 
-.status-text {
-  font-size: 24rpx;
+.home-device-body {
+  position: relative;
+  z-index: 1;
+  margin-top: 38rpx;
+}
+
+.home-device-desc {
+  display: block;
   color: var(--color-text-secondary);
+  font-size: 26rpx;
+  margin-bottom: 24rpx;
 }
 
-.device-content-wrapper {
+.home-open-button {
+  height: 82rpx;
+  border-radius: 26rpx;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  gap: 12rpx;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  box-shadow: 0 16rpx 28rpx rgba(37, 99, 235, 0.24);
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.home-open-button:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.home-open-button .iconfont {
+  font-size: 30rpx;
+}
+
+.home-open-button-offline {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  box-shadow: 0 16rpx 28rpx rgba(71, 85, 105, 0.18);
+}
+
+.home-open-button-all {
+  background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+  box-shadow: 0 16rpx 28rpx rgba(16, 185, 129, 0.2);
+}
+
+.carousel-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+}
+
+.carousel-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 999rpx;
+  background: rgba(100, 116, 139, 0.35);
+  transition: all 0.2s ease;
+}
+
+.carousel-dot.active {
+  width: 32rpx;
+  background: var(--color-accent);
 }
 
 

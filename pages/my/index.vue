@@ -11,12 +11,12 @@
             <image v-if="userStore.avatarUrl" :src="userStore.avatarUrl" mode="aspectFill" class="avatar-img" @click="handleAvatarClick"></image>
             <text v-else class="iconfont icon-fa-user" style="font-size: 64rpx; color: white;" @click="handleAvatarClick"></text>
           </view>
-          <text class="user-name" :style="{ color: theme.textPrimary }">{{ userStore.userName || '未登录' }}</text>
+          <text class="user-name" :style="{ color: theme.textPrimary }">{{ userStore.userName || formatPhone(userStore.userAcct) }}</text>
           <text class="user-phone" :style="{ color: theme.textSecondary }">{{ formatPhone(userStore.userAcct) }}</text>
           
           <view class="user-badges">
-            <view class="badge" :style="{ background: theme.getBadgeBackground('success'), color: theme.colorSuccess }">已认证</view>
-            <view class="badge" :style="{ background: theme.getBadgeBackground('info'), color: theme.colorAccent }">业主</view>
+            <!-- <view class="badge" :style="{ background: theme.getBadgeBackground('success'), color: theme.colorSuccess }">已认证</view> -->
+            <!-- <view class="badge" :style="{ background: theme.getBadgeBackground('info'), color: theme.colorAccent }">业主</view> -->
           </view>
         </view>
         
