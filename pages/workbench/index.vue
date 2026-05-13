@@ -20,7 +20,7 @@
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">远程开门</text>
             </view>
-            <view class="feature-item" @click="handleNavigate('/pages/door/scan')">
+            <view class="feature-item" @click="handleScanCode">
               <view class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
                 <text class="iconfont icon-saoyisao"></text>
               </view>
@@ -173,25 +173,41 @@ const handleNavigate = (url) => {
   }
 }
 
+const handleScanCode = async () => {
+  if (!userStore.checkLogin()) return
+
+  const result = await scanUtils.scanQRCode()
+  if (!result) {
+    uni.showToast({
+      title: '扫码失败，请重试',
+      icon: 'none',
+      duration: 2000
+    })
+    return
+  }
+
+  uni.navigateTo({
+    url: `/pages/door/scan?device_number=${result}`
+  })
+}
+
 const getLockerIdFromScanResult = (result = '') => {
   const raw = String(result || '').trim()
   if (!raw) return ''
 
-  try {
-    const url = new URL(raw)
-    if (url.origin !== 'https://fuyou.yefiot.com') {
-      return ''
-    }
+  const match = raw.match(/^https:\/\/fuyou\.yefiot\.com\/?\?(.+)$/i)
+  if (!match) return ''
 
-    if (url.pathname !== '/' && url.pathname !== '') {
-      return ''
+  const params = match[1].split('&').reduce((acc, item) => {
+    const [key, value = ''] = item.split('=')
+    if (key) {
+      acc[decodeURIComponent(key)] = decodeURIComponent(value)
     }
+    return acc
+  }, {})
 
-    const id = url.searchParams.get('locker_id') || url.searchParams.get('lockerId') || url.searchParams.get('id') || url.searchParams.get('c')
-    return id && /^\d+$/.test(id) ? id : ''
-  } catch (error) {
-    return ''
-  }
+  const id = params.locker_id || params.lockerId || params.id || params.c
+  return id && /^\d+$/.test(id) ? id : ''
 }
 
 const handleLockerScan = async () => {

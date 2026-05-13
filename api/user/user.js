@@ -140,7 +140,7 @@ export default {
       url: BASE_API + 'getAppVer/',
       method: 'post',
       data: {
-        app_no: '2'  // 固定传入 app_no: 1
+        app_no: '1'  // 固定传入 app_no: 1
       },
       ...defaultOptions,
       ...options

@@ -16,19 +16,19 @@ export default defineConfig({
 	server: {
 		proxy: {
 			'/yefiot': {
-				target: 'http://test2.yefiot.com',
+				target: 'https://fuyou.yefiot.com',
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path
 			},
 			'/locker': {
-				target: 'http://test2.yefiot.com',
+				target: 'https://fuyou.yefiot.com',
 				changeOrigin: true,
 				secure: false,
                 rewrite: (path) => path.replace(/^\/locker/, '/api/locker')
 			},
 			'/repair': {
-				target: 'http://test2.yefiot.com',
+				target: 'https://fuyou.yefiot.com',
 				changeOrigin: true,
 				secure: false,
                 rewrite: (path) => path.replace(/^\/repair/, '/api/repair')

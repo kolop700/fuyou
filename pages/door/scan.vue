@@ -79,21 +79,28 @@ const isFormValid = computed(() => {
   return visitorPassword.value.length >= 6 && /^\d+$/.test(visitorPassword.value)
 })
 
+const setDeviceNumber = (number) => {
+  deviceNumber.value = number
+  matchedDevice.value = null
+  isDeviceFound.value = false
+  searchStatus.value = '正在搜索设备...'
+  console.log('设备号:', deviceNumber.value)
+
+  const device = deviceList.value.find(device => device.door_qr_code === deviceNumber.value)
+  if (device) {
+    matchedDevice.value = device
+  } else {
+    uni.showToast({
+      title: '未找到匹配的设备',
+      icon: 'none'
+    })
+  }
+}
+
 // 页面加载时获取设备号和查找设备
 onLoad((options) => {
   if (options.device_number) {
-    deviceNumber.value = options.device_number
-    console.log('设备号:', deviceNumber.value)
-    // 查找匹配的设备并保存
-    const device = deviceList.value.find(device => device.door_qr_code === deviceNumber.value)
-    if (device) {
-      matchedDevice.value = device
-    } else {
-      uni.showToast({
-        title: '未找到匹配的设备',
-        icon: 'none'
-      })
-    }
+    setDeviceNumber(options.device_number)
   }
   console.log('设备列表:', deviceList.value)
   console.log('匹配的设备:', matchedDevice.value)
@@ -562,4 +569,4 @@ const onAdError = (e) => {
     }
   }
 }
-</style> 
+</style>

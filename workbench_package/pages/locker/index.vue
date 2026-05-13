@@ -5,7 +5,7 @@
     
     <view class="page-content" :style="{ paddingTop: navbarHeight + 'px' }">
       <view class="header-section">
-        <text class="greeting" :style="{ color: theme.textSecondary }">欢迎您，王师傅！</text>
+        <text class="greeting" :style="{ color: theme.textSecondary }">欢迎您，{{ displayName }}！</text>
       </view>
 
       <view class="cards-grid">
@@ -57,6 +57,7 @@ import { useThemeVars } from '@/utils/themeConfig';
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
+const userStore = proxy.$store.user.useUserStore();
 // 使用主题配置，实现深色/浅色模式切换
 const theme = computed(() => {
   const vars = useThemeVars(themeStore.isDark());
@@ -99,6 +100,15 @@ const theme = computed(() => {
 
 const navbarHeight = ref(0);
 const lockerId = ref(1);
+
+const formatPhone = (phone = '') => {
+  const value = String(phone || '');
+  return /^1\d{10}$/.test(value) ? `${value.slice(0, 3)}****${value.slice(7)}` : value;
+};
+
+const displayName = computed(() => {
+  return userStore.userName || formatPhone(userStore.userAcct) || '用户';
+});
 
 onLoad((options) => {
   themeStore.loadTheme();

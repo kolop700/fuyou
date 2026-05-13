@@ -10,7 +10,40 @@ const QR_REGEX = {
   SVR: /^https?:\/\/svr\.yefiot\.com\/xy\?c=.+$/,
   NEW_FORMAT: /^https?:\/\/xy\.yefiot\.com\/public\/dl\/\?c=.+$/,
   YT_FORMAT: /^https?:\/\/svr\.yefiot\.com\/yt\?c=.+$/,
-  YULONG: /^https?:\/\/xy\.yefiot\.com\/public\/yulong\/\?c=.+$/
+  YULONG: /^https?:\/\/xy\.yefiot\.com\/public\/yulong\/\?c=.+$/,
+  FUYOU: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\bc=[^&#]+/i
+}
+
+const safeDecodeURIComponent = (value = '') => {
+  try {
+    return decodeURIComponent(value)
+  } catch (error) {
+    return value
+  }
+}
+
+const extractQueryParam = (qrString, paramName = 'c') => {
+  const raw = String(qrString || '').trim()
+  const queryStart = raw.indexOf('?')
+  if (queryStart === -1) return ''
+
+  const query = raw.slice(queryStart + 1).split('#')[0]
+  const pairs = query.split('&')
+
+  for (const pair of pairs) {
+    if (!pair) continue
+
+    const separatorIndex = pair.indexOf('=')
+    const rawKey = separatorIndex === -1 ? pair : pair.slice(0, separatorIndex)
+    const rawValue = separatorIndex === -1 ? '' : pair.slice(separatorIndex + 1)
+    const key = safeDecodeURIComponent(rawKey || '')
+
+    if (key === paramName) {
+      return safeDecodeURIComponent(rawValue || '')
+    }
+  }
+
+  return ''
 }
 
 const scanUtils = {
@@ -151,7 +184,7 @@ const scanUtils = {
   /**
    * 扫描二维码
    * @param {Object} options 配置项
-   * @param {Boolean} options.onlyFromCamera 是否只使用相机扫码，默认true
+   * @param {Boolean} options.onlyFromCamera 是否只使用相机扫码，默认false
    * @param {Array} options.scanType 扫码类型，默认['qrCode']
    * @returns {Promise<string>} 返回扫码结果，失败返回空字符串
    */
@@ -167,7 +200,7 @@ const scanUtils = {
     }
 
     const { 
-      onlyFromCamera = true, 
+      onlyFromCamera = false,
       scanType = ['qrCode']
     } = options
 
@@ -182,7 +215,8 @@ const scanUtils = {
           if (scanUtils.validateQRFormat(res.result)) {
             console.log('匹配成功:', res.result);
             // 提取参数 c 的值
-            const codeParam = res.result.split('c=')[1]
+            const codeParam = scanUtils.extractParamFromQR(res.result, 'c')
+            console.log('提取设备号:', codeParam)
             resolve(codeParam)
           } else {
             console.log('匹配失败:', res.result);
@@ -210,7 +244,7 @@ const scanUtils = {
   /**
    * 扫描二维码（不校验格式）
    * @param {Object} options 配置项
-   * @param {Boolean} options.onlyFromCamera 是否只使用相机扫码，默认true
+   * @param {Boolean} options.onlyFromCamera 是否只使用相机扫码，默认false
    * @param {Array} options.scanType 扫码类型，默认['qrCode']
    * @returns {Promise<string>} 返回扫码原始结果，失败返回空字符串
    */
@@ -226,7 +260,7 @@ const scanUtils = {
     }
 
     const { 
-      onlyFromCamera = true, 
+      onlyFromCamera = false,
       scanType = ['qrCode']
     } = options
 
@@ -257,7 +291,8 @@ const scanUtils = {
    * @returns {boolean} 是否为有效格式
    */
   validateQRFormat(qrString) {
-    return QR_REGEX.YEFIOT.test(qrString) || QR_REGEX.SVR.test(qrString) || QR_REGEX.NEW_FORMAT.test(qrString) || QR_REGEX.YT_FORMAT.test(qrString) || QR_REGEX.YULONG.test(qrString)
+    const raw = String(qrString || '').trim()
+    return QR_REGEX.YEFIOT.test(raw) || QR_REGEX.SVR.test(raw) || QR_REGEX.NEW_FORMAT.test(raw) || QR_REGEX.YT_FORMAT.test(raw) || QR_REGEX.YULONG.test(raw) || QR_REGEX.FUYOU.test(raw)
   },
 
   /**
@@ -267,13 +302,7 @@ const scanUtils = {
    * @returns {string} 参数值，未找到返回空字符串
    */
   extractParamFromQR(qrString, paramName = 'c') {
-    try {
-      const url = new URL(qrString)
-      return url.searchParams.get(paramName) || ''
-    } catch (error) {
-      console.error('URL解析失败:', error)
-      return ''
-    }
+    return extractQueryParam(qrString, paramName)
   }
 }
 
