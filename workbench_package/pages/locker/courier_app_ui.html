@@ -313,7 +313,7 @@
             </div>
             <div class="main-content pt-6 pb-8">
                 <h1 class="page-title mb-2">智能快递柜</h1>
-                <p class="text-base mb-10" style="color: var(--color-text-secondary);">欢迎您，王师傅！</p>
+                <p class="text-base mb-10" style="color: var(--color-text-secondary);">欢迎您，{{ userStore.userName || formatPhone(userStore.userAcct) }}！</p>
 
                 <div class="grid grid-cols-2 gap-4">
                     <!-- Courier Deposit -->

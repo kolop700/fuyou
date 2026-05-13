@@ -28,7 +28,7 @@ export default {
       url: '/locker/courier_begin_deposit',
       method: 'post',
       data: {
-        locker_id: LOCKER_ID,
+        locker_id: rest.locker_id || LOCKER_ID,
         tracking_no: tracking_no || tracking_number || '',
         customer_phone: customer_phone || phone || '',
         ...rest
@@ -52,7 +52,7 @@ export default {
     } = data || {}
 
     const payload = {
-      locker_id: LOCKER_ID,
+      locker_id: rest.locker_id || LOCKER_ID,
       hours: Number(hours ?? duration ?? 0),
       ...rest
     }
@@ -102,6 +102,7 @@ export default {
         openid: openid || '0',
         pick_code: pick_code || pickup_code || '',
         tracking_no: tracking_no || tracking_number || '',
+        locker_id: rest.locker_id || LOCKER_ID,
         ...rest
       },
       ...options

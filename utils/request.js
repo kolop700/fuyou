@@ -3,8 +3,7 @@ import { useUserStore } from '@/store/modules/user';
 // 根据环境设置baseURL
 const BASE_URL = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
   ? '' // 开发环境下H5使用代理
-  : 'https://fuyou.yefiot.com'; // 其他环境使用完整URL，App 端使用 HTTPS 避免明文请求被拦截
-
+  : 'http://test2.yefiot.com'; // 其他环境使用完整URL，App 端使用 HTTPS 避免明文请求被拦截 http://test2.yefiot.com   https://fuyou.yefiot.com
 // 错误代码-消息映射表
 const errorMessages = {
     401: '用户验证失败，请先登录',

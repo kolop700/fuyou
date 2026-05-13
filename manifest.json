@@ -21,7 +21,8 @@
             "Barcode" : {},
             "Bluetooth" : {},
             "Camera" : {},
-            "Payment" : {}
+            "Payment" : {},
+            "Share" : {}
         },
         /* 应用发布信息 */
         "distribute" : {
@@ -73,9 +74,7 @@
                     "NSLocalNetworkUsageDescription" : "需要访问网络来进行通讯"
                 },
                 "capabilities" : {
-                        "com.apple.developer.associated-domains" : [
-                            "applinks:fuyou.yefiot.com"
-                        ]
+                    "com.apple.developer.associated-domains" : [ "applinks:fuyou.yefiot.com" ]
                 },
                 "urltypes" : "app"
             },
@@ -83,7 +82,7 @@
                 "ad" : {},
                 "share" : {
                     "weixin" : {
-                        "appid" : "wx35c997a2abfc3ab6",
+                        "appid" : "wx8ea71b7e50187f1d",
                         "UniversalLinks" : "https://fuyou.yefiot.com/app/"
                     }
                 },

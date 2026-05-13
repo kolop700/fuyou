@@ -51,23 +51,17 @@
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">访客管理</text>
             </view>
-            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/locker/index')">
-              <view class="feature-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                <text class="iconfont icon-box"></text>
-              </view>
-              <text class="feature-name" :style="{ color: theme.textPrimary }">快递柜</text>
-            </view>
             <view class="feature-item" @click="handleNavigate('/workbench_package/pages/repair/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
                 <text class="iconfont icon-tools"></text>
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">报修服务</text>
             </view>
-            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-application/index')">
-              <view class="feature-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
-                <text class="iconfont icon-shipping-fast"></text>
+            <view class="feature-item" @click="handleCallBind">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                <text class="iconfont icon-phone"></text>
               </view>
-              <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请</text>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">呼叫绑定</text>
             </view>
             <!-- 链接到旧的"我的房屋"页面 -->
             <view class="feature-item" @click="handleNavigate('/pages/device/index')">
@@ -79,7 +73,32 @@
           </view>
         </view>
         
-        <!-- 物业服务 -->
+        <!-- 快递服务 -->
+        <view class="section">
+          <text class="section-title" :style="{ color: theme.textSecondary }">快递服务</text>
+          <view class="feature-grid">
+            <view class="feature-item" @click="handleLockerScan">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                <text class="iconfont icon-box"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">快递柜</text>
+            </view>
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-application/index')">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+                <text class="iconfont icon-shipping-fast"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请</text>
+            </view>
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-history/index')">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #34d399, #059669);">
+                <text class="iconfont icon-fa-id-card"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请记录</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 物业服务
         <view class="section">
           <text class="section-title" :style="{ color: theme.textSecondary }">物业服务</text>
           <view class="feature-grid">
@@ -101,20 +120,9 @@
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">投诉建议</text>
             </view>
-         <!--   <view class="feature-item">
-              <view class="feature-icon" style="background: linear-gradient(135deg, #84cc16, #65a30d);">
-                <text class="iconfont icon-file-invoice-dollar"></text>
-              </view>
-              <text class="feature-name" :style="{ color: theme.textPrimary }">物业缴费</text>
-            </view> -->
-            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/courier-history/index')">
-              <view class="feature-icon" style="background: linear-gradient(135deg, #34d399, #059669);">
-                <text class="iconfont icon-fa-id-card"></text>
-              </view>
-              <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请记录</text>
-            </view>
           </view>
         </view>
+        -->
       </view>
     </scroll-view>
     
@@ -127,9 +135,13 @@
 import { computed, ref } from 'vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/store/modules/theme'
+import { useUserStore } from '@/store/modules/user'
 import { useThemeVars } from '@/utils/themeConfig'
+import { openWechatCallBind } from '@/utils/wechatMiniProgramUtils'
+import scanUtils from '@/utils/scanUtils'
 
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 const theme = computed(() => useThemeVars(themeStore.isDark()))
 const navbarHeight = ref(0)
 
@@ -159,6 +171,48 @@ const handleNavigate = (url) => {
       url
     })
   }
+}
+
+const getLockerIdFromScanResult = (result = '') => {
+  const raw = String(result || '').trim()
+  if (!raw) return ''
+
+  try {
+    const url = new URL(raw)
+    if (url.origin !== 'https://fuyou.yefiot.com') {
+      return ''
+    }
+
+    if (url.pathname !== '/' && url.pathname !== '') {
+      return ''
+    }
+
+    const id = url.searchParams.get('locker_id') || url.searchParams.get('lockerId') || url.searchParams.get('id') || url.searchParams.get('c')
+    return id && /^\d+$/.test(id) ? id : ''
+  } catch (error) {
+    return ''
+  }
+}
+
+const handleLockerScan = async () => {
+  const result = await scanUtils.scanQRCodeNoValidate()
+  const lockerId = getLockerIdFromScanResult(result)
+
+  if (!lockerId) {
+    uni.showToast({
+      title: '无效的快递柜二维码',
+      icon: 'none'
+    })
+    return
+  }
+
+  uni.navigateTo({
+    url: `/workbench_package/pages/locker/index?locker_id=${lockerId}`
+  })
+}
+
+const handleCallBind = () => {
+  openWechatCallBind(userStore)
 }
 </script>
 

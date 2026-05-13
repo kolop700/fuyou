@@ -98,36 +98,40 @@ const theme = computed(() => {
 });
 
 const navbarHeight = ref(0);
+const lockerId = ref(1);
 
-onLoad(() => {
+onLoad((options) => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
-});
 
-const LOCKER_ID = 1 // 快递柜 ID，目前写死
+  const id = Number(options?.locker_id);
+  if (Number.isFinite(id) && id > 0) {
+    lockerId.value = id;
+  }
+});
 
 const handleCourierDeposit = () => {
   uni.navigateTo({
-    url: `/workbench_package/pages/locker/courier-deposit?locker_id=${LOCKER_ID}`
+    url: `/workbench_package/pages/locker/courier-deposit?locker_id=${lockerId.value}`
   });
 };
 
 const handleTempStorage = () => {
   uni.navigateTo({
-    url: `/workbench_package/pages/locker/temp-storage?locker_id=${LOCKER_ID}`
+    url: `/workbench_package/pages/locker/temp-storage?locker_id=${lockerId.value}`
   });
 };
 
 const handlePickup = () => {
   uni.navigateTo({
-    url: `/workbench_package/pages/locker/pickup?locker_id=${LOCKER_ID}`
+    url: `/workbench_package/pages/locker/pickup?locker_id=${lockerId.value}`
   });
 };
 
 const handleRecords = () => {
   uni.navigateTo({
-    url: `/workbench_package/pages/locker/storage-records?locker_id=${LOCKER_ID}`
+    url: `/workbench_package/pages/locker/storage-records?locker_id=${lockerId.value}`
   });
 };
 </script>
