@@ -1,4 +1,4 @@
-const IMAGE_BASE_URL = 'https://test2.yefiot.com/'
+const IMAGE_BASE_URL = 'https://fuyou.yefiot.com/'
 
 export const buildImageUrl = (path = '') => {
   const value = String(path || '').trim()

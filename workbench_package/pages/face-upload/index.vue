@@ -13,6 +13,12 @@ import scanUtils from '@/utils/scanUtils.js'
 
 const userStore = useUserStore()
 
+const getUploadErrorMessage = (error, fallback = '上传失败，请重试') => {
+	if (!error) return fallback
+	if (typeof error === 'string') return error
+	return error.info || error.msg || error.message || error.errMsg || fallback
+}
+
 // 页面加载时检查权限
 onMounted(async () => {
 	const permissionNames = {
@@ -32,23 +38,46 @@ onMounted(async () => {
 
 const handleCrop = async (e) => {
 	try {
+		const tempFilePath = e?.tempFilePath || ''
+		const userAcct = userStore.userAcct
+
+		console.log('[face-upload] crop event:', e)
+		console.log('[face-upload] tempFilePath:', tempFilePath)
+		console.log('[face-upload] userAcct:', userAcct)
+
+		if (!tempFilePath) {
+			uni.showToast({
+				title: '裁剪图片路径为空，请重新选择',
+				icon: 'none'
+			})
+			return
+		}
+
+		if (!userAcct) {
+			uni.showToast({
+				title: '账号信息为空，请重新登录',
+				icon: 'none'
+			})
+			return
+		}
+
 		// 显示上传中
 		uni.showLoading({
 			title: '上传中...',
 			mask: true
 		})
-		// 获取用户账号
-		const userAcct = userStore.userAcct
 
 		// 调用上传接口
 		const result = await userApi.uploadUserFacePic(
-			e.tempFilePath,
+			tempFilePath,
 			userAcct
 		)
 
+		console.log('[face-upload] upload result:', result)
+
 		if (result.code === "0") {
 			// 重新登录刷新用户信息
-			await userStore.login(null, { showLoading: false })
+			await userStore.login(null, { showLoading: false, refreshRoomList: false })
 			
 			uni.showToast({
 				title: '图片上传成功!',
@@ -62,14 +91,14 @@ const handleCrop = async (e) => {
 			}, 1500)
 		} else {
 			uni.showToast({
-				title: result.msg || '上传失败',
+				title: getUploadErrorMessage(result),
 				icon: 'none'
 			})
 		}
 	} catch (error) {
 		console.error('上传失败:', error)
 		uni.showToast({
-			title: '上传失败，请重试',
+			title: getUploadErrorMessage(error),
 			icon: 'none'
 		})
 	} finally {

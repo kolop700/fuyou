@@ -16,7 +16,7 @@ export const useUserStore = defineStore('user', () => {
   const deviceUserId = ref('') // 设备用户ID
   
   // 基础图片URL
-  const BASE_IMG_URL = 'https://xy.yefiot.com/yefiot/v1/'
+  const BASE_IMG_URL = 'https://fuyou.yefiot.com/yefiot/v1/'
   
   // 头像完整URL的计算属性
   const avatarUrl = computed(() => {
@@ -196,18 +196,19 @@ export const useUserStore = defineStore('user', () => {
     userInfo.value = data
     user_id.value = data.user_id
     console.log("广告类型", userInfo.value.ad_type_app)
-    // 清空设备列表
-    const deviceStore = useDeviceStore()
-    deviceStore.clearDeviceList()
-    
     try {
-      // 登录成功后获取房间列表
-      await updateRoomList(options)
-      
-      // 获取设备列表
-      const res = await deviceApi.getDoorList(data.user_id, options)
-      if (res.data) {
-        deviceStore.setDeviceList(res.data)
+      // 登录成功后默认刷新房间/设备列表；头像上传等场景可关闭，避免隐藏页面 swiper 被动重建。
+      if (options.refreshRoomList !== false) {
+        await updateRoomList(options)
+      }
+
+      // 默认不额外清空设备列表。updateRoomList 内部已刷新设备列表，避免 App 端 swiper 因清空再填充触发卸载异常。
+      if (options.refreshDevices === true) {
+        const deviceStore = useDeviceStore()
+        const res = await deviceApi.getDoorList(data.user_id, options)
+        if (res.data) {
+          deviceStore.setDeviceList(res.data)
+        }
       }
     } catch (error) {
       console.error('初始化数据失败:', error)

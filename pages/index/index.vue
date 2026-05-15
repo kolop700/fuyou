@@ -222,6 +222,7 @@ const themeStore = proxy.$store.theme.useThemeStore()
 const agreementPopup = ref(null)
 const roomList = ref([])
 const loading = ref(false)
+const homeDataRefreshing = ref(false)
 const deviceOpenCounts = ref({}) // 存储设备开门次数
 const currentIndex = ref(0) // 当前展示的设备索引
 const HOME_DEVICE_LIMIT = 5
@@ -488,9 +489,14 @@ const loadRoomList = async () => {
   if (!userStore.isLogin) {
     return
   }
+  if (homeDataRefreshing.value) {
+    return
+  }
   try {
+    homeDataRefreshing.value = true
     loading.value = true
-    const data = await userStore.getUserRoomList()
+    const res = await userStore.updateRoomList({ showLoading: false })
+    const data = res?.data || []
     if (Array.isArray(data)) {
       roomList.value = data
     } else {
@@ -498,8 +504,11 @@ const loadRoomList = async () => {
     }
   } catch (error) {
     console.error('获取房屋列表失败:', error)
-    roomList.value = []
+    if (roomList.value.length === 0) {
+      roomList.value = []
+    }
   } finally {
+    homeDataRefreshing.value = false
     loading.value = false
   }
 }
@@ -580,12 +589,8 @@ onShow(() => {
   
   // 页面显示时刷新数据
   if (userStore.isLogin) {
-    // 刷新房屋列表
-    if (roomList.value.length === 0) {
-      loadRoomList()
-    }
-    // 刷新设备列表（如果 store 中有相关方法）
-    // deviceStore.getDeviceList()
+    // 每次首页显示都静默刷新房屋和设备，避免认证成功后仍显示认证入口。
+    loadRoomList()
   }
 })
 

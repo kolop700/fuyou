@@ -114,22 +114,50 @@ export default {
   // 上传用户人脸图片
   uploadUserFacePic(filePath, userAcct, options = {}) {
     return new Promise((resolve, reject) => {
+      const uploadUrl = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5'
+        ? '/yefiot/v1/uploadUserFacePic/'  // 开发环境使用代理
+        : 'https://fuyou.yefiot.com/yefiot/v1/uploadUserFacePic/' // 生产环境使用完整URL
+      const uploadFilePath = (() => {
+        // APP 端压缩插件可能返回 _doc/xxx.jpg，转为系统绝对路径后 uploadFile 更稳定。
+        // #ifdef APP-PLUS
+        if (filePath && typeof plus !== 'undefined' && plus.io?.convertLocalFileSystemURL) {
+          return plus.io.convertLocalFileSystemURL(filePath)
+        }
+        // #endif
+        return filePath
+      })()
+
+      console.log('[uploadUserFacePic] url:', uploadUrl)
+      console.log('[uploadUserFacePic] filePath:', uploadFilePath)
+      console.log('[uploadUserFacePic] user:', userAcct)
+
       uni.uploadFile({
-        url: process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
-          ? '/yefiot/v1/uploadUserFacePic/'  // 开发环境使用代理
-          : 'https://xy.yefiot.com/yefiot/v1/uploadUserFacePic/', // 生产环境使用完整URL
-        filePath: filePath,
+        url: uploadUrl,
+        filePath: uploadFilePath,
         name: 'file',
         formData: {
           user: userAcct
         },
         success: (res) => {
-          // uploadFile 返回的数据是字符串，需要手动转换成对象
-          const data = JSON.parse(res.data)
-          resolve(data)
+          console.log('[uploadUserFacePic] statusCode:', res.statusCode)
+          console.log('[uploadUserFacePic] raw response:', res.data)
+
+          if (res.statusCode && res.statusCode !== 200) {
+            reject(new Error(`上传失败，HTTP ${res.statusCode}`))
+            return
+          }
+
+          try {
+            // uploadFile 返回的数据通常是字符串，需要手动转换成对象
+            const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+            resolve(data)
+          } catch (error) {
+            reject(new Error(`上传响应解析失败：${res.data || '空响应'}`))
+          }
         },
         fail: (err) => {
-          reject(err)
+          console.log('[uploadUserFacePic] fail:', err)
+          reject(new Error(err?.errMsg || '上传请求失败'))
         }
       })
     })
@@ -171,4 +199,4 @@ export default {
       ...options
     })
   }
-} 
+}
