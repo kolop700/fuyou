@@ -12,8 +12,8 @@
 
         <!-- 标题 -->
         <view class="text-section">
-          <text class="title" :style="{ color: theme.textPrimary }">请输入取件码</text>
-          <text class="subtitle" :style="{ color: theme.textSecondary }">输入取件码或快递单号以打开柜门</text>
+          <text class="title" :style="{ color: theme.textPrimary }">请输入取件信息</text>
+          <text class="subtitle" :style="{ color: theme.textSecondary }">输入取件码或快递单号任意一项即可打开柜门</text>
         </view>
 
         <!-- 输入框 -->
@@ -90,12 +90,16 @@ const getOpenId = () => {
 };
 
 const submitPickup = async () => {
-  if (!pickupCode.value || pickupCode.value.length < 4) {
-    uni.showToast({ title: '请输入有效的取件码', icon: 'none' });
+  const pickCode = String(pickupCode.value || '').trim();
+  const orderNo = String(trackingNo.value || '').trim();
+
+  if (!pickCode && !orderNo) {
+    uni.showToast({ title: '请输入取件码或快递单号', icon: 'none' });
     return;
   }
-  if (!trackingNo.value) {
-    uni.showToast({ title: '请输入快递单号', icon: 'none' });
+
+  if (pickCode && pickCode.length < 4) {
+    uni.showToast({ title: '请输入有效的取件码', icon: 'none' });
     return;
   }
 
@@ -103,8 +107,9 @@ const submitPickup = async () => {
   try {
     await proxy.$api.locker.pickup({
       openid: getOpenId(),
-      pick_code: pickupCode.value,
-      tracking_no: trackingNo.value
+      pick_code: pickCode,
+      tracking_no: orderNo,
+      locker_id: lockerId.value
     });
     uni.hideLoading();
     uni.navigateTo({
