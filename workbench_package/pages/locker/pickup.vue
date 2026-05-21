@@ -13,13 +13,36 @@
         <!-- 标题 -->
         <view class="text-section">
           <text class="title" :style="{ color: theme.textPrimary }">请输入取件信息</text>
-          <text class="subtitle" :style="{ color: theme.textSecondary }">输入取件码或快递单号任意一项即可打开柜门</text>
+          <text class="subtitle" :style="{ color: theme.textSecondary }">请选择使用取件码或快递单号开柜</text>
+        </view>
+
+        <!-- 切换栏 -->
+        <view class="segmented-control-wrapper">
+          <view class="segmented-control" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+            <view 
+              class="segment-item" 
+              :class="{ active: inputType === 'pickupCode' }"
+              @tap="inputType = 'pickupCode'"
+              :style="inputType === 'pickupCode' ? { background: theme.bgSecondary, color: theme.colorAccent, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' } : { color: theme.textSecondary }"
+            >
+              取件码
+            </view>
+            <view 
+              class="segment-item" 
+              :class="{ active: inputType === 'trackingNo' }"
+              @tap="inputType = 'trackingNo'"
+              :style="inputType === 'trackingNo' ? { background: theme.bgSecondary, color: theme.colorAccent, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' } : { color: theme.textSecondary }"
+            >
+              快递单号
+            </view>
+          </view>
         </view>
 
         <!-- 输入框 -->
         <view class="input-section">
           <view class="input-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
             <input 
+              v-if="inputType === 'pickupCode'"
               class="code-input" 
               type="text" 
               v-model="pickupCode" 
@@ -27,12 +50,8 @@
               :placeholder-style="'color: ' + theme.textTertiary"
               :style="{ color: theme.textPrimary }"
             />
-          </view>
-        </view>
-
-        <view class="input-section secondary-input">
-          <view class="input-wrapper" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
             <input 
+              v-else
               class="tracking-input" 
               type="text" 
               v-model="trackingNo" 
@@ -73,6 +92,7 @@ const navbarHeight = ref(0);
 const lockerId = ref(1); // 快递柜 ID，目前写死为 1
 const pickupCode = ref('');
 const trackingNo = ref('');
+const inputType = ref('pickupCode'); // 'pickupCode' | 'trackingNo'
 
 onLoad((options) => {
   themeStore.loadTheme();
@@ -90,31 +110,53 @@ const getOpenId = () => {
 };
 
 const submitPickup = async () => {
-  const pickCode = String(pickupCode.value || '').trim();
-  const orderNo = String(trackingNo.value || '').trim();
-
-  if (!pickCode && !orderNo) {
-    uni.showToast({ title: '请输入取件码或快递单号', icon: 'none' });
-    return;
-  }
-
-  if (pickCode && pickCode.length < 4) {
-    uni.showToast({ title: '请输入有效的取件码', icon: 'none' });
-    return;
+  let pickCode = '';
+  let orderNo = '';
+  
+  if (inputType.value === 'pickupCode') {
+    pickCode = String(pickupCode.value || '').trim();
+    if (!pickCode || pickCode.length < 4) {
+      uni.showToast({ title: '请输入有效的取件码', icon: 'none' });
+      return;
+    }
+  } else {
+    orderNo = String(trackingNo.value || '').trim();
+    if (!orderNo) {
+      uni.showToast({ title: '请输入快递单号', icon: 'none' });
+      return;
+    }
   }
 
   uni.showLoading({ title: '验证中...' });
   try {
-    await proxy.$api.locker.pickup({
-      openid: getOpenId(),
-      pick_code: pickCode,
-      tracking_no: orderNo,
-      locker_id: lockerId.value
+    const res = await proxy.$api.locker.pickup({
+      pickup_code: pickCode,
+      tracking_no: orderNo
     });
     uni.hideLoading();
-    uni.navigateTo({
-      url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&mode=pickup`
-    });
+    
+    // 检查是否返回了支付参数 (如 prepayId) 说明需要支付超时费用
+    if (res && res.prepayId) {
+      uni.showModal({
+        title: '支付超时费用',
+        content: '您的包裹已产生超时费用，需支付后方可开柜',
+        confirmText: '去支付',
+        success: (modalRes) => {
+          if (modalRes.confirm) {
+            // 模拟获取金额，实际可根据后端返回字段(如 res.amount)调整
+            const amount = res.fee_amount || '2.00'; 
+            uni.navigateTo({
+              url: `/workbench_package/pages/payment/cashier?amount=${amount}&compt_record_no=${res.compt_record_no || ''}`
+            });
+          }
+        }
+      });
+    } else {
+      // 无需支付，直接开柜
+      uni.navigateTo({
+        url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&mode=pickup`
+      });
+    }
   } catch (e) {
     uni.hideLoading();
     uni.showToast({ title: e?.msg || '取件码错误，请重试', icon: 'none' });
@@ -170,13 +212,32 @@ const submitPickup = async () => {
   display: block;
 }
 
+/* 顶部切换栏 */
+.segmented-control-wrapper {
+  width: 100%;
+  margin-bottom: 48rpx;
+}
+
+.segmented-control {
+  display: flex;
+  border-radius: 24rpx;
+  padding: 8rpx;
+  border: 1px solid transparent;
+}
+
+.segment-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 18rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
 .input-section {
   width: 100%;
   margin-bottom: 64rpx;
-}
-
-.secondary-input {
-  margin-top: -24rpx;
 }
 
 .input-wrapper {

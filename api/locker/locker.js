@@ -90,20 +90,15 @@ export default {
       pickup_code,
       pick_code,
       tracking_number,
-      tracking_no,
-      openid,
-      ...rest
+      tracking_no
     } = data || {}
 
     return request({
       url: '/locker/pickup',
       method: 'post',
       data: {
-        openid: openid || '0',
-        pick_code: pick_code || pickup_code || '',
-        tracking_no: tracking_no || tracking_number || '',
-        locker_id: rest.locker_id || LOCKER_ID,
-        ...rest
+        pickup_code: pickup_code || pick_code || '',
+        tracking_no: tracking_no || tracking_number || ''
       },
       ...options
     })
