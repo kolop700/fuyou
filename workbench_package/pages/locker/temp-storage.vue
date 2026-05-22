@@ -79,10 +79,14 @@
     </view>
 
     <!-- 支付确认弹窗 -->
-    <view class="modal-overlay" v-if="showPaymentConfirm"></view>
+    <view class="modal-overlay" v-if="showPaymentConfirm" @touchmove.stop.prevent></view>
     <view class="confirm-modal" :class="{ 'modal-show': showPaymentConfirm }" :style="{ background: theme.bgCard }">
       <view class="modal-header">
+        <text class="placeholder" style="width: 48rpx;"></text>
         <text class="modal-title" :style="{ color: theme.textPrimary }">确认支付状态</text>
+        <view @tap="closePaymentConfirm" style="padding: 10rpx;">
+          <uni-icons type="closeempty" size="24" :color="theme.textSecondary"></uni-icons>
+        </view>
       </view>
       
       <view class="modal-body">
@@ -380,6 +384,11 @@ const cancelPayment = async () => {
   }
 };
 
+const closePaymentConfirm = () => {
+  stopPolling();
+  showPaymentConfirm.value = false;
+};
+
 const checkPaymentStatus = async (showLoader = true) => {
   // 注意如果是在模板中绑定的 @tap="checkPaymentStatus"，默认参数 event 是一个对象，会导致 showLoader 变为 true，这是符合预期的
   const isShowLoader = typeof showLoader === 'boolean' ? showLoader : true;
@@ -632,7 +641,7 @@ const checkPaymentStatus = async (showLoader = true) => {
 
 .modal-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   padding: 32rpx;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
@@ -641,6 +650,8 @@ const checkPaymentStatus = async (showLoader = true) => {
 .modal-title {
   font-size: 34rpx;
   font-weight: 600;
+  flex: 1;
+  text-align: center;
 }
 
 .modal-body {

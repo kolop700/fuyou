@@ -74,11 +74,76 @@
         </view>
       </view>
     </view>
+
+    <!-- 超时支付提示弹窗 -->
+    <view class="modal-overlay" v-if="showPaymentModal" @touchmove.stop.prevent></view>
+    <view class="custom-modal" :class="{ 'modal-show': showPaymentModal }" :style="{ background: theme.bgCard }">
+      <!-- 弹窗关闭按钮 -->
+      <view class="modal-close-btn" @tap="showPaymentModal = false">
+        <uni-icons type="closeempty" size="24" :color="theme.textTertiary"></uni-icons>
+      </view>
+      
+      <view class="modal-icon-wrapper" :style="{ background: theme.getBadgeBackground('warning') }">
+        <text class="iconfont icon-a-fasfa-info-circle" :style="{ color: theme.colorWarning }"></text>
+      </view>
+      <text class="modal-title" :style="{ color: theme.textPrimary }">支付超时费用</text>
+      <text class="modal-content" :style="{ color: theme.textSecondary }">您的包裹已产生超时费用，需支付后方可开柜</text>
+      
+      <view class="modal-actions">
+        <button 
+          class="btn-cancel" 
+          :style="{ background: theme.bgSecondary, color: theme.textSecondary }"
+          @tap="showPaymentModal = false"
+        >
+          取消
+        </button>
+        <button 
+          class="btn-confirm" 
+          :style="{ background: theme.colorAccentGradient, color: '#fff', boxShadow: theme.shadowButton }"
+          @tap="goToPayment"
+        >
+          去支付
+        </button>
+      </view>
+    </view>
+
+    <!-- 支付确认弹窗 (与临时存货一致) -->
+    <view class="modal-overlay" v-if="showPaymentConfirm" @touchmove.stop.prevent></view>
+    <view class="confirm-modal" :class="{ 'modal-show': showPaymentConfirm }" :style="{ background: theme.bgCard }">
+      <view class="modal-header">
+        <text class="placeholder" style="width: 48rpx;"></text>
+        <text class="modal-title" :style="{ color: theme.textPrimary }">确认支付状态</text>
+        <view @tap="closePaymentConfirm" style="padding: 10rpx;">
+          <uni-icons type="closeempty" size="24" :color="theme.textSecondary"></uni-icons>
+        </view>
+      </view>
+      
+      <view class="modal-body">
+        <text class="modal-desc" :style="{ color: theme.textSecondary }">请在微信/支付宝内完成支付，支付成功后点击下方按钮确认。</text>
+      </view>
+      
+      <view class="modal-footer">
+        <button 
+          class="btn-cancel" 
+          :style="{ background: theme.bgSecondary, color: theme.textSecondary }"
+          @tap="cancelPayment"
+        >
+          重新支付
+        </button>
+        <button 
+          class="btn-confirm" 
+          :style="{ background: theme.colorAccentGradient, color: '#fff' }"
+          @tap="checkPaymentStatus"
+        >
+          已完成支付
+        </button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, getCurrentInstance } from 'vue';
+import { ref, computed, getCurrentInstance, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useThemeStore } from '@/store/modules/theme';
 import { useThemeVars } from '@/utils/themeConfig';
@@ -93,6 +158,22 @@ const lockerId = ref(1); // 快递柜 ID，目前写死为 1
 const pickupCode = ref('');
 const trackingNo = ref('');
 const inputType = ref('pickupCode'); // 'pickupCode' | 'trackingNo'
+const showPaymentModal = ref(false);
+const pendingPaymentInfo = ref(null);
+
+const showPaymentConfirm = ref(false);
+let pollTimer = null;
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+};
+
+onUnmounted(() => {
+  stopPolling();
+});
 
 onLoad((options) => {
   themeStore.loadTheme();
@@ -137,20 +218,8 @@ const submitPickup = async () => {
     
     // 检查是否返回了支付参数 (如 prepayId) 说明需要支付超时费用
     if (res && res.prepayId) {
-      uni.showModal({
-        title: '支付超时费用',
-        content: '您的包裹已产生超时费用，需支付后方可开柜',
-        confirmText: '去支付',
-        success: (modalRes) => {
-          if (modalRes.confirm) {
-            // 模拟获取金额，实际可根据后端返回字段(如 res.amount)调整
-            const amount = res.fee_amount || '2.00'; 
-            uni.navigateTo({
-              url: `/workbench_package/pages/payment/cashier?amount=${amount}&compt_record_no=${res.compt_record_no || ''}`
-            });
-          }
-        }
-      });
+      pendingPaymentInfo.value = res;
+      showPaymentModal.value = true;
     } else {
       // 无需支付，直接开柜
       uni.navigateTo({
@@ -160,6 +229,184 @@ const submitPickup = async () => {
   } catch (e) {
     uni.hideLoading();
     uni.showToast({ title: e?.msg || '取件码错误，请重试', icon: 'none' });
+  }
+};
+
+const invokePayment = (paymentInfo) => {
+  return new Promise((resolve, reject) => {
+    const orderInfo = {
+      appid: paymentInfo?.appId || '',
+      partnerid: paymentInfo?.partnerId || '',
+      prepayid: paymentInfo?.prepayId || '',
+      package: paymentInfo?.packageValue || 'Sign=WXPay',
+      noncestr: paymentInfo?.nonceStr || '',
+      timestamp: String(paymentInfo?.timestamp || ''),
+      sign: paymentInfo?.sign || ''
+    };
+
+    console.log('[pickup] requestPayment orderInfo:', orderInfo);
+
+    // #ifdef APP-PLUS
+    uni.requestPayment({
+      provider: 'wxpay',
+      orderInfo,
+      success: (res) => {
+        console.log('[pickup] requestPayment success:', res);
+        resolve(res);
+      },
+      fail: (error) => {
+        console.log('[pickup] requestPayment fail:', error);
+        reject(error);
+      }
+    });
+    // #endif
+
+    // #ifndef APP-PLUS
+    reject(new Error('当前平台不支持直接调用微信支付'));
+    // #endif
+  });
+};
+
+const startPolling = () => {
+  stopPolling();
+  pollTimer = setInterval(async () => {
+    if (showPaymentConfirm.value) {
+      await checkPaymentStatus(false);
+    } else {
+      stopPolling();
+    }
+  }, 2000);
+};
+
+const getTargetRecord = (res) => {
+  const items = Array.isArray(res?.items) ? res.items : [];
+  return items.find(item => item?.compt_record_no === pendingPaymentInfo.value?.compt_record_no) || items[0] || null;
+};
+
+const normalizePayStatus = (status) => {
+  if (!status) return '';
+  if (typeof status === 'object') {
+    if (status.value !== undefined && status.value !== null) {
+      return String(status.value).trim();
+    }
+    if (status.label) {
+      return String(status.label).match(/[0-4]/)?.[0] || '';
+    }
+    return '';
+  }
+  return String(status).match(/[0-4]/)?.[0] || String(status).trim();
+};
+
+const goToPayment = async () => {
+  showPaymentModal.value = false;
+  if (!pendingPaymentInfo.value) return;
+
+  showPaymentConfirm.value = true;
+  startPolling();
+
+  try {
+    await invokePayment(pendingPaymentInfo.value);
+  } catch (e) {
+    console.log('前端支付接口回调未成功:', e);
+  }
+};
+
+const cancelPayment = async () => {
+  stopPolling();
+  if (!pendingPaymentInfo.value?.compt_record_no) return;
+
+  uni.showLoading({ title: '正在确认状态...' });
+  try {
+    const res = await proxy.$api.locker.qryComptRecord({
+      page: 1,
+      size: 50,
+      compt_record_no: pendingPaymentInfo.value.compt_record_no,
+      bill_id: 0
+    }, { showLoading: false });
+    
+    const record = getTargetRecord(res);
+    const payStatus = normalizePayStatus(record?.storage_pay_sta);
+    
+    uni.hideLoading();
+
+    if (payStatus === '2') {
+      uni.showToast({ title: '您已支付成功', icon: 'success' });
+      setTimeout(() => {
+        uni.redirectTo({
+          url: `/workbench_package/pages/locker/deposit-success?mode=pickup&compt_record_no=${encodeURIComponent(pendingPaymentInfo.value.compt_record_no)}`
+        });
+      }, 1000);
+      return;
+    }
+
+    showPaymentConfirm.value = true;
+    startPolling();
+
+    try {
+      await invokePayment(pendingPaymentInfo.value);
+    } catch (e) {
+      console.log('[pickup] retry requestPayment fail:', e);
+    }
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: '状态确认失败，请重试', icon: 'none' });
+  }
+};
+
+const closePaymentConfirm = () => {
+  stopPolling();
+  showPaymentConfirm.value = false;
+};
+
+const checkPaymentStatus = async (showLoader = true) => {
+  const isShowLoader = typeof showLoader === 'boolean' ? showLoader : true;
+  if (!pendingPaymentInfo.value?.compt_record_no) return;
+  
+  if (isShowLoader) {
+    uni.showLoading({ title: '正在确认...' });
+  }
+  
+  try {
+    const res = await proxy.$api.locker.qryComptRecord({
+      page: 1,
+      size: 50,
+      compt_record_no: pendingPaymentInfo.value.compt_record_no,
+      bill_id: 0
+    }, { showLoading: false });
+    
+    const record = getTargetRecord(res);
+    const payStatus = normalizePayStatus(record?.storage_pay_sta);
+    
+    if (isShowLoader) {
+      uni.hideLoading();
+    }
+    
+    if (payStatus === '2') {
+      stopPolling();
+      showPaymentConfirm.value = false;
+      if (isShowLoader) {
+        uni.showToast({ title: '支付成功', icon: 'success' });
+      }
+      setTimeout(() => {
+        uni.redirectTo({
+          url: `/workbench_package/pages/locker/deposit-success?mode=pickup&compt_record_no=${encodeURIComponent(pendingPaymentInfo.value.compt_record_no)}`
+        });
+      }, isShowLoader ? 1000 : 0);
+    } else {
+      if (isShowLoader) {
+        uni.showToast({
+          title: '尚未查询到支付成功状态，请稍后再试',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    }
+  } catch (e) {
+    console.log('[pickup] checkPaymentStatus error:', e);
+    if (isShowLoader) {
+      uni.hideLoading();
+      uni.showToast({ title: '查询状态失败，请重试', icon: 'none' });
+    }
   }
 };
 </script>
@@ -285,5 +532,166 @@ const submitPickup = async () => {
 .action-btn:active {
   transform: scale(0.98);
   opacity: 0.9;
+}
+
+/* 自定义弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.custom-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 600rpx;
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1001;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.1);
+}
+
+.custom-modal.modal-show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 0.2s ease;
+}
+
+.modal-close-btn:active {
+  opacity: 0.6;
+}
+
+.modal-close-btn .iconfont {
+  font-size: 40rpx;
+}
+
+.modal-icon-wrapper {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+.modal-icon-wrapper .iconfont {
+  font-size: 48rpx;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.modal-content {
+  font-size: 28rpx;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 48rpx;
+}
+
+.modal-actions {
+  width: 100%;
+  display: flex;
+  gap: 24rpx;
+}
+
+.btn-cancel, .btn-confirm {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 24rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+
+.btn-cancel:active, .btn-confirm:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 支付确认弹窗 (底部) */
+.confirm-modal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 32rpx 32rpx 0 0;
+  z-index: 1001;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.confirm-modal.modal-show {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+
+.modal-desc {
+  font-size: 30rpx;
+  line-height: 1.6;
+}
+
+.modal-body {
+  padding: 64rpx 48rpx;
+  text-align: center;
+}
+
+.modal-footer {
+  display: flex;
+  padding: 32rpx;
+  gap: 24rpx;
 }
 </style>
