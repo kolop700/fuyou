@@ -222,9 +222,10 @@ const submitPickup = async () => {
       showPaymentModal.value = true;
     } else {
       // 无需支付，直接开柜
-      uni.navigateTo({
-        url: `/workbench_package/pages/locker/deposit-success?locker_id=${lockerId.value}&mode=pickup`
-      });
+      uni.showToast({ title: '开柜成功', icon: 'success' });
+      setTimeout(() => {
+        uni.navigateBack();
+      }, 1000);
     }
   } catch (e) {
     uni.hideLoading();
@@ -325,16 +326,15 @@ const cancelPayment = async () => {
     }, { showLoading: false });
     
     const record = getTargetRecord(res);
-    const payStatus = normalizePayStatus(record?.storage_pay_sta);
+    // 取件超时支付看的是 pickup_pay_sta 字段
+    const payStatus = normalizePayStatus(record?.pickup_pay_sta);
     
     uni.hideLoading();
 
     if (payStatus === '2') {
-      uni.showToast({ title: '您已支付成功', icon: 'success' });
+      uni.showToast({ title: '支付成功，开柜成功', icon: 'success' });
       setTimeout(() => {
-        uni.redirectTo({
-          url: `/workbench_package/pages/locker/deposit-success?mode=pickup&compt_record_no=${encodeURIComponent(pendingPaymentInfo.value.compt_record_no)}`
-        });
+        uni.navigateBack();
       }, 1000);
       return;
     }
@@ -375,7 +375,8 @@ const checkPaymentStatus = async (showLoader = true) => {
     }, { showLoading: false });
     
     const record = getTargetRecord(res);
-    const payStatus = normalizePayStatus(record?.storage_pay_sta);
+    // 取件超时支付看的是 pickup_pay_sta 字段
+    const payStatus = normalizePayStatus(record?.pickup_pay_sta);
     
     if (isShowLoader) {
       uni.hideLoading();
@@ -385,12 +386,10 @@ const checkPaymentStatus = async (showLoader = true) => {
       stopPolling();
       showPaymentConfirm.value = false;
       if (isShowLoader) {
-        uni.showToast({ title: '支付成功', icon: 'success' });
+        uni.showToast({ title: '支付成功，开柜成功', icon: 'success' });
       }
       setTimeout(() => {
-        uni.redirectTo({
-          url: `/workbench_package/pages/locker/deposit-success?mode=pickup&compt_record_no=${encodeURIComponent(pendingPaymentInfo.value.compt_record_no)}`
-        });
+        uni.navigateBack();
       }, isShowLoader ? 1000 : 0);
     } else {
       if (isShowLoader) {
