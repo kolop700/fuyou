@@ -109,7 +109,7 @@
 
 <script setup>
 import { ref, computed, getCurrentInstance } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import doorAccessUtils from '@/utils/doorAccessUtils'
 import { useThemeVars } from '@/utils/themeConfig.js'
 import { formatDoorDevice, sortDoorDevices } from '@/utils/deviceDisplayUtils.js'
@@ -127,18 +127,29 @@ const theme = computed(() => useThemeVars(isDarkMode.value))
 const currentDevice = ref(null)
 const searchKey = ref('')
 const isRefreshing = ref(false)
+const deviceOpenCounts = ref({}) // 新增响应式的开门次数
 
 // 导航栏高度
 const navbarHeight = ref(0)
 
-// 获取设备开门次数
-const getDeviceOpenCount = (doorMac) => {
+// 加载设备开门次数
+const loadDeviceOpenCounts = () => {
   try {
     const counts = uni.getStorageSync('device_open_counts') || {}
-    return counts[doorMac] || 0
+    deviceOpenCounts.value = counts
   } catch (e) {
-    return 0
+    deviceOpenCounts.value = {}
   }
+}
+
+// 监听开门次数更新事件
+uni.$on('deviceOpenCountUpdated', () => {
+  loadDeviceOpenCounts()
+})
+
+// 获取设备开门次数
+const getDeviceOpenCount = (doorMac) => {
+  return deviceOpenCounts.value[doorMac] || 0
 }
 
 // 更新设备开门次数
@@ -147,6 +158,8 @@ const updateDeviceOpenCount = (doorMac) => {
     const counts = uni.getStorageSync('device_open_counts') || {}
     counts[doorMac] = (counts[doorMac] || 0) + 1
     uni.setStorageSync('device_open_counts', counts)
+    deviceOpenCounts.value = { ...counts } // 同步更新响应式数据，触发重新计算和排序
+    uni.$emit('deviceOpenCountUpdated') // 通知其他页面
     console.log('开门次数已更新:', doorMac, counts[doorMac])
   } catch (e) {
     console.error('更新开门次数失败:', e)
@@ -160,7 +173,8 @@ const deviceList = computed(() => {
   }
   
   const formattedList = deviceStore.deviceList.map((device, index) => {
-    return formatDoorDevice(device, index, getDeviceOpenCount)
+    // 门禁列表页面不按开门次数排序，传入 0 作为开门次数
+    return formatDoorDevice(device, index, () => 0)
   })
 
   return sortDoorDevices(formattedList)
@@ -287,6 +301,10 @@ onLoad(async () => {
   // 计算导航栏高度
   const systemInfo = uni.getSystemInfoSync()
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
+  
+  // 加载开门次数
+  loadDeviceOpenCounts()
+  
   // 只加载数据，不检查登录跳转
   await loadDeviceList()
 })
@@ -300,6 +318,8 @@ onShow(async () => {
   // 页面显示时刷新设备列表和房屋列表
   if (userStore.isLogin) {
     try {
+      // 加载开门次数
+      loadDeviceOpenCounts()
       // 刷新用户房屋列表和设备列表
       await userStore.updateRoomList({ showLoading: false })
     } catch (error) {
@@ -307,6 +327,10 @@ onShow(async () => {
     }
     await loadDeviceList()
   }
+})
+
+onUnload(() => {
+  uni.$off('deviceOpenCountUpdated')
 })
 </script>
 

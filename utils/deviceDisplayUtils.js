@@ -84,8 +84,11 @@ export const formatDoorDevice = (device, index, getDeviceOpenCount = () => 0) =>
 
 export const sortDoorDevices = (devices = []) => {
   return [...devices].sort((a, b) => {
-    if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1
+    // 优先按开门次数从大到小排序
     if (b.openCount !== a.openCount) return b.openCount - a.openCount
+    // 开门次数相同时，在线的排在前面
+    if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1
+    // 最后按心跳时间排序
     return (b.door_last_heart_beat || '').localeCompare(a.door_last_heart_beat || '')
   })
 }

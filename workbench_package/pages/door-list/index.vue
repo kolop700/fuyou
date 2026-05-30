@@ -224,6 +224,17 @@ const handleDeviceClick = async (device) => {
       const success = await doorAccessUtils.openDoor(device)
       if (success) {
         console.log('开门成功:', device)
+        // 更新开门次数
+        try {
+          const counts = uni.getStorageSync('device_open_counts') || {}
+          counts[device.door_mac] = (counts[device.door_mac] || 0) + 1
+          uni.setStorageSync('device_open_counts', counts)
+          // 触发全局事件通知其他页面更新
+          uni.$emit('deviceOpenCountUpdated')
+        } catch (e) {
+          console.error('更新开门次数失败:', e)
+        }
+        
         // 开门成功后展示广告
         try {
           // 先尝试展示激励广告

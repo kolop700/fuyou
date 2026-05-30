@@ -73,7 +73,7 @@
               previous-margin="28rpx"
               next-margin="28rpx"
             >
-              <swiper-item v-for="(device, index) in carouselList" :key="device.door_id || device.door_mac || device.name || index">
+              <swiper-item v-for="(device, index) in carouselList" :key="device.door_mac || device.door_id || index">
                 <view
                   class="home-device-card"
                   :class="{
@@ -137,7 +137,7 @@
             <view v-if="carouselList.length > 1" class="carousel-dots">
               <view
                 v-for="(device, index) in carouselList"
-                :key="device.door_id || device.door_mac || device.name || index"
+                :key="device.door_mac || device.door_id || index"
                 class="carousel-dot"
                 :class="{ active: currentIndex === index }"
                 @tap="setCarouselIndex(index)"
@@ -207,7 +207,7 @@
 
 <script setup>
 import { ref, computed, getCurrentInstance, onMounted, watch } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import scanUtils from '@/utils/scanUtils'
 import checkVersion from '@/pages/lq-upgrade/checkVersion.js'
 import { useThemeVars } from '@/utils/themeConfig.js'
@@ -262,7 +262,8 @@ const carouselList = computed(() => {
     isAllDevices: true,
     name: '全部设备',
     location: '查看完整门禁列表',
-    isOnline: true
+    isOnline: true,
+    door_id: 'all_devices_special_key' // 增加唯一标识，避免重复渲染时无 key
   })
   return list
 })
@@ -322,12 +323,19 @@ const loadDeviceOpenCounts = () => {
   }
 }
 
+// 监听开门次数更新事件
+uni.$on('deviceOpenCountUpdated', () => {
+  loadDeviceOpenCounts()
+})
+
 // 更新设备开门次数
 const updateDeviceOpenCount = (doorMac) => {
   try {
     const counts = uni.getStorageSync('device_open_counts') || {}
     counts[doorMac] = (counts[doorMac] || 0) + 1
     uni.setStorageSync('device_open_counts', counts)
+    deviceOpenCounts.value = { ...counts } // 同步更新响应式数据，触发重新计算和排序
+    uni.$emit('deviceOpenCountUpdated') // 通知其他页面
   } catch (e) {
     console.error('更新开门次数失败:', e)
   }
@@ -559,12 +567,7 @@ const checkFirstOpen = () => {
 
 // 页面生命周期
 onLoad(() => {
-  // #ifdef APP-PLUS
-  navbarHeight.value = uni.getSystemInfoSync().statusBarHeight + 44
-  // #endif
-  // #ifdef H5
-  navbarHeight.value = 44
-  // #endif
+  navbarHeight.value = (uni.getSystemInfoSync().statusBarHeight || 0) + 44
   
   // 检查版本更新
   // #ifdef APP-PLUS
@@ -587,9 +590,15 @@ onShow(() => {
   
   // 页面显示时刷新数据
   if (userStore.isLogin) {
+    // 加载开门次数
+    loadDeviceOpenCounts()
     // 每次首页显示都静默刷新房屋和设备，避免认证成功后仍显示认证入口。
     loadRoomList()
   }
+})
+
+onUnload(() => {
+  uni.$off('deviceOpenCountUpdated')
 })
 
 // 处理不同意协议
