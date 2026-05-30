@@ -229,7 +229,7 @@ const submitPickup = async () => {
     }
   } catch (e) {
     uni.hideLoading();
-    uni.showToast({ title: e?.msg || '取件码错误，请重试', icon: 'none' });
+    uni.showToast({ title: e?.msg || e?.detail || e?.message || '取件码错误，请重试', icon: 'none' });
   }
 };
 

@@ -11,7 +11,8 @@ const QR_REGEX = {
   NEW_FORMAT: /^https?:\/\/xy\.yefiot\.com\/public\/dl\/\?c=.+$/,
   YT_FORMAT: /^https?:\/\/svr\.yefiot\.com\/yt\?c=.+$/,
   YULONG: /^https?:\/\/xy\.yefiot\.com\/public\/yulong\/\?c=.+$/,
-  FUYOU: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\bc=[^&#]+/i
+  FUYOU_DOOR: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\bc=[^&#]+/i,
+  FUYOU_LOCKER: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\blocker_mac=[^&#]+/i
 }
 
 const safeDecodeURIComponent = (value = '') => {
@@ -47,6 +48,21 @@ const extractQueryParam = (qrString, paramName = 'c') => {
 }
 
 const scanUtils = {
+  isDoorQRCode(qrString) {
+    const raw = String(qrString || '').trim()
+    return QR_REGEX.YEFIOT.test(raw)
+      || QR_REGEX.SVR.test(raw)
+      || QR_REGEX.NEW_FORMAT.test(raw)
+      || QR_REGEX.YT_FORMAT.test(raw)
+      || QR_REGEX.YULONG.test(raw)
+      || QR_REGEX.FUYOU_DOOR.test(raw)
+  },
+
+  isLockerQRCode(qrString) {
+    const raw = String(qrString || '').trim()
+    return QR_REGEX.FUYOU_LOCKER.test(raw)
+  },
+
   /**
    * 检查并申请权限
    * @returns {Promise<boolean>} 是否获得所有权限
@@ -218,6 +234,13 @@ const scanUtils = {
             const codeParam = scanUtils.extractParamFromQR(res.result, 'c')
             console.log('提取设备号:', codeParam)
             resolve(codeParam)
+          } else if (scanUtils.isLockerQRCode(res.result)) {
+            uni.showToast({
+              title: '这是快递柜二维码，请从快递柜入口进入',
+              icon: 'none',
+              duration: 2200
+            })
+            resolve('')
           } else {
             console.log('匹配失败:', res.result);
             // 如果二维码格式不正确，返回空字符串
@@ -291,8 +314,7 @@ const scanUtils = {
    * @returns {boolean} 是否为有效格式
    */
   validateQRFormat(qrString) {
-    const raw = String(qrString || '').trim()
-    return QR_REGEX.YEFIOT.test(raw) || QR_REGEX.SVR.test(raw) || QR_REGEX.NEW_FORMAT.test(raw) || QR_REGEX.YT_FORMAT.test(raw) || QR_REGEX.YULONG.test(raw) || QR_REGEX.FUYOU.test(raw)
+    return this.isDoorQRCode(qrString)
   },
 
   /**

@@ -192,7 +192,7 @@ const fetchRepairList = async (reset = false) => {
     if (reset) {
       repairList.value = [];
     }
-    uni.showToast({ title: e?.msg || '获取报修记录失败', icon: 'none' });
+    uni.showToast({ title: e?.msg || e?.detail || e?.message || '获取报修记录失败', icon: 'none' });
   } finally {
     loading.value = false;
     loadingMore.value = false;

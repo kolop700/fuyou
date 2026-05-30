@@ -223,6 +223,12 @@
 					}
 				},
 				{
+					"path": "pages/locker/settlement-bills",
+					"style": {
+						"navigationStyle": "custom"
+					}
+				},
+				{
 					"path": "pages/repair/index",
 					"style": {
 						"navigationStyle": "custom"

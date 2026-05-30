@@ -5,11 +5,23 @@ const LOCKER_ID = 1 // 快递柜 ID，目前写死
 export default {
   // 获取快递柜信息及格口规格列表
   // 代理规则: /locker/* → http://test2.yefiot.com/api/locker/*
-  getLockerInfo(id = LOCKER_ID, options = {}) {
+  getLockerInfo(params = LOCKER_ID, options = {}) {
+    const queryParams = {}
+
+    if (typeof params === 'object' && params !== null) {
+      if (params.mac || params.locker_mac || params.c) {
+        queryParams.mac = params.mac || params.locker_mac || params.c
+      } else if (params.id || params.locker_id) {
+        queryParams.id = params.id || params.locker_id
+      }
+    } else if (params !== undefined && params !== null && params !== '') {
+      queryParams.id = params
+    }
+
     return request({
       url: '/locker/get',
       method: 'get',
-      params: { id },
+      params: Object.keys(queryParams).length ? queryParams : { id: LOCKER_ID },
       ...options
     })
   },
@@ -131,6 +143,26 @@ export default {
     }).catch((error) => {
       console.log('[locker.qryComptRecord] response error:', error)
       throw error
+    })
+  },
+
+  // 快递结算单查询
+  qryComptBill(params = {}, options = {}) {
+    return request({
+      url: '/locker/qry_compt_bill',
+      method: 'get',
+      params,
+      ...options
+    })
+  },
+
+  // 快递结算单支付
+  comptBillPay(data, options = {}) {
+    return request({
+      url: '/locker/compt_bill_pay',
+      method: 'post',
+      data,
+      ...options
     })
   }
 }

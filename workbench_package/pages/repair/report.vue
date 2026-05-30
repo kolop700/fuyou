@@ -512,7 +512,7 @@ const submitReport = async () => {
     }, 1500);
   } catch (e) {
     uni.hideLoading();
-    uni.showToast({ title: e?.msg || '提交失败，请重试', icon: 'none' });
+    uni.showToast({ title: e?.msg || e?.detail || e?.message || '提交失败，请重试', icon: 'none' });
   }
 };
 </script>

@@ -123,7 +123,8 @@ const themeStore = proxy.$store.theme.useThemeStore();
 const theme = computed(() => useThemeVars(themeStore.isDark()));
 
 const navbarHeight = ref(0);
-const lockerId = ref(1); // 快递柜 ID，目前写死为 1
+const lockerId = ref(String(1)); // 快递柜 ID，支持扫码传入的 mac 字符串
+const lockerMac = ref('');
 const lockerName = ref('');
 
 // 表单数据
@@ -147,9 +148,9 @@ onUnmounted(() => {
   stopPolling();
 });
 
-const fetchLockerInfo = async (id) => {
+const fetchLockerInfo = async (params) => {
   try {
-    const res = await proxy.$api.locker.getLockerInfo(id, { showLoading: false });
+    const res = await proxy.$api.locker.getLockerInfo(params, { showLoading: false });
     // 检查快递柜是否已启用
     if (res?.status?.value !== 1) {
       uni.showModal({
@@ -160,6 +161,9 @@ const fetchLockerInfo = async (id) => {
         success: () => uni.navigateBack()
       });
       return;
+    }
+    if (res?.id !== undefined && res?.id !== null && res?.id !== '') {
+      lockerId.value = String(res.id);
     }
     lockerName.value = res?.name || `快递柜 #${id}`;
     const specs = res?.specs || [];
@@ -175,10 +179,12 @@ onLoad((options) => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
-  if (options && options.locker_id) {
-    lockerId.value = Number(options.locker_id);
+  if (options && options.mac) {
+    lockerMac.value = decodeURIComponent(String(options.mac));
+  } else if (options && options.locker_id) {
+    lockerId.value = decodeURIComponent(String(options.locker_id));
   }
-  fetchLockerInfo(lockerId.value);
+  fetchLockerInfo(lockerMac.value ? { mac: lockerMac.value } : { id: lockerId.value });
 });
 
 const selectSize = (item) => {
@@ -317,7 +323,7 @@ const submitStorage = async () => {
     }
   } catch (e) {
     uni.hideLoading();
-    uni.showToast({ title: e?.message || '提交失败，请重试', icon: 'none' });
+    uni.showToast({ title: e?.msg || e?.detail || e?.message || '提交失败，请重试', icon: 'none' });
   }
 };
 

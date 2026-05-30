@@ -95,6 +95,18 @@
               </view>
               <text class="feature-name" :style="{ color: theme.textPrimary }">快递员申请记录</text>
             </view>
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/locker/storage-records')">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                <text class="iconfont icon-clipboard-list"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">存取记录</text>
+            </view>
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/locker/settlement-bills')">
+              <view class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <text class="iconfont icon-file-invoice-dollar"></text>
+              </view>
+              <text class="feature-name" :style="{ color: theme.textPrimary }">快递结算单</text>
+            </view>
           </view>
         </view>
 
@@ -206,8 +218,7 @@ const getLockerIdFromScanResult = (result = '') => {
     return acc
   }, {})
 
-  const id = params.locker_id || params.lockerId || params.id || params.c
-  return id && /^\d+$/.test(id) ? id : ''
+  return String(params.locker_mac || '').trim()
 }
 
 const handleLockerScan = async () => {
@@ -215,6 +226,14 @@ const handleLockerScan = async () => {
   const lockerId = getLockerIdFromScanResult(result)
 
   if (!lockerId) {
+    if (scanUtils.isDoorQRCode(result)) {
+      uni.showToast({
+        title: '这是扫码开门二维码，请从扫码开门入口进入',
+        icon: 'none'
+      })
+      return
+    }
+
     uni.showToast({
       title: '无效的快递柜二维码',
       icon: 'none'
@@ -223,7 +242,7 @@ const handleLockerScan = async () => {
   }
 
   uni.navigateTo({
-    url: `/workbench_package/pages/locker/index?locker_id=${lockerId}`
+    url: `/workbench_package/pages/locker/index?mac=${encodeURIComponent(lockerId)}`
   })
 }
 

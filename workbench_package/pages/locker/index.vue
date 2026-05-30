@@ -99,7 +99,10 @@ const theme = computed(() => {
 });
 
 const navbarHeight = ref(0);
-const lockerId = ref(1);
+const lockerId = ref(String(1));
+const rawLockerCode = ref('');
+const rawLockerMac = ref('');
+const lockerResolved = ref(false);
 
 const formatPhone = (phone = '') => {
   const value = String(phone || '');
@@ -110,36 +113,96 @@ const displayName = computed(() => {
   return userStore.userName || formatPhone(userStore.userAcct) || '用户';
 });
 
+const fetchLockerInfo = async (params) => {
+  try {
+    const res = await proxy.$api.locker.getLockerInfo(params, { showLoading: false });
+
+    if (res?.status?.value !== 1) {
+      uni.showModal({
+        title: '快递柜不可用',
+        content: `「${res?.name || '该快递柜'}」当前状态为「${res?.status?.label || '未启用'}」，暂时无法使用`,
+        showCancel: false,
+        confirmText: '返回',
+        success: () => uni.navigateBack()
+      });
+      return;
+    }
+
+    if (res?.id !== undefined && res?.id !== null && res?.id !== '') {
+      lockerId.value = String(res.id);
+      lockerResolved.value = true;
+      return;
+    }
+
+    uni.showToast({
+      title: '未获取到快递柜编号',
+      icon: 'none'
+    });
+  } catch (error) {
+    uni.showToast({
+      title: '获取快递柜信息失败',
+      icon: 'none'
+    });
+  }
+};
+
 onLoad((options) => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44;
 
-  const id = Number(options?.locker_id);
-  if (Number.isFinite(id) && id > 0) {
-    lockerId.value = id;
+  const mac = String(options?.mac || options?.locker_mac || '').trim();
+  const id = String(options?.locker_id || '').trim();
+
+  if (mac) {
+    rawLockerMac.value = decodeURIComponent(mac);
+    fetchLockerInfo({ mac: rawLockerMac.value });
+    return;
   }
+
+  if (id) {
+    rawLockerCode.value = decodeURIComponent(id);
+    lockerId.value = rawLockerCode.value;
+  }
+
+  fetchLockerInfo({ id: lockerId.value });
 });
 
+const ensureResolvedLockerId = () => {
+  if (!lockerResolved.value || !lockerId.value) {
+    uni.showToast({
+      title: '快递柜信息加载中，请稍后再试',
+      icon: 'none'
+    });
+    return false;
+  }
+
+  return true;
+};
+
 const handleCourierDeposit = () => {
+  if (!ensureResolvedLockerId()) return;
   uni.navigateTo({
     url: `/workbench_package/pages/locker/courier-deposit?locker_id=${lockerId.value}`
   });
 };
 
 const handleTempStorage = () => {
+  if (!ensureResolvedLockerId()) return;
   uni.navigateTo({
     url: `/workbench_package/pages/locker/temp-storage?locker_id=${lockerId.value}`
   });
 };
 
 const handlePickup = () => {
+  if (!ensureResolvedLockerId()) return;
   uni.navigateTo({
     url: `/workbench_package/pages/locker/pickup?locker_id=${lockerId.value}`
   });
 };
 
 const handleRecords = () => {
+  if (!ensureResolvedLockerId()) return;
   uni.navigateTo({
     url: `/workbench_package/pages/locker/storage-records?locker_id=${lockerId.value}`
   });

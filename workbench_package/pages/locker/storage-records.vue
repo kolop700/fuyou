@@ -3,6 +3,42 @@
     <custom-navbar title="存取记录" :show-back="true" />
 
     <view class="page-content" :style="{ paddingTop: navbarHeight + 'px' }">
+      <view class="search-section">
+        <view class="search-type-group" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+          <view
+            class="search-type"
+            :style="getSearchTypeStyle('compt_record_no')"
+            @tap="switchSearchType('compt_record_no')"
+          >
+            记录号
+          </view>
+          <view
+            class="search-type"
+            :style="getSearchTypeStyle('bill_id')"
+            @tap="switchSearchType('bill_id')"
+          >
+            结算单
+          </view>
+        </view>
+
+        <view class="search-box" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
+          <input
+            v-model="searchKeyword"
+            class="search-input"
+            :type="searchType === 'bill_id' ? 'number' : 'text'"
+            :placeholder="searchType === 'bill_id' ? '输入结算单ID' : '输入存货记录编号'"
+            :placeholder-style="'color: ' + theme.textTertiary"
+            :style="{ color: theme.textPrimary }"
+            confirm-type="search"
+            @confirm="handleSearch"
+          />
+          <view v-if="searchKeyword" class="search-clear" @tap="clearSearch">
+            <uni-icons type="clear" size="18" :color="theme.textTertiary"></uni-icons>
+          </view>
+          <button class="search-button" :style="{ background: theme.colorAccentGradient }" @tap="handleSearch">搜索</button>
+        </view>
+      </view>
+
       <view class="segmented-control-wrapper">
         <view class="segmented-control" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
           <view
@@ -110,6 +146,8 @@ const total = ref(0);
 const loading = ref(false);
 const loadingMore = ref(false);
 const refreshing = ref(false);
+const searchType = ref('compt_record_no');
+const searchKeyword = ref('');
 
 const normalizeValue = (value) => {
   if (value && typeof value === 'object') {
@@ -142,6 +180,8 @@ const currentList = computed(() => {
   return records.value.filter(item => currentTab.value === 'courier' ? isCourierRecord(item) : isTempRecord(item));
 });
 
+const currentStorageType = computed(() => currentTab.value === 'courier' ? 0 : 1);
+
 const loadMoreText = computed(() => {
   if (loadingMore.value) return '加载中...';
   if (pages.value && page.value >= pages.value) return '没有更多了';
@@ -154,6 +194,17 @@ const getSegmentStyle = (tab) => {
       background: theme.value.bgSecondary,
       color: theme.value.colorAccent,
       boxShadow: '0 2px 8px rgba(0,0,0,0.07)'
+    };
+  }
+
+  return { color: theme.value.textSecondary };
+};
+
+const getSearchTypeStyle = (type) => {
+  if (searchType.value === type) {
+    return {
+      background: theme.value.bgSecondary,
+      color: theme.value.colorAccent
     };
   }
 
@@ -208,8 +259,18 @@ const fetchRecords = async (reset = false) => {
 
   const requestParams = {
     page: page.value,
-    size: size.value
+    size: size.value,
+    storage_type: currentStorageType.value
   };
+
+  const keyword = String(searchKeyword.value || '').trim();
+  if (keyword) {
+    if (searchType.value === 'bill_id') {
+      requestParams.bill_id = Number(keyword);
+    } else {
+      requestParams.compt_record_no = keyword;
+    }
+  }
 
   console.log('[storage-records] qryComptRecord params:', requestParams);
 
@@ -225,7 +286,7 @@ const fetchRecords = async (reset = false) => {
     records.value = reset ? items : records.value.concat(items);
   } catch (error) {
     console.log('[storage-records] qryComptRecord error:', error);
-    uni.showToast({ title: error?.msg || '获取记录失败', icon: 'none' });
+    uni.showToast({ title: error?.msg || error?.detail || error?.message || '获取记录失败', icon: 'none' });
     if (!reset) {
       page.value = Math.max(1, page.value - 1);
     }
@@ -246,7 +307,33 @@ const loadMore = () => {
 };
 
 const switchTab = (tab) => {
+  if (currentTab.value === tab) return;
   currentTab.value = tab;
+  fetchRecords(true);
+};
+
+const switchSearchType = (type) => {
+  if (searchType.value === type) return;
+  searchType.value = type;
+  searchKeyword.value = '';
+  fetchRecords(true);
+};
+
+const handleSearch = () => {
+  const keyword = String(searchKeyword.value || '').trim();
+  if (searchType.value === 'bill_id' && keyword && !/^\d+$/.test(keyword)) {
+    uni.showToast({ title: '请输入正确的结算单ID', icon: 'none' });
+    return;
+  }
+
+  searchKeyword.value = keyword;
+  fetchRecords(true);
+};
+
+const clearSearch = () => {
+  if (!searchKeyword.value) return;
+  searchKeyword.value = '';
+  fetchRecords(true);
 };
 
 onLoad(() => {
@@ -268,6 +355,74 @@ onLoad(() => {
   flex-direction: column;
   height: 100vh;
   box-sizing: border-box;
+}
+
+.search-section {
+  padding: 0 32rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.search-type-group {
+  display: flex;
+  align-self: flex-start;
+  border-radius: 18rpx;
+  padding: 6rpx;
+  border: 1px solid transparent;
+}
+
+.search-type {
+  min-width: 112rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  border-radius: 14rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.search-box {
+  min-height: 88rpx;
+  border-radius: 24rpx;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  padding: 0 12rpx 0 28rpx;
+  gap: 12rpx;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  height: 88rpx;
+  font-size: 28rpx;
+}
+
+.search-clear {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-button {
+  margin: 0;
+  width: 128rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  border-radius: 18rpx;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 700;
+  border: none;
+  flex-shrink: 0;
+}
+
+.search-button::after {
+  display: none;
 }
 
 .segmented-control-wrapper {

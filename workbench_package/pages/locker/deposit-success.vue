@@ -121,7 +121,7 @@ const finishDeposit = async (op, successText) => {
     return true;
   } catch (e) {
     uni.hideLoading();
-    uni.showToast({ title: e?.msg || '操作失败，请重试', icon: 'none' });
+    uni.showToast({ title: e?.msg || e?.detail || e?.message || '操作失败，请重试', icon: 'none' });
     return false;
   } finally {
     submitting.value = false;
