@@ -120,11 +120,11 @@ export default {
         responseMac
       })
       uni.showToast({
-        title: '开门失败!',
+        title: '开门失败(设备不匹配)!',
         icon: 'error',
         duration: 3000
       })
-      throw false
+      throw { type: 'DeviceMismatch', msg: '开门响应设备不匹配' }
     }
 
     switch (msgInfo) {
@@ -150,7 +150,7 @@ export default {
           icon: 'none',
           duration: 3000
         })
-        throw false
+        throw { type: 'SyncFailed', msg: `数据同步失败(${msgInfo})` }
 
       case 'HD2AA78W':
         uni.showToast({
@@ -158,7 +158,7 @@ export default {
           icon: 'none',
           duration: 3000
         })
-        throw false
+        throw { type: 'OpenFailed', msg: `开门失败(${msgInfo})` }
 
       default:
         if (!msgInfo) {
@@ -168,7 +168,7 @@ export default {
             icon: 'error',
             duration: 3000
           })
-          throw false
+          throw { type: 'UnknownError', msg: fallbackMessage }
         }
 
         uni.showToast({
@@ -244,7 +244,8 @@ export default {
 
       return this.handleOpenResponse(response, door)
     } catch (error) {
-      if (error === false || error === true) {
+      if (error && error.type) {
+        // 这是 handleOpenResponse 抛出的已知错误
         throw error
       }
 
@@ -253,12 +254,12 @@ export default {
       }
 
       uni.showToast({
-        title: '开门失败!',
+        title: '开门失败(网络异常或设备离线)!',
         icon: 'error',
         duration: 3000
       })
       console.error('开门失败:', error)
-      throw false
+      throw { type: 'NetworkError', msg: '网络异常或设备离线', originalError: error }
     } finally {
       uni.hideLoading()
     }

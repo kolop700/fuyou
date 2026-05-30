@@ -123,23 +123,8 @@ class AdManager {
 
   // 初始化广告实例
   init() {
-    if (!this.adStore) {
-      console.error('请先调用initStore初始化store')
-      return
-    }
-
-    // 初始化激励广告
-    this.rewardedVideoAd = uni.createRewardedVideoAd({
-      adpid: this.adStore.getRewardedVideoAdId(),
-      urlCallback: this.urlCallback
-    })
-
-    // 初始化插屏广告
-    this.interstitialAd = uni.createInterstitialAd({
-      adpid: this.adStore.getInterstitialAdId()
-    })
-
-    this.setupAdListeners()
+    console.log('Ads module disabled to prevent HTML5+ Runtime error')
+    return false
   }
 
   // 设置广告事件监听
@@ -212,89 +197,7 @@ class AdManager {
 
   // 显示广告（自动选择类型）
   async showAd() {
-    console.log('准备展示广告，参数检查:', {
-      adStore: !!this.adStore,
-      adControlStore: !!this.adControlStore,
-      stores状态: {
-        adType: this.adControlStore?.adType,
-        showRewarded: this.adControlStore?.showRewarded,
-        showInterstitial: this.adControlStore?.showInterstitial,
-        AD_CONTROL_TYPES: this.adControlStore?.AD_CONTROL_TYPES
-      }
-    })
-
-    // 检查是否允许显示广告
-    if (!this.adControlStore) {
-      console.error('广告控制 Store 未初始化')
-      return false
-    }
-
-    if (this.adControlStore.adType === this.adControlStore.AD_CONTROL_TYPES.NONE) {
-      console.log('广告功能已关闭，当前广告类型:', this.adControlStore.adType)
-      return false
-    }
-
-    // 根据广告类型检查是否允许显示
-    const preferredType = this.adControlStore.showRewarded ? 'rewarded' : 'interstitial'
-
-    if (preferredType === 'rewarded' && !this.adControlStore.showRewarded) {
-      console.log('激励广告未启用，当前广告控制状态:', {
-        adType: this.adControlStore.adType,
-        showRewarded: this.adControlStore.showRewarded
-      })
-      return false
-    }
-
-    if (preferredType === 'interstitial' && !this.adControlStore.showInterstitial) {
-      console.log('插屏广告未启用，当前广告控制状态:', {
-        adType: this.adControlStore.adType,
-        showInterstitial: this.adControlStore.showInterstitial
-      })
-      return false
-    }
-
-    console.log('广告展示前状态:', {
-      类型: preferredType,
-      当前激励广告次数: this.state.rewardedCount,
-      当前插屏广告次数: this.state.interstitialCount,
-      每日上限: this.config.maxDailyCount,
-      广告控制类型: this.adControlStore.adTypeDescription,
-      广告实例状态: {
-        rewardedVideoAd: !!this.rewardedVideoAd,
-        interstitialAd: !!this.interstitialAd
-      }
-    })
-    
-    // 先检查限制，避免不必要的广告加载
-    if (!this.checkDailyLimit(preferredType) || !this.canShowAd(preferredType)) {
-      return false
-    }
-
-    if (preferredType === 'rewarded' && this.adControlStore.showRewarded) {
-      try {
-        console.log('尝试展示激励广告')
-        const result = await this.showRewardedAd()
-        console.log('激励广告展示结果:', result)
-        
-        if (!result && this.adControlStore.showInterstitial) {
-          console.log('激励广告失败，尝试显示插屏广告')
-          // 在尝试插屏广告之前也要检查限制
-          if (!this.checkDailyLimit('interstitial') || !this.canShowAd('interstitial')) {
-            return false
-          }
-          return await this.showInterstitialAd()
-        }
-        return result
-      } catch (error) {
-        console.error('广告展示失败，详细错误:', error)
-        return false
-      }
-    } else if (this.adControlStore.showInterstitial) {
-      console.log('直接展示插屏广告')
-      return await this.showInterstitialAd()
-    }
-    
-    console.log('无可用广告类型')
+    console.log('Ads disabled, executing callback directly')
     return false
   }
 

@@ -224,15 +224,12 @@ const handleQuickUnlock = async (device) => {
     // 开门成功后更新开门次数
     updateDeviceOpenCount(device.door_mac)
     
-    uni.showToast({
-      title: '开门成功',
-      icon: 'success',
-      duration: 2000
-    })
+    // 成功提示在 utils 里面已经报了
   } catch (error) {
-    console.error('开门失败:', error)
+    console.error('设备列表页开门失败:', error)
     uni.hideLoading()
-    showOpenDoorFailModal()
+    // 开门失败时弹出离线密码备选
+    showOfflinePasswordModal(device)
   } finally {
     currentDevice.value = null
   }

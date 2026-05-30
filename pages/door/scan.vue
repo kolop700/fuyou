@@ -31,7 +31,7 @@
             >提交申请</button>
           </view>
     </view>
-	<view class="ad-section">
+	<!-- <view class="ad-section">
 	  <view class="divider"></view>
 	  <view class="ad-view">
 	    <ad 
@@ -42,7 +42,7 @@
 	      @error="onAdError">
 	    </ad>
 	  </view> 
-	</view>
+	</view> -->
   </view>
 </template>
 

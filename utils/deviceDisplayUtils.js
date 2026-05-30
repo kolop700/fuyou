@@ -55,38 +55,30 @@ export const isUnitDoor = (device = {}) => {
   return Boolean(device.unit_name?.includes('单元') || location.includes('单元'))
 }
 
-export const formatDoorDevice = (device = {}, index = 0, getOpenCount = () => 0) => {
-  const online = isDoorOnline(device)
-  const unitDoor = isUnitDoor(device)
-  const shortCode = getDoorShortCode(device)
-  const location = formatDoorLocation(device)
-  const name = formatDoorName(device)
-
-  const unitThemes = [
-    { icon: 'icon-fasfa-building', iconGradient: 'linear-gradient(135deg, #34c759 0%, #30d158 100%)' },
-    { icon: 'icon-fasfa-building', iconGradient: 'linear-gradient(135deg, #0a84ff 0%, #0066cc 100%)' },
-    { icon: 'icon-fasfa-building', iconGradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' }
-  ]
-  const gateThemes = [
-    { icon: 'icon-door-open', iconGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-    { icon: 'icon-door-open', iconGradient: 'linear-gradient(135deg, #ff9500 0%, #ff6b00 100%)' },
-    { icon: 'icon-door-open', iconGradient: 'linear-gradient(135deg, #ff2d55 0%, #ff375f 100%)' }
-  ]
-  const theme = unitDoor ? unitThemes[index % unitThemes.length] : gateThemes[index % gateThemes.length]
-
+/**
+ * 格式化门禁设备数据用于展示
+ * @param {Object} device 原始设备数据
+ * @param {Number} index 索引
+ * @param {Function} getDeviceOpenCount 获取开门次数的函数
+ * @returns {Object} 格式化后的设备数据
+ */
+export const formatDoorDevice = (device, index, getDeviceOpenCount = () => 0) => {
+  // 根据用户提供的数据结构，设备名称使用 door_name，位置/小区名使用 comm_name + door_name
+  const name = device.door_name || `门禁设备 ${index + 1}`
+  const location = device.comm_name && device.door_name 
+    ? `${device.comm_name} ${device.door_name}`
+    : (device.comm_name || device.door_name || '小区门禁')
+  
+  // 检查设备是否在线：online 字段为 "1" 或者 1 时表示在线
+  const isOnline = String(device.online) === '1'
+  
   return {
     ...device,
     name,
     location,
-    icon: theme.icon,
-    iconGradient: theme.iconGradient,
-    signal: online ? '可用' : '不可用',
-    statusText: online ? '在线' : '离线',
-    statusDetail: online ? '在线' : '离线',
-    shortCode,
-    isOnline: online,
-    isUnitDoor: unitDoor,
-    openCount: getOpenCount(device.door_mac)
+    isOnline,
+    statusDetail: isOnline ? '设备在线' : '设备离线',
+    openCount: getDeviceOpenCount(device.door_mac)
   }
 }
 

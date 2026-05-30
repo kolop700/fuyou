@@ -368,15 +368,13 @@ const handleQuickOpen = async (device) => {
     updateDeviceOpenCount(device.door_mac)
     
     // 显示成功提示
-    uni.showToast({
-      title: '开门成功',
-      icon: 'success',
-      duration: 2000
-    })
+    // uni.showToast 已经在 openDoor 里面调用过了，这里可以不用重复调用
   } catch (error) {
-    console.error('开门失败:', error)
+    console.error('开门失败 caught in index:', error)
     uni.hideLoading()
-    showOpenDoorFailModal()
+    
+    // 无论是设备不匹配、网路异常、还是响应失败，都弹出离线密码备用方案
+    showOfflinePasswordModal(device)
   }
 }
 
