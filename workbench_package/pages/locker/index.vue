@@ -202,9 +202,8 @@ const handlePickup = () => {
 };
 
 const handleRecords = () => {
-  if (!ensureResolvedLockerId()) return;
   uni.navigateTo({
-    url: `/workbench_package/pages/locker/storage-records?locker_id=${lockerId.value}`
+    url: '/workbench_package/pages/locker/storage-records'
   });
 };
 </script>

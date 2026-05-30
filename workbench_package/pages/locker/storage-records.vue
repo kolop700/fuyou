@@ -1,44 +1,8 @@
 <template>
-  <view class="page-container" :style="{ background: theme.bgPrimary }">
+  <view class="page-container" :class="{ 'dark-mode': themeStore.isDark() }" :style="{ background: theme.bgPrimary }">
     <custom-navbar title="存取记录" :show-back="true" />
 
     <view class="page-content" :style="{ paddingTop: navbarHeight + 'px' }">
-      <view class="search-section">
-        <view class="search-type-group" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
-          <view
-            class="search-type"
-            :style="getSearchTypeStyle('compt_record_no')"
-            @tap="switchSearchType('compt_record_no')"
-          >
-            记录号
-          </view>
-          <view
-            class="search-type"
-            :style="getSearchTypeStyle('bill_id')"
-            @tap="switchSearchType('bill_id')"
-          >
-            结算单
-          </view>
-        </view>
-
-        <view class="search-box" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
-          <input
-            v-model="searchKeyword"
-            class="search-input"
-            :type="searchType === 'bill_id' ? 'number' : 'text'"
-            :placeholder="searchType === 'bill_id' ? '输入结算单ID' : '输入存货记录编号'"
-            :placeholder-style="'color: ' + theme.textTertiary"
-            :style="{ color: theme.textPrimary }"
-            confirm-type="search"
-            @confirm="handleSearch"
-          />
-          <view v-if="searchKeyword" class="search-clear" @tap="clearSearch">
-            <uni-icons type="clear" size="18" :color="theme.textTertiary"></uni-icons>
-          </view>
-          <button class="search-button" :style="{ background: theme.colorAccentGradient }" @tap="handleSearch">搜索</button>
-        </view>
-      </view>
-
       <view class="segmented-control-wrapper">
         <view class="segmented-control" :style="{ background: theme.bgCard, borderColor: theme.borderColor }">
           <view
@@ -81,15 +45,15 @@
                 <text class="record-title" :style="{ color: theme.textPrimary }">{{ getRecordTitle(item) }}</text>
                 <text class="record-subtitle" :style="{ color: theme.textSecondary }">{{ item.locker_name || '-' }} · {{ item.compt_name || '-' }}</text>
               </view>
-              <view class="status-tag" :style="getStoragePayStyle(item.storage_pay_sta)">
-                {{ getStatusLabel(item.storage_pay_sta) }}
+              <view class="status-tag" :style="getStoragePayStyle(item.storage_pay_sta, item)">
+                {{ getStatusLabel(item.storage_pay_sta, item) }}
               </view>
             </view>
 
             <view class="record-body">
               <view v-if="isCourierRecord(item)" class="info-row">
                 <text class="info-label" :style="{ color: theme.textSecondary }">快递单号</text>
-                <text class="info-value" :style="{ color: theme.textPrimary }">{{ item.tracking_no || '-' }}</text>
+                <text class="info-value" :style="{ color: theme.textPrimary, fontWeight: '600' }">{{ item.tracking_no || '-' }}</text>
               </view>
               <view v-if="isCourierRecord(item)" class="info-row">
                 <text class="info-label" :style="{ color: theme.textSecondary }">客户手机</text>
@@ -97,7 +61,9 @@
               </view>
               <view class="info-row">
                 <text class="info-label" :style="{ color: theme.textSecondary }">取件码</text>
-                <text class="info-value code-value" :style="{ color: item.pickup_code ? theme.colorAccent : theme.textTertiary }">{{ item.pickup_code || '未生成' }}</text>
+                <view class="info-value">
+                  <text class="code-value" :style="{ color: item.pickup_code ? theme.colorAccent : theme.textTertiary, background: item.pickup_code ? theme.bgSecondary : 'transparent', padding: item.pickup_code ? '8rpx 20rpx' : '0', borderRadius: '12rpx' }">{{ item.pickup_code || '未生成' }}</text>
+                </view>
               </view>
               <view class="info-row">
                 <text class="info-label" :style="{ color: theme.textSecondary }">存件时间</text>
@@ -107,11 +73,21 @@
                 <text class="info-label" :style="{ color: theme.textSecondary }">免费截止</text>
                 <text class="info-value" :style="{ color: theme.textPrimary }">{{ item.free_deadline || '-' }}</text>
               </view>
+              <view class="info-row" v-if="item.pickup_time">
+                <text class="info-label" :style="{ color: theme.textSecondary }">取件时间</text>
+                <text class="info-value" :style="{ color: theme.textPrimary }">{{ item.pickup_time }}</text>
+              </view>
             </view>
 
             <view class="record-footer" :style="{ borderTopColor: theme.borderColor }">
-              <text class="footer-text" :style="{ color: theme.textSecondary }">存货费 ¥{{ formatAmount(item.storage_fee) }}</text>
-              <text class="footer-text" :style="{ color: theme.textSecondary }">{{ item.settled ? '已结算' : '未结算' }}</text>
+              <view class="footer-left">
+                <text class="footer-label" :style="{ color: theme.textSecondary }">存货费：</text>
+                <text class="footer-amount" :style="{ color: theme.colorWarning }">¥{{ formatAmount(item.storage_fee) }}</text>
+              </view>
+              <view class="footer-right">
+                <text v-if="item.pickup_fee > 0" class="footer-label" :style="{ color: theme.textSecondary, marginRight: '16rpx' }">超时费：<text :style="{ color: theme.colorWarning }">¥{{ formatAmount(item.pickup_fee) }}</text></text>
+                <text class="settle-status" :style="{ color: item.settled ? theme.colorSuccess : theme.colorError, background: item.settled ? theme.getBadgeBackground('success') : theme.getBadgeBackground('error') }">{{ item.settled ? '已结算' : '未结算' }}</text>
+              </view>
             </view>
           </view>
 
@@ -146,8 +122,6 @@ const total = ref(0);
 const loading = ref(false);
 const loadingMore = ref(false);
 const refreshing = ref(false);
-const searchType = ref('compt_record_no');
-const searchKeyword = ref('');
 
 const normalizeValue = (value) => {
   if (value && typeof value === 'object') {
@@ -157,12 +131,18 @@ const normalizeValue = (value) => {
   return matched ? matched[0] : String(value ?? '').trim();
 };
 
-const getStatusLabel = (status) => {
+const getStatusLabel = (status, item) => {
   if (status && typeof status === 'object' && status.label) {
     return status.label;
   }
 
   const value = normalizeValue(status);
+  
+  // 对于快递存件，如果已取件（取件码已被使用），可以结合 pickup_time 显示更明确的状态
+  if (item && item.pickup_time) {
+    return '已完成';
+  }
+
   const labels = {
     0: '无费用',
     1: '待支付',
@@ -200,18 +180,14 @@ const getSegmentStyle = (tab) => {
   return { color: theme.value.textSecondary };
 };
 
-const getSearchTypeStyle = (type) => {
-  if (searchType.value === type) {
+const getStoragePayStyle = (status, item) => {
+  if (item && item.pickup_time) {
     return {
-      background: theme.value.bgSecondary,
-      color: theme.value.colorAccent
+      background: theme.value.getBadgeBackground('success'),
+      color: theme.value.colorSuccess
     };
   }
 
-  return { color: theme.value.textSecondary };
-};
-
-const getStoragePayStyle = (status) => {
   const value = normalizeValue(status);
   const colorMap = {
     0: theme.value.colorInfo,
@@ -263,15 +239,6 @@ const fetchRecords = async (reset = false) => {
     storage_type: currentStorageType.value
   };
 
-  const keyword = String(searchKeyword.value || '').trim();
-  if (keyword) {
-    if (searchType.value === 'bill_id') {
-      requestParams.bill_id = Number(keyword);
-    } else {
-      requestParams.compt_record_no = keyword;
-    }
-  }
-
   console.log('[storage-records] qryComptRecord params:', requestParams);
 
   try {
@@ -312,30 +279,6 @@ const switchTab = (tab) => {
   fetchRecords(true);
 };
 
-const switchSearchType = (type) => {
-  if (searchType.value === type) return;
-  searchType.value = type;
-  searchKeyword.value = '';
-  fetchRecords(true);
-};
-
-const handleSearch = () => {
-  const keyword = String(searchKeyword.value || '').trim();
-  if (searchType.value === 'bill_id' && keyword && !/^\d+$/.test(keyword)) {
-    uni.showToast({ title: '请输入正确的结算单ID', icon: 'none' });
-    return;
-  }
-
-  searchKeyword.value = keyword;
-  fetchRecords(true);
-};
-
-const clearSearch = () => {
-  if (!searchKeyword.value) return;
-  searchKeyword.value = '';
-  fetchRecords(true);
-};
-
 onLoad(() => {
   themeStore.loadTheme();
   const systemInfo = uni.getSystemInfoSync();
@@ -355,74 +298,6 @@ onLoad(() => {
   flex-direction: column;
   height: 100vh;
   box-sizing: border-box;
-}
-
-.search-section {
-  padding: 0 32rpx 24rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.search-type-group {
-  display: flex;
-  align-self: flex-start;
-  border-radius: 18rpx;
-  padding: 6rpx;
-  border: 1px solid transparent;
-}
-
-.search-type {
-  min-width: 112rpx;
-  height: 56rpx;
-  line-height: 56rpx;
-  text-align: center;
-  border-radius: 14rpx;
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
-.search-box {
-  min-height: 88rpx;
-  border-radius: 24rpx;
-  border: 1px solid transparent;
-  display: flex;
-  align-items: center;
-  padding: 0 12rpx 0 28rpx;
-  gap: 12rpx;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 0;
-  height: 88rpx;
-  font-size: 28rpx;
-}
-
-.search-clear {
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.search-button {
-  margin: 0;
-  width: 128rpx;
-  height: 64rpx;
-  line-height: 64rpx;
-  border-radius: 18rpx;
-  color: #ffffff;
-  font-size: 26rpx;
-  font-weight: 700;
-  border: none;
-  flex-shrink: 0;
-}
-
-.search-button::after {
-  display: none;
 }
 
 .segmented-control-wrapper {
@@ -459,10 +334,14 @@ onLoad(() => {
 }
 
 .record-card {
-  border-radius: 28rpx;
-  padding: 28rpx;
+  border-radius: 32rpx;
+  padding: 32rpx;
   border: 1px solid transparent;
   box-shadow: 0 14rpx 40rpx rgba(15, 23, 42, 0.06);
+}
+
+.dark-mode .record-card {
+  box-shadow: 0 14rpx 40rpx rgba(0, 0, 0, 0.2);
 }
 
 .record-header {
@@ -479,7 +358,7 @@ onLoad(() => {
 
 .record-title {
   display: block;
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: 700;
   line-height: 1.4;
 }
@@ -491,9 +370,9 @@ onLoad(() => {
 }
 
 .status-tag {
-  padding: 8rpx 18rpx;
+  padding: 10rpx 20rpx;
   border-radius: 999rpx;
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -502,7 +381,14 @@ onLoad(() => {
   margin-top: 24rpx;
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 20rpx;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 24rpx;
+  border-radius: 16rpx;
+}
+
+.dark-mode .record-body {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .info-row {
@@ -525,9 +411,10 @@ onLoad(() => {
 }
 
 .code-value {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 800;
-  letter-spacing: 1rpx;
+  letter-spacing: 2rpx;
+  font-family: monospace;
 }
 
 .record-footer {
@@ -539,8 +426,27 @@ onLoad(() => {
   justify-content: space-between;
 }
 
-.footer-text {
+.footer-left,
+.footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.footer-label {
   font-size: 24rpx;
+}
+
+.footer-amount {
+  font-size: 32rpx;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.settle-status {
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  font-weight: 600;
 }
 
 .load-more {
