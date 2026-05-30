@@ -191,7 +191,9 @@ const onRefresh = async () => {
     }
   } catch (error) {
     console.error('获取设备列表失败', error)
-    if (!deviceStore.deviceList.length) {
+    if (error && error.code === '1') {
+      deviceStore.setDeviceList([])
+    } else if (!deviceStore.deviceList.length) {
       uni.showToast({
         title: '获取设备列表失败',
         icon: 'none'

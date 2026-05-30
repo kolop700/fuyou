@@ -174,6 +174,11 @@ export const useUserStore = defineStore('user', () => {
         }
       } catch (deviceError) {
         console.error('更新设备列表失败:', deviceError)
+        // 如果获取设备失败，且返回 code === '1'，说明暂无设备，应清空列表
+        if (deviceError && deviceError.code === '1') {
+          const deviceStore = useDeviceStore()
+          deviceStore.setDeviceList([])
+        }
       }
       
       console.log("更新房间列表", res)
@@ -205,9 +210,16 @@ export const useUserStore = defineStore('user', () => {
       // 默认不额外清空设备列表。updateRoomList 内部已刷新设备列表，避免 App 端 swiper 因清空再填充触发卸载异常。
       if (options.refreshDevices === true) {
         const deviceStore = useDeviceStore()
-        const res = await deviceApi.getDoorList(data.user_id, options)
-        if (res.data) {
-          deviceStore.setDeviceList(res.data)
+        try {
+          const res = await deviceApi.getDoorList(data.user_id, options)
+          if (res.data) {
+            deviceStore.setDeviceList(res.data)
+          }
+        } catch (deviceError) {
+          console.error('单独刷新设备列表失败:', deviceError)
+          if (deviceError && deviceError.code === '1') {
+            deviceStore.setDeviceList([])
+          }
         }
       }
     } catch (error) {
