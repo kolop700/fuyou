@@ -89,9 +89,8 @@
             <view class="device-info">
               <view class="device-title-row">
                 <text class="device-name" :style="{ color: theme.textPrimary }">{{ device.name }}</text>
-                <view class="status-pill" :class="device.isOnline ? 'status-online-pill' : 'status-offline-pill'">
+                <view class="status-pill">
                   <view class="status-indicator" :class="device.isOnline ? 'status-online' : 'status-offline'"></view>
-                  <text class="status-pill-text">{{ device.statusText }}</text>
                 </view>
               </view>
               <text class="device-location" :style="{ color: theme.textSecondary }">{{ device.location }}</text>
@@ -597,47 +596,27 @@ onUnload(() => {
 .status-pill {
   display: flex;
   align-items: center;
-  gap: 8rpx;
   flex-shrink: 0;
-  padding: 6rpx 14rpx;
-  border-radius: 999rpx;
-}
-
-.status-online-pill {
-  background: rgba(52, 199, 89, 0.12);
-}
-
-.dark-mode .status-online-pill {
-  background: rgba(34, 197, 94, 0.16);
-}
-
-.status-offline-pill {
-  background: rgba(100, 116, 139, 0.14);
-}
-
-.dark-mode .status-offline-pill {
-  background: rgba(148, 163, 184, 0.16);
 }
 
 .status-pill-text {
   font-size: 22rpx;
   font-weight: 600;
-  color: #64748b;
 }
 
-.status-online-pill .status-pill-text {
+.text-online {
   color: #15803d;
 }
 
-.status-offline-pill .status-pill-text {
+.text-offline {
   color: #64748b;
 }
 
-.dark-mode .status-online-pill .status-pill-text {
+.dark-mode .text-online {
   color: #86efac;
 }
 
-.dark-mode .status-offline-pill .status-pill-text {
+.dark-mode .text-offline {
   color: #cbd5e1;
 }
 
