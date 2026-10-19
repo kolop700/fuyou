@@ -7,6 +7,8 @@ const path = require('path');
 // http://test2.yefiot.com  测试环境
 // https://fuyou.yefiot.com  生产环境
 export default defineConfig({
+	// H5 产物被原生壳以本地资源加载，必须使用相对路径
+	base: './',
 	plugins: [
 		uni(),
 		AutoImport({

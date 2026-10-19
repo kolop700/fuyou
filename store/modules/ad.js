@@ -32,6 +32,22 @@ const AD_IDS = {
   }
 }
 
+// 检测 uni-ad 模块是否可用：仅老 DCloud 整包（APP-PLUS）需要防护——打包未勾选 ad 模块时
+// 渲染 <ad> 组件会弹「打包时未添加ad模块」原生提示，此时返回空 id 让页面 v-if 隐藏广告位。
+// 原生壳走 H5 编译（#ifndef APP-PLUS 分支），<ad> 不实例化原生组件，直接放行。
+const isUniAdAvailable = () => {
+  // #ifdef APP-PLUS
+  try {
+    return typeof plus !== 'undefined' && !!(plus.ad || plus.interstitialAd)
+  } catch (e) {
+    return false
+  }
+  // #endif
+  // #ifndef APP-PLUS
+  return true
+  // #endif
+}
+
 // 创建广告状态管理
 export const useAdStore = defineStore('ad', () => {
   const isTestMode = ref(false) // 默认关闭测试模式
@@ -46,6 +62,10 @@ export const useAdStore = defineStore('ad', () => {
   // 获取广告ID
   const getAdId = (type) => {
 	 const adControlStore = useAdControlStore() // 使用广告控制 store
+    // 整包缺少 ad 模块时不出广告，避免「打包时未添加ad模块」弹窗
+    if (!isUniAdAvailable()) {
+      return ''
+    }
     // 检查广告控制类型
     if (adControlStore.adType === AD_CONTROL_TYPES.NONE) {
       return '11111'

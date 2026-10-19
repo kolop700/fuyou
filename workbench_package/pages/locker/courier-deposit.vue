@@ -99,6 +99,9 @@ import { ref, computed, getCurrentInstance } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useThemeStore } from '@/store/modules/theme';
 import { useThemeVars } from '@/utils/themeConfig';
+// #ifdef H5
+import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge';
+// #endif
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
@@ -161,6 +164,14 @@ const selectSize = (item) => {
 };
 
 const scanCode = () => {
+  // #ifdef H5
+  if (isNativeShell) {
+    NativeApp.scanQRCode().then((data) => {
+      trackingNumber.value = (data && data.result) || '';
+    }).catch(() => {});
+    return;
+  }
+  // #endif
   uni.scanCode({
     success: (res) => {
       trackingNumber.value = res.result;

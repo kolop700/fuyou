@@ -104,10 +104,14 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, onMounted, onLoad } from 'vue'
+import { ref, getCurrentInstance, onMounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
 import { encrypt, decrypt } from '@/utils/aesUtils'
 import userApi from '@/api/user/user'
+// #ifdef H5
+import { NativeApp } from '@/utils/h5-native-bridge'
+// #endif
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
@@ -394,6 +398,13 @@ const handleOpenAppSettings = () => {
       icon: 'none'
     })
   }
+  // #endif
+
+  // #ifdef H5
+  // 原生壳：经 app.openSettings 桥打开本应用系统设置页
+  NativeApp.openSettings().catch(() => {
+    uni.showToast({ title: '打开设置失败', icon: 'none' })
+  })
   // #endif
   
   // #ifdef MP-WEIXIN

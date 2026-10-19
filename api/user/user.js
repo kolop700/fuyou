@@ -1,4 +1,6 @@
 import request from '@/utils/request'
+// 统一上传入口：原生壳内走原生 multipart 上传（绕 CORS），其余环境回退到 uni.uploadFile
+import { httpUpload } from '@/utils/nativeHttp'
 const BASE_API = '/yefiot/v1/';
 
 // 添加默认配置
@@ -131,7 +133,7 @@ export default {
       console.log('[uploadUserFacePic] filePath:', uploadFilePath)
       console.log('[uploadUserFacePic] user:', userAcct)
 
-      uni.uploadFile({
+      httpUpload({
         url: uploadUrl,
         filePath: uploadFilePath,
         name: 'file',

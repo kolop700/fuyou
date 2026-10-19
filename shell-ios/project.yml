@@ -1,0 +1,54 @@
+# =====================================================================
+# 福优智家 iOS 原生壳 —— XcodeGen 工程描述
+# =====================================================================
+# 本壳与 shell-android 逐方法对齐：WKWebView 加载打包进 Bundle 的 H5 产物
+# （CloudGuard/WebApp），通过 WKScriptMessageHandler 暴露 window.NativeBridge，
+# 复用前端 utils/h5-native-bridge.js（协议：call/回传 __nativeCallback/事件 __nativeEmit）。
+#
+# 在 Mac 上生成工程：
+#   brew install xcodegen
+#   cd shell-ios && xcodegen generate
+#   open CloudGuard.xcodeproj
+#
+# 第三方 SDK（微信 OpenSDK / 支付宝 / Taku）均以「运行时动态调用」实现，
+# 工程默认可无 Pods 直接编译运行（核心：WebView/HTTP/蓝牙/扫码/相册/权限/更新）。
+# 接入广告/支付/分享时，用下方 Podfile 集成对应 SDK 即可，无需改壳代码。
+# =====================================================================
+name: CloudGuard
+options:
+  bundleIdPrefix: com.yefiot
+  deploymentTarget:
+    iOS: "13.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+    ENABLE_BITCODE: "NO"
+
+targets:
+  CloudGuard:
+    type: application
+    platform: iOS
+    sources:
+      # CloudGuard 目录下所有源码；WebApp 作为「文件夹引用」单独加入，保留 H5 产物目录结构
+      - path: CloudGuard
+        excludes:
+          - "WebApp/**"
+      # 显式把 WebApp 目录作为 folder reference（蓝色文件夹），Bundle 内保持 WebApp/... 层级
+      - path: CloudGuard/WebApp
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yefiot.fuyou
+        # 可执行文件名/CFBundleName 用 ASCII，避免工具链与非 ASCII 目标名问题；
+        # 桌面显示名由 Info.plist 的 CFBundleDisplayName=福优智家 承载
+        PRODUCT_NAME: CloudGuard
+        INFOPLIST_FILE: CloudGuard/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CloudGuard/CloudGuard.entitlements
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        OTHER_LDFLAGS: "-ObjC -framework WebKit"
+        ENABLE_DEBUG_DYLIB: "NO"

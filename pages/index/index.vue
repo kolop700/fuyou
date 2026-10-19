@@ -569,8 +569,8 @@ const checkFirstOpen = () => {
 onLoad(() => {
   navbarHeight.value = (uni.getSystemInfoSync().statusBarHeight || 0) + 44
   
-  // 检查版本更新
-  // #ifdef APP-PLUS
+  // 检查版本更新（原生壳为 H5，同样需要触发）
+  // #ifdef APP-PLUS || H5
   checkAppUpdate()
   // #endif
   

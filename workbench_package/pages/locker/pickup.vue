@@ -147,6 +147,9 @@ import { ref, computed, getCurrentInstance, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useThemeStore } from '@/store/modules/theme';
 import { useThemeVars } from '@/utils/themeConfig';
+// #ifdef H5
+import { NativePay } from '@/utils/h5-native-bridge';
+// #endif
 
 const { proxy } = getCurrentInstance();
 const themeStore = proxy.$store.theme.useThemeStore();
@@ -247,6 +250,18 @@ const invokePayment = (paymentInfo) => {
 
     console.log('[pickup] requestPayment orderInfo:', orderInfo);
 
+    // #ifdef H5
+    // 原生壳：走微信 OpenSDK（pay.wechat）。orderInfo 字段与壳 PayBridge 完全对应；
+    // 支付结果经 pay.onEvent 异步回传，最终状态由页面轮询后端确认。
+    NativePay.wechatPay(orderInfo).then((r) => {
+      console.log('[pickup] NativePay.wechatPay triggered:', r);
+      resolve(r);
+    }).catch((error) => {
+      console.log('[pickup] NativePay.wechatPay error:', error);
+      reject(error);
+    });
+    // #endif
+
     // #ifdef APP-PLUS
     uni.requestPayment({
       provider: 'wxpay',
@@ -262,7 +277,7 @@ const invokePayment = (paymentInfo) => {
     });
     // #endif
 
-    // #ifndef APP-PLUS
+    // #ifndef APP-PLUS || H5
     reject(new Error('当前平台不支持直接调用微信支付'));
     // #endif
   });

@@ -63,3 +63,17 @@ test/
 coverage/
 *.cache
 .eslintcache
+
+# 签名凭证（严禁上传）
+shell-android/keystore.properties
+shell-android/keystore/
+*.keystore
+*.jks
+
+# iOS 生成物（xcodegen / CocoaPods）
+shell-ios/CloudGuard.xcodeproj/
+shell-ios/Pods/
+
+# Android 构建缓存与本机配置
+.gradle/
+local.properties

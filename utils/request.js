@@ -1,4 +1,7 @@
 import { useUserStore } from '@/store/modules/user';
+// 统一 HTTP 入口：原生壳内走原生 OkHttp/URLSession 发起（绕 WebView 同源策略 CORS），
+// 其余环境（浏览器 / APP-PLUS / 小程序）自动回退到 uni.request，出参契约与 uni.request 一致。
+import { httpRequest } from '@/utils/nativeHttp';
 
 // 根据环境设置baseURL
 const BASE_URL = process.env.NODE_ENV === 'development' && process.env.UNI_PLATFORM === 'h5' 
@@ -107,7 +110,7 @@ const request = ({
             console.log('[request] locker headers:', headers);
         }
 
-        uni.request({
+        httpRequest({
             url: requestUrl,
             data: requestData,
             method: method,

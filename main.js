@@ -1,3 +1,7 @@
+// #ifdef H5
+// H5 原生壳桥接层：必须在业务代码前加载，补齐 WebView 中缺失的原生能力
+import '@/utils/h5-native-bridge'
+// #endif
 import App from './App'
 import uviewPlus from '@/uni_modules/uview-plus'
 import api from './api/index.js'

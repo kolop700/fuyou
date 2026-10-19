@@ -1,0 +1,41 @@
+# =====================================================================
+# 福优智家 iOS 原生壳 —— 第三方 SDK 依赖（可选集成）
+# =====================================================================
+# 说明：本壳在「无 Pods」状态下即可编译运行核心能力
+#   （WebView / HTTP / 蓝牙 / 扫码 / 相册 / 权限 / 更新 / 内购 StoreKit）。
+#
+# 需要点亮以下能力时，在 Mac 上执行：
+#   pod install
+#   open CloudGuard.xcworkspace     # 注意此后打开 .xcworkspace 而非 .xcodeproj
+#
+# 微信 OpenSDK / 支付宝 SDK 一旦链接，AppSDK.swift 中的
+#   #if canImport(WechatOpenSDK) / #if canImport(AlipaySDK)
+# 分支即自动生效，无需改动任何桥接代码。
+#
+# 广告（Taku / AnyThinkiOS）：AdBridge/AdManager 已实现完整方法/事件契约与
+#   VIP 免广告逻辑，底层经 AdNetwork 抽象。集成 Taku 后请在 AdNetworkFactory.make()
+#   返回自定义 TakuNetwork（按 AnyThink 官方 iOS API 实现 ATTSDK 加载/展示即可）。
+#   因 Taku 需在后台配置且版本 API 有差异，此处默认注释，按需开启。
+# =====================================================================
+
+platform :ios, '13.0'
+use_frameworks!
+
+target 'CloudGuard' do
+  # —— 微信开放平台 SDK（支付 / 分享 / 小程序）——
+  pod 'WechatOpenSDK-XCFramework', '2.0.4'
+
+  # —— 支付宝 SDK（App 支付）——
+  pod 'AlipaySDK-iOS'
+
+  # —— 广告聚合 Taku（AnyThinkiOS），按需开启并补 TakuNetwork ——
+  # pod 'AdHubMarket/AnyThinkiOS'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |t|
+    t.build_configurations.each do |c|
+      c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    end
+  end
+end

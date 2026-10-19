@@ -73,6 +73,26 @@ class ShareUtils {
       })
       resolve()
       // #endif
+
+      // #ifdef H5
+      // 原生壳：uni.share 已由桥接层 shim 覆盖（share.wechat），H5 编译器不会将其静态改写
+      uni.share({
+        provider: 'weixin',
+        scene: 'WXSceneSession',
+        type: 2,
+        imageUrl: options.imageUrl,
+        title: options.title,
+        summary: options.summary,
+        success: (res) => resolve(res),
+        fail: (err) => {
+          uni.showToast({
+            title: '分享失败',
+            icon: 'none'
+          })
+          reject(err)
+        }
+      })
+      // #endif
     })
   }
 

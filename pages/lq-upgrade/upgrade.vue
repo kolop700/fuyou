@@ -79,6 +79,17 @@
 		created() {
 			uni.$on('upgrade-app',this.bindEmit)
 		},
+		onLoad(options) {
+			// H5 下 navigateTo 的 success+emit 时序不可靠，兼收 URL 参数（checkVersion.js 已携参）
+			if (options && (options.name || options.url)) {
+				this.bindEmit({
+					name: decodeURIComponent(options.name || ''),
+					content: decodeURIComponent(options.content || ''),
+					url: decodeURIComponent(options.url || ''),
+					forceUpdate: options.forceUpdate === '1'
+				})
+			}
+		},
 		beforeDestroy() {
 			uni.$off('upgrade-app',this.bindEmit)
 		},

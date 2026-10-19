@@ -2,6 +2,12 @@
  * 扫码工具类
  */
 
+// #ifdef H5
+// 原生壳桥接：H5 编译器会把 uni.scanCode 静态改写成不支持占位，window.uni 上的 shim 也覆盖不到，
+// 因此壳内扫码必须直接经 NativeApp 调用原生摄像扫码。
+import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge'
+// #endif
+
 /**
  * 二维码格式验证正则
  */
@@ -220,6 +226,31 @@ const scanUtils = {
       scanType = ['qrCode']
     } = options
 
+    // #ifdef H5
+    if (isNativeShell) {
+      try {
+        const data = await NativeApp.scanQRCode({ onlyFromCamera, scanType })
+        const raw = (data && data.result) || ''
+        if (this.validateQRFormat(raw)) {
+          return this.extractParamFromQR(raw, 'c')
+        } else if (this.isLockerQRCode(raw)) {
+          uni.showToast({ title: '这是快递柜二维码，请从快递柜入口进入', icon: 'none', duration: 2200 })
+          return ''
+        } else {
+          uni.showToast({ title: '无效的二维码格式', icon: 'none', duration: 2000 })
+          return ''
+        }
+      } catch (error) {
+        console.error('扫码失败:', error)
+        const msg = (error && (error.msg || error.errMsg || error.message)) || ''
+        if (msg.indexOf('cancel') === -1) {
+          uni.showToast({ title: '扫描失败', icon: 'none' })
+        }
+        return ''
+      }
+    }
+    // #endif
+
     return new Promise((resolve, reject) => {
       uni.scanCode({
         onlyFromCamera,
@@ -286,6 +317,22 @@ const scanUtils = {
       onlyFromCamera = false,
       scanType = ['qrCode']
     } = options
+
+    // #ifdef H5
+    if (isNativeShell) {
+      try {
+        const data = await NativeApp.scanQRCode({ onlyFromCamera, scanType })
+        return (data && data.result) || ''
+      } catch (error) {
+        console.error('扫码失败:', error)
+        const msg = (error && (error.msg || error.errMsg || error.message)) || ''
+        if (msg.indexOf('cancel') === -1) {
+          uni.showToast({ title: '扫描失败', icon: 'none' })
+        }
+        return ''
+      }
+    }
+    // #endif
 
     return new Promise((resolve, reject) => {
       uni.scanCode({
