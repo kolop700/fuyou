@@ -103,7 +103,15 @@
     
     <!-- 自定义底部标签栏 -->
     <custom-tabbar />
-  </view>
+  
+    <!-- 底部横幅广告（Taku）：常驻页面底部，placementId 为空/开关全关时自动隐藏 -->
+    <view class="ad-section ad-tab" v-if="bannerAdId">
+      <view class="ad-divider"></view>
+      <view class="ad-view">
+        <taku-banner :placement-id="bannerAdId"></taku-banner>
+      </view>
+    </view>
+    </view>
 </template>
 
 <script setup>
@@ -113,11 +121,14 @@ import doorAccessUtils from '@/utils/doorAccessUtils'
 import { useThemeVars } from '@/utils/themeConfig.js'
 import { formatDoorDevice, sortDoorDevices } from '@/utils/deviceDisplayUtils.js'
 import { showOfflinePasswordModal, showOpenDoorFailModal } from '@/utils/offlinePasswordUtils.js'
+import { adManager } from '@/utils/adUtils'
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
 const deviceStore = proxy.$store.device.useDeviceStore()
 const themeStore = proxy.$store.theme.useThemeStore()
+const adStore = proxy.$store.ad.useAdStore()
+const adControlStore = proxy.$store.adControl.useAdControlStore()
 
 // 主题变量
 const isDarkMode = computed(() => themeStore.isDark())
@@ -237,6 +248,16 @@ const handleQuickUnlock = async (device) => {
     // 开门成功后更新开门次数
     updateDeviceOpenCount(device.door_mac)
     
+    // 开门成功后展示广告（Taku 激励优先，失败降级插屏，受日限/间隔约束）
+    try {
+      const adResult = await adManager.showAd()
+      if (!adResult) {
+        console.log('广告展示受限：可能达到每日限制或间隔时间不足')
+      }
+    } catch (error) {
+      console.error('广告展示失败:', error)
+    }
+    
     // 成功提示在 utils 里面已经报了
   } catch (error) {
     console.error('设备列表页开门失败:', error)
@@ -297,6 +318,9 @@ const onRefresh = async () => {
 
 onLoad(async () => {
   console.log('开门页面加载')
+  // 初始化广告管理器（预加载激励/插屏广告）
+  adManager.initStore(adStore, adControlStore)
+  adManager.init()
   // 计算导航栏高度
   const systemInfo = uni.getSystemInfoSync()
   navbarHeight.value = (systemInfo.statusBarHeight || 0) + 44
@@ -331,6 +355,12 @@ onShow(async () => {
 onUnload(() => {
   uni.$off('deviceOpenCountUpdated')
 })
+
+// ===== Taku 底部横幅广告位 ID（空/全关时不展示；随广告开关自动响应更新） =====
+import { computed as __takuComputed, getCurrentInstance as __takuGci } from 'vue'
+const __takuInst = __takuGci()
+const __takuAdStore = __takuInst.proxy.$store.ad.useAdStore()
+const bannerAdId = __takuComputed(() => __takuAdStore.getBannerAdId())
 </script>
 
 <style lang="scss" scoped>
@@ -675,5 +705,37 @@ onUnload(() => {
   font-size: 26rpx;
   color: #64748b;
   opacity: 0.6;
+}
+
+/* ===== Taku 底部横幅广告 ===== */
+.ad-section {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  box-shadow: 0 -6rpx 20rpx rgba(31, 48, 152, 0.08);
+}
+
+.ad-section .ad-divider {
+  height: 2rpx;
+  background: #eeeeee;
+}
+
+.ad-section .ad-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120rpx;
+  padding: 8rpx 0;
+}
+
+/* Tab 页：横幅悬浮在自定义 tabbar（高100rpx+安全区）上方 */
+.ad-section.ad-tab {
+  bottom: calc(100rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 16rpx rgba(31, 48, 152, 0.12);
 }
 </style>

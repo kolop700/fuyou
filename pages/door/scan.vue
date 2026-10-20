@@ -31,18 +31,13 @@
             >提交申请</button>
           </view>
     </view>
-	<!-- <view class="ad-section">
-	  <view class="divider"></view>
+	<!-- 底部横幅广告（Taku）：常驻页面底部（fixed，不随滚动移动） -->
+	<view class="ad-section" v-if="bannerAdId">
+	  <view class="ad-divider"></view>
 	  <view class="ad-view">
-	    <ad 
-	      v-if="bannerAdId"
-	      :adpid="bannerAdId" 
-	      @load="onAdLoad" 
-	      @close="onAdClose" 
-	      @error="onAdError">
-	    </ad>
-	  </view> 
-	</view> -->
+	    <taku-banner :placement-id="bannerAdId"></taku-banner>
+	  </view>
+	</view>
   </view>
 </template>
 
@@ -52,11 +47,12 @@ import { storeToRefs } from 'pinia'
 const { proxy } = getCurrentInstance()
 import { onLoad } from '@dcloudio/uni-app'
 const adStore = proxy.$store.ad.useAdStore()
+const adControlStore = proxy.$store.adControl.useAdControlStore()
 import doorAccessUtils from '@/utils/doorAccessUtils'
 import visitorPasswordUtils from '@/utils/visitorPasswordUtils'
 import { adManager } from '@/utils/adUtils'
-const isAdLoaded = ref(false) // 控制广告加载状态
-const bannerAdId = ref('') // 横幅广告 ID
+// 横幅广告位 ID（Taku placementId，空/全关时不展示；随开关自动响应更新）
+const bannerAdId = computed(() => adStore.getBannerAdId())
 // 注入蓝牙实例
 const doorBleUtils = inject('doorBleUtils')
 
@@ -104,11 +100,8 @@ onLoad((options) => {
   }
   console.log('设备列表:', deviceList.value)
   console.log('匹配的设备:', matchedDevice.value)
-  bannerAdId.value = adStore.getBannerAdId() // 获取横幅广告 ID
-  console.log('bannerAdId' ,bannerAdId)
-  
-  // 初始化广告管理器
-  const adControlStore = proxy.$store.adControl.useAdControlStore()
+
+  // 初始化广告管理器（预加载激励/插屏广告）
   adManager.initStore(adStore, adControlStore)
   adManager.init()
 })
@@ -394,21 +387,6 @@ const openDoorWithPassword = async () => {
     })
   }
 }
-// 广告相关的事件处理函数
-const onAdLoad = (e) => {
-  console.log('广告加载成功', e)
-  isAdLoaded.value = true
-}
-
-const onAdClose = (e) => {
-  console.log('广告关闭', e)
-  isAdLoaded.value = false
-}
-
-const onAdError = (e) => {
-  console.error('广告加载失败', e)
-  isAdLoaded.value = false
-}
 </script>
 
 <style lang="scss" scoped>
@@ -545,28 +523,29 @@ const onAdError = (e) => {
 .login-button.secondary {
   background-color: #FCA5A7;
 }
+/* ===== 底部横幅广告（Taku）：常驻页面底部 ===== */
 .ad-section {
-  width: 100%;
-  height: 225rpx;
-  flex: none;
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 0;
+  z-index: 20;
+  background: #ffffff;
+  border-radius: 24rpx 24rpx 0 0;
+  box-shadow: 0 -6rpx 20rpx rgba(74, 108, 247, 0.08);
   box-sizing: border-box;
-  margin-top: 20rpx;
 
-  .divider {
+  .ad-divider {
     height: 2rpx;
     background: #EEEEEE;
   }
 
   .ad-view {
-    height: 220rpx;
     display: flex;
     justify-content: center;
     align-items: center;
-    
-    ad {
-      width: 100%;
-      height: 220rpx;
-    }
+    min-height: 120rpx;
+    padding: 8rpx 0;
   }
 }
 </style>

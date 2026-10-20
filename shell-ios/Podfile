@@ -12,10 +12,10 @@
 #   #if canImport(WechatOpenSDK) / #if canImport(AlipaySDK)
 # 分支即自动生效，无需改动任何桥接代码。
 #
-# 广告（Taku / AnyThinkiOS）：AdBridge/AdManager 已实现完整方法/事件契约与
-#   VIP 免广告逻辑，底层经 AdNetwork 抽象。集成 Taku 后请在 AdNetworkFactory.make()
-#   返回自定义 TakuNetwork（按 AnyThink 官方 iOS API 实现 ATTSDK 加载/展示即可）。
-#   因 Taku 需在后台配置且版本 API 有差异，此处默认注释，按需开启。
+# 广告（Taku / AnyThinkiOS）：AdBridge/AdManager 已实现完整方法/事件契约与 VIP 免广告逻辑，
+#   底层经 AdNetwork 抽象；TakuNetwork.swift 已提供真实实现，本文件开启下方 pod 后
+#   AdNetworkFactory 编译期自动切换（#if canImport(AnyThinkSDK)）到 TakuNetwork。
+#   注：集成 Pods 后本地需打开 CloudGuard.xcworkspace；CI 已配 pod install + -workspace。
 # =====================================================================
 
 platform :ios, '13.0'
@@ -28,8 +28,11 @@ target 'CloudGuard' do
   # —— 支付宝 SDK（App 支付）——
   pod 'AlipaySDK-iOS'
 
-  # —— 广告聚合 Taku（AnyThinkiOS），按需开启并补 TakuNetwork ——
-  # pod 'AdHubMarket/AnyThinkiOS'
+  # —— 广告聚合 Taku（AnyThinkiOS）+ 莱特摩比（Litemize）适配器，版本与云卫家实测一致 ——
+  pod 'AnyThinkiOS', '6.5.73'                                    # Taku 聚合 SDK 主包
+  pod 'AnyThinkMediationAdxSmartdigimktCNAdapter', '6.5.78.2.0'  # 酷映 Adx SDK（necessary）
+  pod 'LitemobAd', '1.5.9'                                        # 莱特摩比 SDK 主包
+  pod 'LitemobTakuAdapter', '1.1.3'                              # 莱特摩比 Taku 适配器
 end
 
 post_install do |installer|

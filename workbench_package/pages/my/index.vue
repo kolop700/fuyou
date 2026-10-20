@@ -88,23 +88,18 @@
 	-->
     </view>
     
-    <!-- 底部广告区域 -->
-    <view class="ad-section" :class="{ 'ad-loaded': isAdLoaded }">
-      <view class="divider"></view>
-      <view class="ad-view" v-if="bannerAdId">
-        <ad 
-          :adpid="bannerAdId" 
-          @load="onAdLoad" 
-          @close="onAdClose" 
-          @error="onAdError">
-        </ad>
-      </view> 
+    <!-- 底部横幅广告（Taku） -->
+    <view class="ad-section" v-if="bannerAdId">
+      <view class="ad-divider"></view>
+      <view class="ad-view">
+        <taku-banner :placement-id="bannerAdId"></taku-banner>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, onMounted } from 'vue'
+import { ref, computed, getCurrentInstance, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
 import { encrypt, decrypt } from '@/utils/aesUtils'
@@ -118,8 +113,8 @@ const userStore = proxy.$store.user.useUserStore()
 const adStore = proxy.$store.ad.useAdStore()
 const { userType } = storeToRefs(userStore)
 
-const isAdLoaded = ref(false) // 控制广告加载状态
-const bannerAdId = ref('') // 初始化为空字符串
+// 横幅广告位 ID（Taku placementId，空/全关时不展示；随开关自动响应更新）
+const bannerAdId = computed(() => adStore.getBannerAdId())
 const isAdmin = ref(false) // 是否是管理员
 
 // 平台判断
@@ -141,15 +136,6 @@ const initVersion = () => {
     const systemInfo = uni.getSystemInfoSync()
     appVersion.value = systemInfo.appVersion || '1.0.0'
   }
-}
-
-// 初始化广告
-const initAd = () => {
-  setTimeout(() => {
-    const adId = adStore.getBannerAdId()
-    console.log('获取广告ID:', adId)
-    bannerAdId.value = adId
-  }, 100) // 延迟100ms加载广告
 }
 
 // 检查管理员权限
@@ -181,37 +167,12 @@ const checkAdminStatus = async () => {
 }
 
 onMounted(() => {
-  initAd()
   initVersion() // 初始化版本号
   // 获取平台信息
   const systemInfo = uni.getSystemInfoSync()
   platform.value = systemInfo.platform.toLowerCase()
   checkAdminStatus()
 })
-
-// 广告相关的事件处理函数
-const onAdLoad = (e) => {
-  console.log('广告加载成功', e)
-  isAdLoaded.value = true
-}
-
-const onAdClose = (e) => {
-  console.log('广告关闭', e)
-  isAdLoaded.value = false
-  // 广告关闭后，延迟重新加载
-  setTimeout(() => {
-    initAd()
-  }, 300)
-}
-
-const onAdError = (e) => {
-  console.error('广告加载失败', e)
-  isAdLoaded.value = false
-  // 广告加载失败后，延迟重试
-  setTimeout(() => {
-    initAd()
-  }, 300)
-}
 
 // 修改用户资料
 const handleUpdateProfile = () => {
@@ -520,39 +481,29 @@ page {
   color: #FF0000 !important;
 }
 
+/* ===== 底部横幅广告（Taku）：常驻页面底部 ===== */
 .ad-section {
-  width: 100%;
-  height: 225rpx;
-  flex: none;
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 0;
+  z-index: 20;
   box-sizing: border-box;
-  margin-top: 20rpx;
-  opacity: 0;
-  transition: all 0.3s ease-in-out;
-  transform: translateY(20rpx);
+  background: #ffffff;
+  border-radius: 24rpx 24rpx 0 0;
+  box-shadow: 0 -6rpx 20rpx rgba(74, 108, 247, 0.08);
 
-  &.ad-loaded {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .divider {
+  .ad-divider {
     height: 2rpx;
     background: #EEEEEE;
   }
 
   .ad-view {
-    height: 220rpx;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #FFFFFF;
-    border-radius: 12rpx;
-    overflow: hidden;
-    
-    ad {
-      width: 100%;
-      height: 220rpx;
-    }
+    min-height: 120rpx;
+    padding: 8rpx 0;
   }
 }
 

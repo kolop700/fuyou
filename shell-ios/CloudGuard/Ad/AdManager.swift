@@ -111,8 +111,13 @@ protocol AdNetwork: AnyObject {
 
 enum AdNetworkFactory {
     static func make() -> AdNetwork {
-        // 集成 Taku iOS（AnyThinkiOS）后，在此返回 TakuNetwork()；当前使用占位实现。
+        // 编译期自动切换：Podfile 引入 AnyThinkiOS 并 pod install 后即真实实现（TakuNetwork.swift），
+        // 无 Pods 状态保持可编译运行（UnavailableAdNetwork 即刻失败回落）。
+        #if canImport(AnyThinkSDK)
+        return TakuNetwork()
+        #else
         return UnavailableAdNetwork()
+        #endif
     }
 }
 

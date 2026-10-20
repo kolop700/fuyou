@@ -312,6 +312,16 @@
                 <view class="td">广告投放及广告监测归因、反作弊、摇一摇广告投放</view>
                 <view class="td"><a href="https://idbj.juliyuemeng.com/privacy">聚力阅盟隐私保护声明</a></view>
               </view>
+
+              <view class="table-row">
+                <view class="td">Taku SDK（塔酷广告聚合）</view>
+                <view class="td">通过 DCloud 原生插件 TakuAdsNativePlugin 集成（Taku 广告聚合 SDK，Android/iOS 端）</view>
+                <view class="td">广告展示</view>
+                <view class="td">设备品牌、设备型号、操作系统版本、屏幕密度与分辨率、设备语言、设备时区、sim卡信息（mcc&mnc）、CPU信息、运营商信息、Wi-Fi状态、网络信号强度、IP地址、设备标识符（Android ID、OAID、IDFA、IDFV、MAC地址等，IMEI等需用户授权后收集）、应用包名、运行中的进程信息、版本号、应用前后台状态、广告展示/点击等交互数据、传感器信息（如摇一摇等广告互动场景，可选）；实际收集项以 Taku 官方隐私政策为准</view>
+                <view class="td">android.permission.INTERNET、android.permission.ACCESS_NETWORK_STATE、android.permission.ACCESS_WIFI_STATE（具体以 Taku SDK 及各广告渠道实际申请为准）</view>
+                <view class="td">广告投放与聚合、广告监测归因、广告反作弊、保障广告正常展示与交互</view>
+                <view class="td"><a href="https://www.takuad.com/privacy-policy">Taku隐私政策</a></view>
+              </view>
             </view>
           </view>
         </view>
@@ -387,7 +397,15 @@
         </view>
       </view>
     </view>
-  </view>
+  
+    <!-- 底部横幅广告（Taku）：常驻页面底部，placementId 为空/开关全关时自动隐藏 -->
+    <view class="ad-section" v-if="bannerAdId">
+      <view class="ad-divider"></view>
+      <view class="ad-view">
+        <taku-banner :placement-id="bannerAdId"></taku-banner>
+      </view>
+    </view>
+    </view>
 </template>
 
 <script setup>
@@ -398,6 +416,12 @@ onLoad(() => {
     title: '隐私政策'
   })
 })
+
+// ===== Taku 底部横幅广告位 ID（空/全关时不展示；随广告开关自动响应更新） =====
+import { computed as __takuComputed, getCurrentInstance as __takuGci } from 'vue'
+const __takuInst = __takuGci()
+const __takuAdStore = __takuInst.proxy.$store.ad.useAdStore()
+const bannerAdId = __takuComputed(() => __takuAdStore.getBannerAdId())
 </script>
 
 <style lang="scss">
@@ -494,5 +518,37 @@ onLoad(() => {
       }
     }
   }
+}
+
+/* ===== Taku 底部横幅广告 ===== */
+.ad-section {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  box-shadow: 0 -6rpx 20rpx rgba(31, 48, 152, 0.08);
+}
+
+.ad-section .ad-divider {
+  height: 2rpx;
+  background: #eeeeee;
+}
+
+.ad-section .ad-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120rpx;
+  padding: 8rpx 0;
+}
+
+/* Tab 页：横幅悬浮在自定义 tabbar（高100rpx+安全区）上方 */
+.ad-section.ad-tab {
+  bottom: calc(100rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 16rpx rgba(31, 48, 152, 0.12);
 }
 </style> 

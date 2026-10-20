@@ -54,18 +54,12 @@
         >保存</button>
       </view>
 
-      <!-- 底部广告区域 -->
-      <view class="ad-section">
-        <view class="divider"></view>
+      <!-- 底部横幅广告（Taku） -->
+      <view class="ad-section" v-if="bannerAdId">
+        <view class="ad-divider"></view>
         <view class="ad-view">
-          <ad 
-            v-if="bannerAdId"
-            :adpid="bannerAdId" 
-            @load="onAdLoad" 
-            @close="onAdClose" 
-            @error="onAdError">
-          </ad>
-        </view> 
+          <taku-banner :placement-id="bannerAdId"></taku-banner>
+        </view>
       </view>
     </view>
   </template>
@@ -85,8 +79,8 @@
   const genderColumns = ['男', '女', '未知']
   const genderIndex = ref(-1)
   
-  const isAdLoaded = ref(false) // 控制广告加载状态
-  const bannerAdId = ref('') // 横幅广告 ID
+  // 横幅广告位 ID（Taku placementId，空/全关时不展示；随开关自动响应更新）
+  const bannerAdId = computed(() => adStore.getBannerAdId())
   
   // 计算属性判断表单是否有效
   const isFormValid = computed(() => {
@@ -160,9 +154,6 @@
       form.value.name = userInfo.user_name || ''
       form.value.gender = userInfo.user_sex === '1' ? '男' : userInfo.user_sex === '2' ? '女' : '未知'
       genderIndex.value = form.value.gender ? genderColumns.indexOf(form.value.gender) : -1
-
-      bannerAdId.value = adStore.getBannerAdId() // 获取横幅广告 ID
-      console.log('bannerAdId', bannerAdId)
     } catch (error) {
       console.error('获取用户信息失败:', error)
     }
@@ -182,22 +173,6 @@
         }
       })
     }
-  }
-
-  // 广告相关的事件处理函数
-  const onAdLoad = (e) => {
-    console.log('广告加载成功', e)
-    isAdLoaded.value = true
-  }
-
-  const onAdClose = (e) => {
-    console.log('广告关闭', e)
-    isAdLoaded.value = false
-  }
-
-  const onAdError = (e) => {
-    console.error('广告加载失败', e)
-    isAdLoaded.value = false
   }
   </script>
   
@@ -309,28 +284,29 @@
     }
   }
 
+  /* ===== 底部横幅广告（Taku）：常驻页面底部 ===== */
   .ad-section {
-    width: 100%;
-    height: 225rpx;
-    flex: none;
+    position: fixed;
+    left: 24rpx;
+    right: 24rpx;
+    bottom: 0;
+    z-index: 20;
     box-sizing: border-box;
-    margin-top: 20rpx;
+    background: #ffffff;
+    border-radius: 24rpx 24rpx 0 0;
+    box-shadow: 0 -6rpx 20rpx rgba(74, 108, 247, 0.08);
 
-    .divider {
+    .ad-divider {
       height: 2rpx;
       background: #EEEEEE;
     }
 
     .ad-view {
-      height: 220rpx;
       display: flex;
       justify-content: center;
       align-items: center;
-      
-      ad {
-        width: 100%;
-        height: 220rpx;
-      }
+      min-height: 120rpx;
+      padding: 8rpx 0;
     }
   }
   </style> 

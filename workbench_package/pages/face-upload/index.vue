@@ -1,7 +1,15 @@
 <template>
 	<view>
 		<qf-image-cropper :width="300" :height="300" :fileType="'jpg'" :show-angle="false" :rotatable="false" :quality="0.8" @crop="handleCrop"></qf-image-cropper>
-	</view>
+	
+    <!-- 底部横幅广告（Taku）：常驻页面底部，placementId 为空/开关全关时自动隐藏 -->
+    <view class="ad-section" v-if="bannerAdId">
+      <view class="ad-divider"></view>
+      <view class="ad-view">
+        <taku-banner :placement-id="bannerAdId"></taku-banner>
+      </view>
+    </view>
+    </view>
 </template>
 
 <script setup>
@@ -105,8 +113,46 @@ const handleCrop = async (e) => {
 		uni.hideLoading()
 	}
 }
+
+// ===== Taku 底部横幅广告位 ID（空/全关时不展示；随广告开关自动响应更新） =====
+import { computed as __takuComputed, getCurrentInstance as __takuGci } from 'vue'
+const __takuInst = __takuGci()
+const __takuAdStore = __takuInst.proxy.$store.ad.useAdStore()
+const bannerAdId = __takuComputed(() => __takuAdStore.getBannerAdId())
 </script>
 
 <style>
 
+
+/* ===== Taku 底部横幅广告 ===== */
+.ad-section {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  box-shadow: 0 -6rpx 20rpx rgba(31, 48, 152, 0.08);
+}
+
+.ad-section .ad-divider {
+  height: 2rpx;
+  background: #eeeeee;
+}
+
+.ad-section .ad-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120rpx;
+  padding: 8rpx 0;
+}
+
+/* Tab 页：横幅悬浮在自定义 tabbar（高100rpx+安全区）上方 */
+.ad-section.ad-tab {
+  bottom: calc(100rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 16rpx rgba(31, 48, 152, 0.12);
+}
 </style>

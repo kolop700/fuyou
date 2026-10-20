@@ -60,18 +60,12 @@
     <view class="reward-button">
       <button @click="watchRewardedAd">观看激励广告获取奖励</button>
     </view> -->
-    <!-- 底部广告区域 -->
-    <view class="ad-section">
-      <view class="divider"></view>
+    <!-- 底部横幅广告（Taku） -->
+    <view class="ad-section" v-if="bannerAdId">
+      <view class="ad-divider"></view>
       <view class="ad-view">
-        <ad 
-          v-if="bannerAdId"
-          :adpid="bannerAdId" 
-          @load="onAdLoad" 
-          @close="onAdClose" 
-          @error="onAdError">
-        </ad>
-      </view> 
+        <taku-banner :placement-id="bannerAdId"></taku-banner>
+      </view>
     </view>
   </view>
 </template>
@@ -90,9 +84,8 @@ const adStore = proxy.$store.ad.useAdStore()
 const adControlStore = proxy.$store.adControl.useAdControlStore()
 const deviceApi = proxy.$api.device
 
-// 广告相关状态
-const isAdLoaded = ref(false)
-const bannerAdId = ref('')
+// 横幅广告位 ID（Taku placementId，空/全关时不展示；随开关自动响应更新）
+const bannerAdId = computed(() => adStore.getBannerAdId())
 
 // 页面高度
 const windowHeight = ref('100vh')
@@ -112,28 +105,11 @@ const updateListHeight = async () => {
   // #endif
 }
 
-// 初始化广告管理器
-const initAdManager = () => {
+// 页面加载时初始化广告与监听
+onLoad(() => {
+  // 初始化广告管理器（预加载激励/插屏广告）
   adManager.initStore(adStore, adControlStore)
   adManager.init()
-}
-// 页面加载时设置高度和广告
-onMounted(async () => {
-  windowHeight.value = getPageHeight()
-  await updateListHeight()
-  
-  // 初始化广告ID和广告管理器
-  try {
-    bannerAdId.value = adStore.getBannerAdId()
-    initAdManager()
-    console.log('广告ID:', bannerAdId.value)
-  } catch (error) {
-    console.error('获取广告ID失败:', error)
-  }
-})
-
-// 监听窗口大小变化
-onLoad(() => {
   // #ifdef MP-WEIXIN || APP-PLUS
   uni.onWindowResize(() => {
     updateListHeight()
@@ -141,21 +117,11 @@ onLoad(() => {
   // #endif
 })
 
-// 广告事件处理
-const onAdLoad = (e) => {
-  console.log('广告加载成功', e)
-  isAdLoaded.value = true
-}
-
-const onAdClose = (e) => {
-  console.log('广告关闭', e)
-  isAdLoaded.value = false
-}
-
-const onAdError = (e) => {
-  console.error('广告加载失败', e)
-  isAdLoaded.value = false
-}
+// 页面加载时设置高度
+onMounted(async () => {
+  windowHeight.value = getPageHeight()
+  await updateListHeight()
+})
 
 // 搜索关键词
 const searchKey = ref('')
@@ -312,7 +278,7 @@ page {
   border-radius: 12rpx;
   padding: 20rpx;
   overflow-y: auto;
-  margin-bottom: 245rpx; // 广告高度 + 间距
+  margin-bottom: 20rpx; // 底部留白（横幅广告为 fixed，展示时悬浮于列表上方）
   -webkit-overflow-scrolling: touch;
 
   .device-list-content {
@@ -396,35 +362,29 @@ page {
   }
 }
 
+/* ===== 底部横幅广告（Taku）：常驻页面底部 ===== */
 .ad-section {
-  position: absolute;
-  left: 20rpx;
-  right: 20rpx;
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
   bottom: 0;
-  width: auto;
-  height: 225rpx;
-  background: #FFFFFF;
-  box-sizing: border-box;
   z-index: 99;
+  background: #FFFFFF;
+  border-radius: 24rpx 24rpx 0 0;
+  box-shadow: 0 -6rpx 20rpx rgba(74, 108, 247, 0.08);
+  box-sizing: border-box;
 
-  .divider {
+  .ad-divider {
     height: 2rpx;
     background: #EEEEEE;
   }
 
   .ad-view {
-    width: 100%;
-    height: 220rpx;
-    box-sizing: border-box;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #FFFFFF;
-    
-    ad {
-      width: 100%;
-      height: 100%;
-    }
+    min-height: 120rpx;
+    padding: 8rpx 0;
   }
 }
 </style> 

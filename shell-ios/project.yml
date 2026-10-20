@@ -43,6 +43,11 @@ targets:
       # 显式把 WebApp 目录作为 folder reference（蓝色文件夹），Bundle 内保持 WebApp/... 层级
       - path: CloudGuard/WebApp
         buildPhase: resources
+    # 显式链接的系统框架：AppTrackingTransparency 供 TakuNetwork.swift ATT 授权请求使用
+    # （弹窗文案 NSUserTrackingUsageDescription 已配于 Info.plist；pod 集成前的无 Pods 构建也不报错）
+    # 其余 SDK（微信/支付宝/Taku）经 CocoaPods 链接：xcodegen generate → pod install → .xcworkspace
+    dependencies:
+      - sdk: AppTrackingTransparency.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yefiot.fuyou
