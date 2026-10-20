@@ -2,6 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- 出口合规：仅使用 Apple 系统标准 TLS（HTTPS），属豁免加密，声明后 TestFlight 上传不再弹「App 加密文稿」问卷 -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>CFBundleDevelopmentRegion</key>
     <string>zh_CN</string>
     <key>CFBundleDisplayName</key>
