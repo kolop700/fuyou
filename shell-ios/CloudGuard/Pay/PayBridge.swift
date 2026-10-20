@@ -86,6 +86,8 @@ final class PayBridge: NSObject, BridgeModule, SKPaymentTransactionObserver {
         }
 
         let productRequest = SKProductsRequest(productIdentifiers: [productId])
+        // 用独立 UUID 作登记表键值：避免初始化闭包内引用尚未声明完成的 handler 自身（capture before declared）
+        let token = UUID()
         let handler = ProductsHandler(productId: productId) { [weak self] ok, errMsg in
             guard let self = self else { return }
             if ok {
@@ -94,15 +96,15 @@ final class PayBridge: NSObject, BridgeModule, SKPaymentTransactionObserver {
                 self.iapCallbacks.removeValue(forKey: productId)
                 self.channel.resolveErr(callbackId, errMsg ?? "商品查询失败")
             }
-            self.productsHandlers.removeValue(forKey: ObjectIdentifier(handler))
+            self.productsHandlers.removeValue(forKey: token)
         }
-        productsHandlers[ObjectIdentifier(handler)] = handler
+        productsHandlers[token] = handler
         handler.productRequest = productRequest
         productRequest.delegate = handler
         productRequest.start()
     }
 
-    private var productsHandlers: [ObjectIdentifier: ProductsHandler] = [:]
+    private var productsHandlers: [UUID: ProductsHandler] = [:]
 
     /// 商品校验通过后：回传「拉起已发出」并加入支付队列
     private func beginPayment(_ productId: String) {
