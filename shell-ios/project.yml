@@ -24,7 +24,7 @@ options:
 
 settings:
   base:
-    SWIFT_VERSION: "5.9"
+    SWIFT_VERSION: "5.0"   # 注意：Xcode 只认 4.2/5.0/6.0，写 5.9 会被当成未知值回退到 Swift 6 严格并发模式
     IPHONEOS_DEPLOYMENT_TARGET: "14.0"
     ENABLE_BITCODE: "NO"
 

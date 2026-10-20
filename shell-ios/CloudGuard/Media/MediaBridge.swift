@@ -181,31 +181,31 @@ final class MediaBridge: NSObject, BridgeModule,
         }
         guard let img = image else { channel.resolveErr(callbackId, "图片数据无效"); return }
 
-        let perform = {
-            PHPhotoLibrary.shared().performChanges({
-                PHAssetChangeRequest.creationRequestForAsset(from: img)
-            }) { success, error in
-                DispatchQueue.main.async {
-                    if success { self.channel.resolveOk(callbackId) }
-                    else { self.channel.resolveErr(callbackId, "保存失败: \(error?.localizedDescription ?? "")") }
-                }
-            }
-        }
         if #available(iOS 14, *) {
             PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-                DispatchQueue.main.async {
-                    guard status == .addOnly || status == .readWrite else {
-                        self.channel.resolveErr(callbackId, "缺少相册权限"); return
-                    }
-                    perform()
+                guard status == .addOnly || status == .readWrite else {
+                    self.channel.resolveErr(callbackId, "缺少相册权限"); return
                 }
+                self.performSave(img, callbackId: callbackId)
             }
         } else {
             PHPhotoLibrary.requestAuthorization { status in
-                DispatchQueue.main.async {
-                    guard status == .authorized else { self.channel.resolveErr(callbackId, "缺少相册权限"); return }
-                    perform()
+                guard status == .authorized else {
+                    self.channel.resolveErr(callbackId, "缺少相册权限"); return
                 }
+                self.performSave(img, callbackId: callbackId)
+            }
+        }
+    }
+
+    /// 授权通过后实际写入相册（独立方法，避免嵌套闭包捕获非 Sendable 本地闭包）
+    private func performSave(_ img: UIImage, callbackId: String) {
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.creationRequestForAsset(from: img)
+        }) { success, error in
+            DispatchQueue.main.async {
+                if success { self.channel.resolveOk(callbackId) }
+                else { self.channel.resolveErr(callbackId, "保存失败: \(error?.localizedDescription ?? "")") }
             }
         }
     }
