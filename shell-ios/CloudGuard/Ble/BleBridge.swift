@@ -81,7 +81,7 @@ final class BleBridge: NSObject, BridgeModule, CBCentralManagerDelegate, CBPerip
 
     private func emitAdapterState() {
         let available = (central?.state == .poweredOn)
-        channel.emit("ble.onAdapterStateChange", ["available": available, "discovering": discovering])
+        channel.emit("ble.onAdapterStateChange", data: ["available": available, "discovering": discovering])
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
@@ -157,7 +157,7 @@ final class BleBridge: NSObject, BridgeModule, CBCentralManagerDelegate, CBPerip
             "advertisData": mfgData.map { $0.base64EncodedString() } ?? "",
             "advertisServiceUUIDs": serviceUUIDs
         ]
-        channel.emit("ble.onDeviceFound", ["devices": [obj]])
+        channel.emit("ble.onDeviceFound", data: ["devices": [obj]])
     }
 
     // MARK: - 连接

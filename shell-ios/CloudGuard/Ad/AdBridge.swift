@@ -99,7 +99,7 @@ final class AdBridge: BridgeModule {
     /// 生成事件下发闭包（绑定 placementId）
     private func fire(_ placementId: String) -> AdManager.Event {
         return { [weak self] event, code, msg in
-            self?.channel.emit("ad.onEvent", [
+            self?.channel.emit("ad.onEvent", data: [
                 "placementId": placementId, "event": event, "code": code, "msg": msg ?? ""
             ])
         }

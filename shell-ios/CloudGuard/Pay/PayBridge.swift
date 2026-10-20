@@ -29,7 +29,7 @@ final class PayBridge: NSObject, BridgeModule, SKPaymentTransactionObserver {
                 "code": payload.code, "msg": payload.msg
             ]
             payload.extra.forEach { data[$0.key] = $0.value }
-            self?.channel.emit("pay.onEvent", data)
+            self?.channel.emit("pay.onEvent", data: data)
         }
         SKPaymentQueue.default().add(self)
     }
@@ -117,9 +117,9 @@ final class PayBridge: NSObject, BridgeModule, SKPaymentTransactionObserver {
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
         for tx in transactions {
             let pid = tx.payment.productIdentifier
-            let orderNo = iapOrder[pid] ?? tx.payment.applicationUsername
+            let orderNo = iapOrder[pid] ?? tx.payment.applicationUsername ?? ""
             switch tx.transactionState {
-            case .purchasing, .restoring:
+            case .purchasing, .deferred:
                 break
             case .purchased, .failed, .restored:
                 if case .purchased = tx.transactionState {
@@ -147,7 +147,7 @@ final class PayBridge: NSObject, BridgeModule, SKPaymentTransactionObserver {
     private func emitIap(orderNo: String, event: String, code: Int, msg: String, extra: [String: Any] = [:]) {
         var data: [String: Any] = ["channel": "iap", "event": event, "code": code, "msg": msg, "orderNo": orderNo]
         extra.forEach { data[$0.key] = $0.value }
-        channel.emit("pay.onEvent", data)
+        channel.emit("pay.onEvent", data: data)
     }
 
     private static func receiptBase64() -> String {

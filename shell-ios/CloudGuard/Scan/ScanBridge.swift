@@ -75,8 +75,7 @@ final class ScanViewController: UIViewController, AVCaptureMetadataOutputObjects
                         from connection: AVCaptureConnection) {
         guard !didFind else { return }
         guard let obj = metadataObjects.first as? AVMetadataMachineReadableCodeObject else { return }
-        let value = obj.stringValue
-        guard !value.isEmpty else { return }
+        guard let value = obj.stringValue, !value.isEmpty else { return }
         didFind = true
         session?.stopRunning()
         finish(.success(value))

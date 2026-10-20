@@ -51,7 +51,10 @@ final class JsChannel {
         // jsonString([...]) 形如 ["a","b"]，去掉首尾中括号即为 "a","b" 参数列表
         let inner = String(argStr.dropFirst().dropLast())
         let js = "\(fn)(\(inner));"
-        let run = { [weak self] in self?.webView?.evaluateJavaScript(js, completionHandler: nil) }
+        let run: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            self.webView?.evaluateJavaScript(js, completionHandler: nil)
+        }
         if Thread.isMainThread { run() } else { DispatchQueue.main.async(execute: run) }
     }
 

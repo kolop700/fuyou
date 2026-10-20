@@ -1,5 +1,6 @@
 import UIKit
 import Photos
+import PhotosUI
 import UniformTypeIdentifiers
 
 /// 相册 / 相机桥（image.*）——对齐 shell-android MediaManager。

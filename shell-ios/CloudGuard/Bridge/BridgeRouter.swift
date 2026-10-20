@@ -72,7 +72,10 @@ final class BridgeRouter: NSObject, WKScriptMessageHandler {
     }
 
     func dispatch(_ method: String, _ params: [String: Any], _ callbackId: String) {
-        let run = { [weak self] in self?.safeRoute(method, params, callbackId) }
+        let run: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            self.safeRoute(method, params, callbackId)
+        }
         if Thread.isMainThread { run() } else { DispatchQueue.main.async(execute: run) }
     }
 

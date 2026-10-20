@@ -63,7 +63,7 @@ final class ViewController: UIViewController {
         splashContainer.isHidden = true
         view.addSubview(splashContainer)
 
-        webView.load(WebAppSchemeHandler.startURL)
+        webView.load(URLRequest(url: WebAppSchemeHandler.startURL))
     }
 
     override func viewSafeAreaInsetsDidChange() {

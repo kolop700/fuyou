@@ -69,7 +69,7 @@ final class UpdateBridge: NSObject, BridgeModule, URLSessionDownloadDelegate {
         let taskId = downloadTask.taskDescription ?? ""
         let percent = totalBytesExpectedToWrite > 0
             ? Int(totalBytesWritten * 100 / totalBytesExpectedToWrite) : 0
-        channel.emit("app.onDownloadProgress", [
+        channel.emit("app.onDownloadProgress", data: [
             "taskId": taskId,
             "percent": percent,
             "downloadedSize": totalBytesWritten,

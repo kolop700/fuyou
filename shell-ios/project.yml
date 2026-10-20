@@ -18,14 +18,14 @@ name: CloudGuard
 options:
   bundleIdPrefix: com.yefiot
   deploymentTarget:
-    iOS: "13.0"
+    iOS: "14.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "14.0"
     ENABLE_BITCODE: "NO"
 
 targets:
