@@ -44,6 +44,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yefiot.fuyou
+        # App 图标（Assets.xcassets/AppIcon）：actool 会自动把 CFBundleIconName 写进 Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # 可执行文件名/CFBundleName 用 ASCII，避免工具链与非 ASCII 目标名问题；
         # 桌面显示名由 Info.plist 的 CFBundleDisplayName=福优智家 承载
         PRODUCT_NAME: CloudGuard
