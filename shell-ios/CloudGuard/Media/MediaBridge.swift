@@ -183,7 +183,7 @@ final class MediaBridge: NSObject, BridgeModule,
 
         if #available(iOS 14, *) {
             PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-                guard status == .addOnly || status == .readWrite else {
+                guard status == .authorized || status == .limited else {
                     self.channel.resolveErr(callbackId, "缺少相册权限"); return
                 }
                 self.performSave(img, callbackId: callbackId)
