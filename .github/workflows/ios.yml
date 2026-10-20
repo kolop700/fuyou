@@ -108,7 +108,11 @@ jobs:
           <dict>
             <key>method</key><string>app-store</string>
             <key>destination</key><string>export</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.yefiot.fuyou</key><string>9f798af1-e9bc-4c20-abfa-260b798d1ffa</string>
+            </dict>
             <key>manageAppVersionAndBuildNumber</key><false/>
             <key>uploadBitcode</key><false/>
             <key>compileBitcode</key><false/>
@@ -125,6 +129,9 @@ jobs:
           xcodebuild -project CloudGuard.xcodeproj -scheme CloudGuard \
             -configuration Release -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/CloudGuard.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="9f798af1-e9bc-4c20-abfa-260b798d1ffa" \
             -allowProvisioningUpdates \
             -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
             -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
