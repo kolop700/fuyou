@@ -1,0 +1,162 @@
+# =====================================================================
+# 福优智家 iOS 原生壳 —— GitHub Actions 云端打包
+# =====================================================================
+# 两种模式（运行前手动选择）：
+#   simulator  —— 免签名，仅验证工程可编译（无需任何证书，随时可跑）
+#   testflight —— 签名 Archive 并上传 TestFlight（需配好下方 Secrets）
+#
+# 需要在仓库 Settings → Secrets and variables → Actions 配置的 Secrets：
+#   APPLE_CERT_P12_BASE64       发布证书 .p12 的 base64
+#   APPLE_CERT_PASSWORD         .p12 导出密码
+#   MOBILE_PROVISION_BASE64     App Store 描述文件 .mobileprovision 的 base64
+#   KEYCHAIN_PASSWORD           临时钥匙串密码（自定义一个即可）
+#   ASC_API_KEY_ID              App Store Connect API 密钥 ID
+#   ASC_ISSUER_ID               App Store Connect Issuer ID
+#   ASC_API_KEY_P8_BASE64       .p8 私钥的 base64
+#
+# 用法：Actions → "iOS 打包（福优智家）" → Run workflow → 选模式 → 运行
+# =====================================================================
+name: iOS 打包（福优智家）
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '打包模式'
+        type: choice
+        required: true
+        default: simulator
+        options:
+          - simulator
+          - testflight
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 生成 Xcode 工程
+        working-directory: shell-ios
+        run: xcodegen generate
+
+      # 集成微信/支付宝 SDK 时取消注释，并把下方构建命令的 -project 改为 -workspace CloudGuard.xcworkspace
+      # - name: CocoaPods 安装
+      #   working-directory: shell-ios
+      #   run: pod install --repo-update
+
+      # ---------------- 模式一：模拟器编译验证（免签名） ----------------
+      - name: 编译验证（Simulator，不签名）
+        if: inputs.mode == 'simulator'
+        working-directory: shell-ios
+        run: |
+          xcodebuild -project CloudGuard.xcodeproj -scheme CloudGuard \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+
+      # ---------------- 模式二：签名打包并上传 TestFlight ----------------
+      - name: 配置签名证书与描述文件
+        if: inputs.mode == 'testflight'
+        env:
+          APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          MOBILE_PROVISION_BASE64: ${{ secrets.MOBILE_PROVISION_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "$APPLE_CERT_P12_BASE64" | base64 -D > cert.p12
+          echo "$MOBILE_PROVISION_BASE64" | base64 -D > profile.mobileprovision
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import cert.p12 -k build.keychain -P "$APPLE_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # 新旧 Xcode 的描述文件目录都放一份，确保能识别
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          cp profile.mobileprovision "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"
+
+      - name: 解码 ASC API 密钥（.p8）
+        if: inputs.mode == 'testflight'
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          echo "$ASC_API_KEY_P8_BASE64" | base64 -D > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
+
+      - name: 生成 ExportOptions.plist
+        if: inputs.mode == 'testflight'
+        run: |
+          cat > ExportOptions.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>destination</key><string>export</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadBitcode</key><false/>
+            <key>compileBitcode</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: 归档 Archive
+        if: inputs.mode == 'testflight'
+        working-directory: shell-ios
+        run: |
+          set -euo pipefail
+          xcodebuild -project CloudGuard.xcodeproj -scheme CloudGuard \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/CloudGuard.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
+            archive
+
+      - name: 导出 ipa
+        if: inputs.mode == 'testflight'
+        working-directory: shell-ios
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/CloudGuard.xcarchive" \
+            -exportPath "$RUNNER_TEMP/ipa" \
+            -exportOptionsPlist ../ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8"
+
+      - name: 保留 ipa 构建产物（Actions 页面可下载）
+        if: inputs.mode == 'testflight'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuyou-ios
+          path: ${{ runner.temp }}/ipa/*.ipa
+
+      - name: 上传 TestFlight
+        if: inputs.mode == 'testflight'
+        run: |
+          set -euo pipefail
+          IPA=$(ls "$RUNNER_TEMP"/ipa/*.ipa | head -1)
+          echo "上传：$IPA"
+          xcrun altool --validate-app -f "$IPA" -t ios \
+            --apiKey "${{ secrets.ASC_API_KEY_ID }}" --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
+          xcrun altool --upload-app  -f "$IPA" -t ios \
+            --apiKey "${{ secrets.ASC_API_KEY_ID }}" --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
