@@ -32,7 +32,9 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    # XcodeGen 2.44+ 生成的工程为 objectVersion 77，需 Xcode 16+ 才能打开
+    # macos-26 云机默认 Xcode 26.x，可直接读取该格式
+    runs-on: macos-26
 
     steps:
       - name: 检出代码
