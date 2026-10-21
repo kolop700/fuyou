@@ -18,7 +18,10 @@ const QR_REGEX = {
   YT_FORMAT: /^https?:\/\/svr\.yefiot\.com\/yt\?c=.+$/,
   YULONG: /^https?:\/\/xy\.yefiot\.com\/public\/yulong\/\?c=.+$/,
   FUYOU_DOOR: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\bc=[^&#]+/i,
-  FUYOU_LOCKER: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\blocker_mac=[^&#]+/i
+  FUYOU_LOCKER: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\blocker_mac=[^&#]+/i,
+  // 裸设备码：福优门锁二维码直接是设备号本体（如 IMEI 样式的纯数字 865530079086732），
+  // 与后端 door_qr_code 字段全等匹配，不走 URL 提取。
+  BARE_DEVICE: /^[0-9A-Za-z]{6,32}$/
 }
 
 const safeDecodeURIComponent = (value = '') => {
@@ -67,6 +70,12 @@ const scanUtils = {
   isLockerQRCode(qrString) {
     const raw = String(qrString || '').trim()
     return QR_REGEX.FUYOU_LOCKER.test(raw)
+  },
+
+  /** 裸设备码（非 URL，直接作为设备号匹配 door_qr_code） */
+  isBareDeviceCode(qrString) {
+    const raw = String(qrString || '').trim()
+    return QR_REGEX.BARE_DEVICE.test(raw) && raw.indexOf('http') !== 0
   },
 
   /**
@@ -236,6 +245,9 @@ const scanUtils = {
         } else if (this.isLockerQRCode(raw)) {
           uni.showToast({ title: '这是快递柜二维码，请从快递柜入口进入', icon: 'none', duration: 2200 })
           return ''
+        } else if (this.isBareDeviceCode(raw)) {
+          // 门锁码直接是设备号本体，原样返回给 scan 页匹配 door_qr_code
+          return raw
         } else {
           uni.showToast({ title: '无效的二维码格式', icon: 'none', duration: 2000 })
           return ''
@@ -272,6 +284,10 @@ const scanUtils = {
               duration: 2200
             })
             resolve('')
+          } else if (scanUtils.isBareDeviceCode(res.result)) {
+            // 门锁码直接是设备号本体，原样返回
+            console.log('裸设备码:', res.result)
+            resolve(String(res.result).trim())
           } else {
             console.log('匹配失败:', res.result);
             // 如果二维码格式不正确，返回空字符串
