@@ -49,6 +49,7 @@ import { onLoad } from '@dcloudio/uni-app'
 const adStore = proxy.$store.ad.useAdStore()
 const adControlStore = proxy.$store.adControl.useAdControlStore()
 import doorAccessUtils from '@/utils/doorAccessUtils'
+import scanUtils from '@/utils/scanUtils'
 import visitorPasswordUtils from '@/utils/visitorPasswordUtils'
 import { adManager } from '@/utils/adUtils'
 // 横幅广告位 ID（Taku placementId，空/全关时不展示；随开关自动响应更新）
@@ -82,7 +83,8 @@ const setDeviceNumber = (number) => {
   searchStatus.value = '正在搜索设备...'
   console.log('设备号:', deviceNumber.value)
 
-  const device = deviceList.value.find(device => device.door_qr_code === deviceNumber.value)
+  // 容错匹配：door_qr_code 裸号 / URL 提参 / door_mac 兜底（历史码制差异）
+  const device = scanUtils.findDeviceByScanCode(deviceList.value, deviceNumber.value)
   if (device) {
     matchedDevice.value = device
   } else {
@@ -148,7 +150,7 @@ const searchDevice = async () => {
           searchStatus.value = '点击下面按钮开门，蓝牙设备已找到'
           // 保存找到的设备信息
           if (!matchedDevice.value) {
-            const foundDevice = deviceList.value.find(d => d.door_qr_code === deviceNumber.value)
+            const foundDevice = scanUtils.findDeviceByScanCode(deviceList.value, deviceNumber.value)
             if (foundDevice) {
               matchedDevice.value = foundDevice
               // 找到设备后停止搜索
@@ -183,9 +185,9 @@ const openDoor = async () => {
   }
 
   try {
-    // 查找匹配的设备
+    // 查找匹配的设备（容错匹配，与 setDeviceNumber 同源）
     if (!matchedDevice.value) {
-      const device = deviceList.value.find(device => device.door_qr_code === deviceNumber.value)
+      const device = scanUtils.findDeviceByScanCode(deviceList.value, deviceNumber.value)
       if (device) {
         matchedDevice.value = device
       }

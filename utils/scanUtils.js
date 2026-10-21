@@ -388,6 +388,33 @@ const scanUtils = {
    */
   extractParamFromQR(qrString, paramName = 'c') {
     return extractQueryParam(qrString, paramName)
+  },
+
+  /**
+   * 按扫码结果在设备列表中匹配门锁。
+   * 兼容三种数据形态（福优线上实际存在历史码制差异）：
+   *   1) door_qr_code 直接存裸设备号 → 全等（忽略大小写/首尾空白）
+   *   2) door_qr_code 存 URL（?c=设备号）→ 提取 c 参数后比对
+   *   3) door_qr_code 为空/不一致，但码内容就是 door_mac（IMEI 样式 15 位）→ 按 door_mac 兜底匹配
+   * @param {Array} list 设备列表
+   * @param {string} code 扫码得到的设备号
+   * @returns {Object|null} 匹配到的设备
+   */
+  findDeviceByScanCode(list = [], code = '') {
+    const target = String(code || '').trim().toLowerCase()
+    if (!target) return null
+    const eq = (v) => String(v ?? '').trim().toLowerCase() === target
+
+    const direct = (list || []).find(d => eq(d.door_qr_code))
+    if (direct) return direct
+
+    const fromUrl = (list || []).find(d =>
+      /^https?:/i.test(String(d.door_qr_code || '')) &&
+      extractQueryParam(d.door_qr_code, 'c').toLowerCase() === target
+    )
+    if (fromUrl) return fromUrl
+
+    return (list || []).find(d => eq(d.door_mac)) || null
   }
 }
 
