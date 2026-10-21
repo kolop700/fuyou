@@ -14,7 +14,7 @@
         <view class="section">
           <text class="section-title" :style="{ color: theme.textSecondary }">门禁服务</text>
           <view class="feature-grid">
-            <view class="feature-item" @click="handleNavigate('/pages/door-list/index')">
+            <view class="feature-item" @click="handleNavigate('/workbench_package/pages/door-list/index')">
               <view class="feature-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
                 <text class="iconfont icon-door-open"></text>
               </view>
@@ -179,18 +179,14 @@ onShow(() => {
 })
 
 const handleNavigate = (url) => {
-  if (url === '/pages/device/index') {
-    // 特殊处理跳转到房屋页面，因为它是tabbar页面（或者曾经是）
-    // 如果它还是tabbar页面，应该用switchTab，但我们即将把它改为普通页面
-    // 所以这里用navigateTo是安全的，前提是pages.json改了
-    uni.navigateTo({
-      url
-    })
-  } else {
-    uni.navigateTo({
-      url
-    })
-  }
+  // 统一 navigateTo；失败不再静默（此前 door-list 分包路径写错导致点击无反应无从发现）
+  uni.navigateTo({
+    url,
+    fail: (err) => {
+      console.error('[workbench] 页面跳转失败:', url, err)
+      uni.showToast({ title: '页面打开失败，请重试', icon: 'none' })
+    }
+  })
 }
 
 const handleScanCode = async () => {
