@@ -221,6 +221,9 @@ import checkVersion from '@/pages/lq-upgrade/checkVersion.js'
 import { useThemeVars } from '@/utils/themeConfig.js'
 import { formatDoorDevice, sortDoorDevices } from '@/utils/deviceDisplayUtils.js'
 import { showOfflinePasswordModal, showOpenDoorFailModal } from '@/utils/offlinePasswordUtils.js'
+// #ifdef H5
+import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge'
+// #endif
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
@@ -615,7 +618,12 @@ const handleDisagree = () => {
   plus.runtime.quit()
   // #endif
   // #ifdef H5
-  window.close()
+  // 原生壳内：window.close() 会被 WebView 忽略，改走 app.quit 桥退出应用；普通浏览器仍用 window.close
+  if (isNativeShell) {
+    NativeApp.quit().catch(() => {})
+  } else {
+    window.close()
+  }
   // #endif
 }
 

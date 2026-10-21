@@ -1,5 +1,9 @@
 // utils/tangeDevice.js
 
+// 统一跨端 HTTP：原生壳内走 OkHttp/URLSession（绕 WebView 同源策略），普通浏览器/APP 端自动回退 uni.request。
+// 背景：壳内直调 uni.request 访问 tange365 开放接口可能被 CORS 拦截（老整包 plus.net 无此限制），改用封装保持行为一致。
+import { httpRequest } from '@/utils/nativeHttp'
+
 // 你需要根据实际情况替换这些参数
 const BASE_URL = 'https://openapi-cn01.tange365.com'
 const APP_ID = 'AD_2fDa8DLLXoFgKt9wuYwJBXX8aYZ'
@@ -103,21 +107,26 @@ async function request(path, data = {}, method = 'POST') {
   try {
     console.log(`开始请求: ${BASE_URL}${path}`, data)
     
-    const res = await uni.request({
-      url: `${BASE_URL}${path}`,
-      method,
-      header: {
-        'X-Tg-App-Id': APP_ID,
-        'X-Tg-Platform': PLATFORM,
-        'X-Tg-Sdk-Version': SDK_VERSION,
-        'Accept-Language': LANGUAGE,
-        'X-Tg-App-Pkgname': PKGNAME,
-        'Authorization': accessToken,
-        'X-Tg-Date': getUTCDateString(),
-        'X-Tg-App-Version': APP_VERSION,
-        'Content-Type': 'application/json'
-      },
-      data
+    // httpRequest 为回调风格（对齐 uni.request），这里 Promise 化保持原有 await 用法与出参结构 { statusCode, data }
+    const res = await new Promise((resolve, reject) => {
+      httpRequest({
+        url: `${BASE_URL}${path}`,
+        method,
+        header: {
+          'X-Tg-App-Id': APP_ID,
+          'X-Tg-Platform': PLATFORM,
+          'X-Tg-Sdk-Version': SDK_VERSION,
+          'Accept-Language': LANGUAGE,
+          'X-Tg-App-Pkgname': PKGNAME,
+          'Authorization': accessToken,
+          'X-Tg-Date': getUTCDateString(),
+          'X-Tg-App-Version': APP_VERSION,
+          'Content-Type': 'application/json'
+        },
+        data,
+        success: resolve,
+        fail: reject
+      })
     })
     
     console.log(`请求响应: ${BASE_URL}${path}`, res)

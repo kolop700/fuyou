@@ -68,6 +68,9 @@
 <script setup>
 import { ref, onMounted, getCurrentInstance } from 'vue'
 import { storeToRefs } from 'pinia'
+// #ifdef H5
+import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge'
+// #endif
 
 const { proxy } = getCurrentInstance()
 const userStore = proxy.$store.user.useUserStore()
@@ -81,6 +84,15 @@ const currentYear = new Date().getFullYear()
 const initVersion = () => {
   // #ifdef APP-PLUS
   appVersion.value = plus.runtime.version
+  // #endif
+
+  // #ifdef H5
+  // 原生壳：H5 环境无 plus.runtime，经 device.getInfo 桥取真实应用版本（老整包行为对齐）
+  if (isNativeShell) {
+    NativeApp.getInfo().then((d) => {
+      if (d && d.version) appVersion.value = d.version
+    }).catch(() => {})
+  }
   // #endif
 
   // #ifdef MP-WEIXIN

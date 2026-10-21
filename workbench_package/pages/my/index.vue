@@ -105,7 +105,7 @@ import { storeToRefs } from 'pinia'
 import { encrypt, decrypt } from '@/utils/aesUtils'
 import userApi from '@/api/user/user'
 // #ifdef H5
-import { NativeApp } from '@/utils/h5-native-bridge'
+import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge'
 // #endif
 
 const { proxy } = getCurrentInstance()
@@ -124,6 +124,15 @@ const platform = ref('')
 const initVersion = () => {
   // #ifdef APP-PLUS
   appVersion.value = plus.runtime.version
+  // #endif
+
+  // #ifdef H5
+  // 原生壳：H5 环境无 plus.runtime，经 device.getInfo 桥取真实应用版本（老整包行为对齐）
+  if (isNativeShell) {
+    NativeApp.getInfo().then((d) => {
+      if (d && d.version) appVersion.value = d.version
+    }).catch(() => {})
+  }
   // #endif
   
   // #ifdef MP-WEIXIN
@@ -211,7 +220,21 @@ const handleAdminLogin = () => {
     url: '/manageModule/pages/adminLogin/adminLogin'
   })
   // #endif
-  
+
+  // #ifdef H5
+  // 原生壳：经 miniprogram.launch 桥由微信 OpenSDK 拉起管理小程序（与 APP-PLUS 分支同目标）
+  if (isNativeShell) {
+    NativeApp.launchMiniProgram({
+      appId: 'wx8ea71b7e50187f1d',
+      userName: 'gh_1329871b16ba',
+      path: 'manageModule/pages/adminLogin/adminLogin?fromApp=1',
+      type: 0
+    }).catch(() => {
+      uni.showToast({ title: '拉起微信小程序失败', icon: 'none' })
+    })
+  }
+  // #endif
+
   // #ifdef APP-PLUS
   plus.share.getServices(
     (services) => {
@@ -255,6 +278,40 @@ const handleBindWechat = () => {
   })
   // #endif
   
+  // #ifdef H5
+  // 原生壳：复用 APP-PLUS 分支的加密对账流程，经 miniprogram.launch 拉起绑定小程序
+  if (isNativeShell) {
+    uni.showModal({
+      title: '绑定微信',
+      content: '是否跳转到微信小程序进行绑定？',
+      success: (res) => {
+        if (!res.confirm) return
+        const originalData = {
+          account: userStore.userAcct,
+          password: userStore.userPassword,
+          timestamp: Date.now()
+        }
+        const encryptedAccount = encrypt(originalData.account)
+        const encryptedPassword = encrypt(originalData.password)
+        if (!encryptedAccount || !encryptedPassword) {
+          uni.showToast({ title: '数据加密失败', icon: 'none' })
+          return
+        }
+        const query = `account=${encodeURIComponent(encryptedAccount)}&password=${encodeURIComponent(encryptedPassword)}&timestamp=${originalData.timestamp}`
+        NativeApp.launchMiniProgram({
+          appId: 'wx8ea71b7e50187f1d',
+          userName: 'gh_1329871b16ba',
+          path: `pages/voipbind/voipbind?${query}`,
+          type: 0
+        }).catch(() => {
+          uni.showToast({ title: '拉起微信小程序失败', icon: 'none' })
+        })
+      }
+    })
+    return
+  }
+  // #endif
+
   // #ifdef APP-PLUS
   console.log('当前用户信息：', {
     account: userStore.userAcct,
