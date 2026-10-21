@@ -1,5 +1,10 @@
 import { encrypt } from '@/utils/aesUtils'
+// #ifdef H5
+import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge'
+// #endif
 
+// 福优智家微信开放平台移动应用 AppId（拉起小程序调用方标识，与壳内微信 SDK 配置一致）
+const WX_APP_ID = 'wx8ea71b7e50187f1d'
 // 福优智家小程序 AppID: wxe83614305a9d58f2
 // App 端 launchMiniProgram 需要使用原始 ID。
 const MINI_PROGRAM_ORIGINAL_ID = 'gh_f502cf522c81'
@@ -49,6 +54,21 @@ const launchMiniProgram = (path) => {
     }
   )
   return
+  // #endif
+
+  // #ifdef H5
+  // 原生壳：经 miniprogram.launch 桥由微信 OpenSDK 拉起（与 APP-PLUS 分支同目标小程序）
+  if (isNativeShell) {
+    NativeApp.launchMiniProgram({
+      appId: WX_APP_ID,
+      userName: MINI_PROGRAM_ORIGINAL_ID,
+      path,
+      type: MINI_PROGRAM_TYPE
+    }).catch(() => {
+      uni.showToast({ title: '拉起微信小程序失败', icon: 'none' })
+    })
+    return
+  }
   // #endif
 
   showUnsupportedToast()
