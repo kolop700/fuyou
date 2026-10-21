@@ -315,6 +315,13 @@ const openBleDoor = async () => {
   }
 }
 
+// 访客密码接口用的 qrcode：后端按 door_qr_code 字段查门（老小程序实测成功格式），
+// 而扫到的码内容可能是 door_mac 裸号，故优先用匹配到设备在库里的 door_qr_code，兜底用扫码原值
+const getQrCodeForApi = () => {
+  const stored = String(matchedDevice.value?.door_qr_code || '').trim()
+  return stored || deviceNumber.value
+}
+
 // 验证访客密码
 const verifyVisitorPassword = async () => {
   if (!deviceNumber.value) {
@@ -336,13 +343,13 @@ const verifyVisitorPassword = async () => {
   // 获取新的序列号
   const sn = deviceStore.getSerialNo()
   
-  // 处理密码值：如果是0或'0'，转换为-1
-  const password = visitorPassword.value === '0' || visitorPassword.value === 0 ? -1 : parseInt(visitorPassword.value)
+  // 处理密码值：如果是0或'0'，转换为-1；其余保持字符串传参（与老小程序成功调用格式一致）
+  const password = visitorPassword.value === '0' || visitorPassword.value === 0 ? -1 : String(visitorPassword.value)
   
   // 调用访客密码验证接口
   return await visitorPasswordUtils.verifyPassword({
     password: password,
-    deviceNumber: deviceNumber.value,
+    deviceNumber: getQrCodeForApi(),
     sn: sn
   })
 }
@@ -357,9 +364,9 @@ const openDoorWithPassword = async () => {
       title: '正在开门...',
       mask: true
     })
-    // 验证成功后，调用开门接口
+    // 验证成功后，调用开门接口（qrcode 与校验时保持同一口径）
     await visitorPasswordUtils.openDoor({
-      deviceNumber: deviceNumber.value,
+      deviceNumber: getQrCodeForApi(),
       sn: verifyResult.sn
     })
     

@@ -73,8 +73,9 @@ class VisitorPasswordUtils {
       }
     } catch (error) {
       console.error('访客密码验证失败:', error)
+      // request.js 对业务错误码直接 reject，真实失败原因在 error.msg，不再吞成通用文案
       uni.showToast({
-        title: '验证失败，请重试',
+        title: (error && (error.msg || error.message || error.detail)) || '验证失败，请重试',
         icon: 'none'
       })
       return { success: false }
