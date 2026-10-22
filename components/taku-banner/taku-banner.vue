@@ -1,5 +1,5 @@
 <template>
-  <view class="taku-banner" ref="bannerRef"></view>
+  <view class="taku-banner" :class="{ 'has-ad': hasAd }" ref="bannerRef"></view>
 </template>
 
 <script>
@@ -38,6 +38,9 @@ const props = defineProps({
 
 const instance = getCurrentInstance()
 const bannerRef = ref(null)
+// 是否已拉到广告素材：无广告时占位塌缩，避免白栏遮挡页面内容
+const hasAd = ref(false)
+let refreshAfterLoaded = false // 撑开占位后只重报一次位置
 
 let observer = null        // 可见性观察器（H5）
 let firstTimer = null      // 首次展示延迟
@@ -120,8 +123,24 @@ const doShow = async () => {
       dpr
     },
     {
-      onAdLoaded() { console.log('[taku-banner] loaded:', props.placementId) },
-      onAdFailed(res) { console.warn('[taku-banner] failed:', res && res.msg) }
+      onAdLoaded() {
+        console.log('[taku-banner] loaded:', props.placementId)
+        // 首次出广告：撑开占位并按新位置重报一次（否则悬浮层盖住占位下方内容）
+        if (!hasAd.value) {
+          hasAd.value = true
+          if (!refreshAfterLoaded) {
+            refreshAfterLoaded = true
+            nextTick(() => {
+              isShown = false
+              doShow()
+            })
+          }
+        }
+      },
+      onAdFailed(res) {
+        console.warn('[taku-banner] failed:', res && res.msg)
+        hasAd.value = false // 无填充：占位收回，不占页面空间
+      }
     }
   )
   isShown = true
@@ -267,6 +286,15 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .taku-banner {
   width: 100%;
+  /* 无广告时收起到 1px（非 0 保 IntersectionObserver 可观察），不遮挡页面 */
+  height: 1px;
+  overflow: hidden;
+}
+
+/* 拉到素材后才占据正常横幅高度 */
+.taku-banner.has-ad {
+  height: auto;
   min-height: 120rpx;
+  padding: 8rpx 0;
 }
 </style>

@@ -345,8 +345,6 @@ page {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 120rpx;
-  padding: 8rpx 0;
 }
 
 /* Tab 页：横幅悬浮在自定义 tabbar（高100rpx+安全区）上方 */

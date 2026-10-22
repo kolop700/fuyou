@@ -565,8 +565,6 @@ const openDoorWithPassword = async () => {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 120rpx;
-    padding: 8rpx 0;
   }
 }
 </style>
