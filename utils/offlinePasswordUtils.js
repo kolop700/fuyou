@@ -33,7 +33,7 @@ export const showOfflinePasswordModal = (device = {}) => {
 
   uni.showModal({
     title: '设备离线',
-    content: `当前设备离线，可在门禁键盘输入离线密码开门。\n\n离线密码：${password}`,
+    content: `当前设备离线，可在门禁键盘输入离线密码开门。\n\n离线密码：**${password}#`,
     confirmText: '复制密码',
     cancelText: '关闭',
     success: (res) => {

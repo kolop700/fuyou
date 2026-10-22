@@ -221,6 +221,7 @@ import checkVersion from '@/pages/lq-upgrade/checkVersion.js'
 import { useThemeVars } from '@/utils/themeConfig.js'
 import { formatDoorDevice, sortDoorDevices } from '@/utils/deviceDisplayUtils.js'
 import { showOfflinePasswordModal, showOpenDoorFailModal } from '@/utils/offlinePasswordUtils.js'
+import { adManager } from '@/utils/adUtils'
 // #ifdef H5
 import { isNativeShell, NativeApp } from '@/utils/h5-native-bridge'
 // #endif
@@ -385,6 +386,16 @@ const handleQuickOpen = async (device) => {
     
     // 开门成功后更新开门次数
     updateDeviceOpenCount(device.door_mac)
+    
+    // 开门成功后展示广告（Taku 激励优先，失败降级插屏，受日限/间隔约束）
+    try {
+      const adResult = await adManager.showAd()
+      if (!adResult) {
+        console.log('广告展示受限：可能达到每日限制或间隔时间不足')
+      }
+    } catch (error) {
+      console.error('广告展示失败:', error)
+    }
     
     // 显示成功提示
     // uni.showToast 已经在 openDoor 里面调用过了，这里可以不用重复调用
@@ -579,6 +590,10 @@ const checkFirstOpen = () => {
 // 页面生命周期
 onLoad(() => {
   navbarHeight.value = (uni.getSystemInfoSync().statusBarHeight || 0) + 44
+  
+  // 初始化广告管理器（首页快速开门需激励/插屏预加载）
+  adManager.initStore(proxy.$store.ad.useAdStore(), proxy.$store.adControl.useAdControlStore())
+  adManager.init()
   
   // 检查版本更新（原生壳为 H5，同样需要触发）
   // #ifdef APP-PLUS || H5
