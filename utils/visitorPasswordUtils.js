@@ -4,7 +4,18 @@ class VisitorPasswordUtils {
   // 处理开门响应
   handleOpenResponse(res) {
     console.log('开门响应:', res)
-      const { msg_info } = res.data[0]
+      // 防御：后端查无门/通讯失败时响应体为空或 {code:'1'}，无 data 数组，
+      // 不能直接解构 res.data[0]（会抛 TypeError 吞掉真实原因）
+      const rows = res && Array.isArray(res.data) ? res.data : null
+      if (!rows || rows.length === 0 || !rows[0].msg_info) {
+        uni.showToast({
+          title: (res && (res.msg || res.detail)) || '设备未响应开门指令',
+          icon: 'none',
+          duration: 3000
+        })
+        return false
+      }
+      const { msg_info } = rows[0]
       console.log('开门响应:', msg_info)
       switch (msg_info) {
         case 'HD2BB69W':
@@ -63,7 +74,8 @@ class VisitorPasswordUtils {
       })
       
       if (res.code === 0 || res.code === '0') {
-        return { success: true, sn: params.sn }
+        // 把命中的门/密码记录带回：temppswOpen 需要其中的 user_WeChat_id 作 openid（后端按它查主人权限）
+        return { success: true, sn: params.sn, doorInfo: Array.isArray(res.data) ? res.data[0] : null }
       } else {
         uni.showToast({
           title: res.msg || '密码错误或已过期',
@@ -89,7 +101,9 @@ class VisitorPasswordUtils {
         url: '/yefiot/v1/temppswOpen/',
         method: 'post',
         data: {
-          openid: "0",
+          // 后端 WeChart_qr_open 过程按 user_WeChat_id 查密码主人再下开门指令，
+          // 传固定 '0' 查不到用户会静默失败（老小程序传 checkTempPsw 返回的 user_WeChat_id）
+          openid: params.openid || '0',
           qrcode: params.deviceNumber,
           sn: params.sn
         }

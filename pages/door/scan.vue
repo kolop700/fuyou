@@ -364,17 +364,17 @@ const openDoorWithPassword = async () => {
       title: '正在开门...',
       mask: true
     })
-    // 验证成功后，调用开门接口（qrcode 与校验时保持同一口径）
-    await visitorPasswordUtils.openDoor({
+    // 验证成功后，调用开门接口（qrcode 与校验时保持同一口径；
+    // openid 传校验命中的密码主人 user_WeChat_id，后端据此查权限下发开门指令）
+    const openResult = await visitorPasswordUtils.openDoor({
       deviceNumber: getQrCodeForApi(),
-      sn: verifyResult.sn
+      sn: verifyResult.sn,
+      openid: (verifyResult.doorInfo && verifyResult.doorInfo.user_WeChat_id) || '0'
     })
     
     uni.hideLoading()
-    uni.showToast({
-      title: '开门成功',
-      icon: 'success'
-    })
+    // openDoor 内部已按设备回执弹成功/失败提示，失败时不再叠加通用文案
+    if (!openResult) return
     
     // 开门成功后展示广告
     try {
