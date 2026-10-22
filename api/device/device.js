@@ -122,12 +122,13 @@ export default {
   },
 
   // 按扫码值查门设备（免授权开门用：不限属主，扫码串匹配 door_qr_code 或 door_mac）
+  // 注意：t_doorphone 无 liftstr/timegroup 列（多查会整条 SQL 报错），电梯参数由 doorAccessUtils 默认值兜底
   getDoorByScanCode(code, options = {}) {
     return request({
       url: BASE_API + 'openSQL/',
       method: 'post',
       data: {
-        sql: `SELECT door_id, door_type, door_mac, door_name, liftstr, timegroup FROM t_doorphone WHERE door_qr_code = ''${code}'' OR door_mac = ''${code}'' LIMIT 1`
+        sql: `SELECT door_id, door_type, door_mac, door_name FROM t_doorphone WHERE door_qr_code = ''${code}'' OR door_mac = ''${code}'' LIMIT 1`
       },
       ...defaultOptions,
       ...options
