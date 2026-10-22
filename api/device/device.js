@@ -121,6 +121,19 @@ export default {
     })
   },
 
+  // 按扫码值查门设备（免授权开门用：不限属主，扫码串匹配 door_qr_code 或 door_mac）
+  getDoorByScanCode(code, options = {}) {
+    return request({
+      url: BASE_API + 'openSQL/',
+      method: 'post',
+      data: {
+        sql: `SELECT door_id, door_type, door_mac, door_name, liftstr, timegroup FROM t_doorphone WHERE door_qr_code = ''${code}'' OR door_mac = ''${code}'' LIMIT 1`
+      },
+      ...defaultOptions,
+      ...options
+    })
+  },
+
   // 获取远程开门设备列表
   getRemoteOpenDoorList(userId, options = {}) {
     return request({

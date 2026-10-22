@@ -199,7 +199,9 @@ export default {
       const card = this.formatCardNumber(userInfo.user_card_a)
       const pswd = this.formatPassword(userInfo.user_card_b)
       const tag = this.formatTag(userInfo.user_face_tag)
-      const datestr = this.formatExpireDate(userStore.maxExpireDate.toString())
+      // 免授权开门的用户可能没有任何房间，maxExpireDate 为空时兜底远期日期，避免组包日期字段无效
+      const expireRaw = (userStore.maxExpireDate || '2099-12-31').toString()
+      const datestr = this.formatExpireDate(expireRaw)
       const user_id = this.formatUserId(userInfo.user_id)
       
       // 处理电梯参数

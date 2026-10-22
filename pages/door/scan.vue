@@ -88,10 +88,8 @@ const setDeviceNumber = (number) => {
   if (device) {
     matchedDevice.value = device
   } else {
-    uni.showToast({
-      title: '未找到匹配的设备',
-      icon: 'none'
-    })
+    // 不在授权列表不再拦截提示：点开门时会按扫码值查库免授权直开
+    console.log('设备不在授权列表，将以免授权方式开门')
   }
 }
 
@@ -185,7 +183,7 @@ const openDoor = async () => {
   }
 
   try {
-    // 查找匹配的设备（容错匹配，与 setDeviceNumber 同源）
+    // 优先在自己的授权列表里匹配（与 setDeviceNumber 同源）
     if (!matchedDevice.value) {
       const device = scanUtils.findDeviceByScanCode(deviceList.value, deviceNumber.value)
       if (device) {
@@ -193,9 +191,23 @@ const openDoor = async () => {
       }
     }
 
+    // 免授权开门：不在授权列表时直接按扫码值查门设备，登录用户即可直开
+    if (!matchedDevice.value) {
+      try {
+        const res = await deviceApi.getDoorByScanCode(deviceNumber.value, { showLoading: false })
+        const rows = res && Array.isArray(res.data) ? res.data : []
+        if (rows.length > 0 && rows[0].door_mac) {
+          matchedDevice.value = rows[0]
+          console.log('免授权开门：已按扫码值匹配到设备', matchedDevice.value)
+        }
+      } catch (queryError) {
+        console.error('查门设备失败:', queryError)
+      }
+    }
+
     if (!matchedDevice.value) {
       uni.showToast({
-        title: '设备未授权',
+        title: '未找到该门设备',
         icon: 'none'
       })
       return
