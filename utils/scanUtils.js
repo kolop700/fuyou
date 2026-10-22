@@ -18,6 +18,9 @@ const QR_REGEX = {
   YT_FORMAT: /^https?:\/\/svr\.yefiot\.com\/yt\?c=.+$/,
   YULONG: /^https?:\/\/xy\.yefiot\.com\/public\/yulong\/\?c=.+$/,
   FUYOU_DOOR: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\bc=[^&#]+/i,
+  // 免授权开门码：https://fuyou.yefiot.com/auto?c=设备号（路径带 auto 即代表扫码可免授权直开，
+  // 设备码为 12 位 MAC 或 15 位 IMEI 样式，库里 door_mac 必有值）
+  FUYOU_AUTO: /^https?:\/\/fuyou\.yefiot\.com\/auto\?c=.+$/i,
   FUYOU_LOCKER: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\blocker_mac=[^&#]+/i,
   // 裸设备码：福优门锁二维码直接是设备号本体（如 IMEI 样式的纯数字 865530079086732），
   // 与后端 door_qr_code 字段全等匹配，不走 URL 提取。
@@ -31,6 +34,9 @@ const safeDecodeURIComponent = (value = '') => {
     return value
   }
 }
+
+// 最近一次 scanQRCode 是否扫到 /auto?c= 免授权码（scan 页 onLoad 读取并重置）
+let lastScanIsAuto = false
 
 const extractQueryParam = (qrString, paramName = 'c') => {
   const raw = String(qrString || '').trim()
@@ -65,6 +71,19 @@ const scanUtils = {
       || QR_REGEX.YT_FORMAT.test(raw)
       || QR_REGEX.YULONG.test(raw)
       || QR_REGEX.FUYOU_DOOR.test(raw)
+      || QR_REGEX.FUYOU_AUTO.test(raw)
+  },
+
+  /** 是否为 fuyou /auto?c= 免授权开门码 */
+  isAutoQRCode(qrString) {
+    return QR_REGEX.FUYOU_AUTO.test(String(qrString || '').trim())
+  },
+
+  /** 读取"最近一次扫码是否为免授权码"标记，传 true 读取后重置 */
+  isAutoScanResult(reset = false) {
+    const v = lastScanIsAuto
+    if (reset) lastScanIsAuto = false
+    return v
   },
 
   isLockerQRCode(qrString) {
@@ -240,6 +259,7 @@ const scanUtils = {
       try {
         const data = await NativeApp.scanQRCode({ onlyFromCamera, scanType })
         const raw = (data && data.result) || ''
+        lastScanIsAuto = QR_REGEX.FUYOU_AUTO.test(raw)
         if (this.validateQRFormat(raw)) {
           return this.extractParamFromQR(raw, 'c')
         } else if (this.isLockerQRCode(raw)) {
@@ -269,6 +289,7 @@ const scanUtils = {
         scanType,
         success: (res) => {
           console.log('扫码结果:', res)
+          lastScanIsAuto = scanUtils.isAutoQRCode(res.result)
           
           // 验证二维码格式
           if (scanUtils.validateQRFormat(res.result)) {

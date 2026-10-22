@@ -63,6 +63,8 @@ const { deviceList } = storeToRefs(deviceStore)
 const deviceNumber = ref('')
 const visitorPassword = ref('')
 const matchedDevice = ref(null)
+// 本次扫码是否为 fuyou /auto?c= 免授权码（是才允许查库免授权直开）
+const isAutoCode = ref(false)
 
 // 添加 userStore
 const userStore = proxy.$store.user.useUserStore()
@@ -87,7 +89,8 @@ const setDeviceNumber = (number) => {
   const device = scanUtils.findDeviceByScanCode(deviceList.value, deviceNumber.value)
   if (device) {
     matchedDevice.value = device
-  } else {
+  } else if (!isAutoCode.value) {
+    // 免授权码不在授权列表属正常（点开门时查库直开），不弹误导提示
     uni.showToast({
       title: '未找到匹配的设备',
       icon: 'none'
@@ -97,6 +100,9 @@ const setDeviceNumber = (number) => {
 
 // 页面加载时获取设备号和查找设备
 onLoad((options) => {
+  // 先读免授权码标记（scanQRCode 扫码时置位，读取后重置）
+  isAutoCode.value = scanUtils.isAutoScanResult(true)
+  console.log('是否免授权码(/auto?c=):', isAutoCode.value)
   if (options.device_number) {
     setDeviceNumber(options.device_number)
   }
@@ -193,9 +199,23 @@ const openDoor = async () => {
       }
     }
 
+    // 免授权开门：仅当扫的是 fuyou /auto?c= 码时，按设备码查库直开（门需 allow_qr_open=1）
+    if (!matchedDevice.value && isAutoCode.value) {
+      try {
+        const res = await deviceApi.getDoorByScanCode(deviceNumber.value, { showLoading: false })
+        const rows = res && Array.isArray(res.data) ? res.data : []
+        if (rows.length > 0 && rows[0].door_mac) {
+          matchedDevice.value = rows[0]
+          console.log('免授权开门(auto码)：已查库匹配到设备', matchedDevice.value)
+        }
+      } catch (queryError) {
+        console.error('查门设备失败:', queryError)
+      }
+    }
+
     if (!matchedDevice.value) {
       uni.showToast({
-        title: '设备未授权',
+        title: isAutoCode.value ? '未找到该门设备或门未开启扫码开门' : '设备未授权',
         icon: 'none'
       })
       return

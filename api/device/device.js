@@ -121,6 +121,20 @@ export default {
     })
   },
 
+  // 按扫码值查门设备（fuyou /auto?c= 免授权开门用：不限属主，需门开启 allow_qr_open 二维码开门权限）
+  // 注意：t_doorphone 无 liftstr/timegroup 列（多查会整条 SQL 报错）；15 位 IMEI 批次门 door_qr_code 常为空，靠 door_mac 兜底
+  getDoorByScanCode(code, options = {}) {
+    return request({
+      url: BASE_API + 'openSQL/',
+      method: 'post',
+      data: {
+        sql: `SELECT door_id, door_type, door_mac, door_name FROM t_doorphone WHERE (door_qr_code = ''${code}'' OR door_mac = ''${code}'') AND allow_qr_open = 1 LIMIT 1`
+      },
+      ...defaultOptions,
+      ...options
+    })
+  },
+
   // 获取远程开门设备列表
   getRemoteOpenDoorList(userId, options = {}) {
     return request({
