@@ -63,7 +63,7 @@ const { deviceList } = storeToRefs(deviceStore)
 const deviceNumber = ref('')
 const visitorPassword = ref('')
 const matchedDevice = ref(null)
-// 本次扫码是否为 fuyou /auto?c= 免授权码（是才允许查库免授权直开）
+// 本次扫码是否为 fuyou /c?auto= 免授权码（是才允许查库免授权直开）
 const isAutoCode = ref(false)
 
 // 添加 userStore
@@ -102,7 +102,7 @@ const setDeviceNumber = (number) => {
 onLoad((options) => {
   // 先读免授权码标记（scanQRCode 扫码时置位，读取后重置）
   isAutoCode.value = scanUtils.isAutoScanResult(true)
-  console.log('是否免授权码(/auto?c=):', isAutoCode.value)
+  console.log('是否免授权码(/c?auto=):', isAutoCode.value)
   if (options.device_number) {
     setDeviceNumber(options.device_number)
   }
@@ -199,7 +199,7 @@ const openDoor = async () => {
       }
     }
 
-    // 免授权开门：仅当扫的是 fuyou /auto?c= 码时，按设备码查库直开（门需 allow_qr_open=1）
+    // 免授权开门：仅当扫的是 fuyou /c?auto= 码时，按设备码查库直开（门需 allow_qr_open=1）
     if (!matchedDevice.value && isAutoCode.value) {
       try {
         const res = await deviceApi.getDoorByScanCode(deviceNumber.value, { showLoading: false })

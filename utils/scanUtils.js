@@ -18,9 +18,9 @@ const QR_REGEX = {
   YT_FORMAT: /^https?:\/\/svr\.yefiot\.com\/yt\?c=.+$/,
   YULONG: /^https?:\/\/xy\.yefiot\.com\/public\/yulong\/\?c=.+$/,
   FUYOU_DOOR: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\bc=[^&#]+/i,
-  // 免授权开门码：https://fuyou.yefiot.com/auto?c=设备号（路径带 auto 即代表扫码可免授权直开，
-  // 设备码为 12 位 MAC 或 15 位 IMEI 样式，库里 door_mac 必有值）
-  FUYOU_AUTO: /^https?:\/\/fuyou\.yefiot\.com\/auto\?c=.+$/i,
+  // 免授权开门码：https://fuyou.yefiot.com/c?auto=设备号（参数名 auto 即代表扫码可免授权直开，
+  // 设备号为 12 位 MAC 或 15 位 IMEI 样式，库里 door_mac 必有值）
+  FUYOU_AUTO: /^https?:\/\/fuyou\.yefiot\.com\/c\?auto=.+$/i,
   FUYOU_LOCKER: /^https?:\/\/fuyou\.yefiot\.com\/?\?[^#]*\blocker_mac=[^&#]+/i,
   // 裸设备码：福优门锁二维码直接是设备号本体（如 IMEI 样式的纯数字 865530079086732），
   // 与后端 door_qr_code 字段全等匹配，不走 URL 提取。
@@ -74,7 +74,7 @@ const scanUtils = {
       || QR_REGEX.FUYOU_AUTO.test(raw)
   },
 
-  /** 是否为 fuyou /auto?c= 免授权开门码 */
+  /** 是否为 fuyou /c?auto= 免授权开门码 */
   isAutoQRCode(qrString) {
     return QR_REGEX.FUYOU_AUTO.test(String(qrString || '').trim())
   },
@@ -260,7 +260,10 @@ const scanUtils = {
         const data = await NativeApp.scanQRCode({ onlyFromCamera, scanType })
         const raw = (data && data.result) || ''
         lastScanIsAuto = QR_REGEX.FUYOU_AUTO.test(raw)
-        if (this.validateQRFormat(raw)) {
+        if (this.isAutoQRCode(raw)) {
+          // 免授权码的设备号在 auto 参数里
+          return this.extractParamFromQR(raw, 'auto')
+        } else if (this.validateQRFormat(raw)) {
           return this.extractParamFromQR(raw, 'c')
         } else if (this.isLockerQRCode(raw)) {
           uni.showToast({ title: '这是快递柜二维码，请从快递柜入口进入', icon: 'none', duration: 2200 })
@@ -292,7 +295,10 @@ const scanUtils = {
           lastScanIsAuto = scanUtils.isAutoQRCode(res.result)
           
           // 验证二维码格式
-          if (scanUtils.validateQRFormat(res.result)) {
+          if (scanUtils.isAutoQRCode(res.result)) {
+            // 免授权码（/c?auto=）的设备号在 auto 参数里
+            resolve(scanUtils.extractParamFromQR(res.result, 'auto'))
+          } else if (scanUtils.validateQRFormat(res.result)) {
             console.log('匹配成功:', res.result);
             // 提取参数 c 的值
             const codeParam = scanUtils.extractParamFromQR(res.result, 'c')
