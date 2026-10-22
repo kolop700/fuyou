@@ -90,7 +90,17 @@ class AdBridge(
             val left = (rect.optDouble("left", 0.0) * dpr).toInt()
             val top = (rect.optDouble("top", 0.0) * dpr).toInt()
             val width = (rect.optDouble("width", 0.0) * dpr).toInt()
-            activity.attachBannerView(view, left, top, width)
+            // 素材实际高度（CSS px）经 onBannerResized 事件回报 H5，供占位高度对齐防遮挡
+            activity.attachBannerView(view, left, top, width, dpr) { cssHeight ->
+                channel.emit(
+                    "ad.onEvent", JSONObject().apply {
+                        put("placementId", placementId)
+                        put("event", "onBannerResized")
+                        put("code", 0)
+                        put("msg", cssHeight.toString())
+                    }
+                )
+            }
         }
         channel.resolveOk(callbackId)
     }

@@ -1,5 +1,5 @@
 <template>
-  <view class="taku-banner" :class="{ 'has-ad': hasAd }" ref="bannerRef"></view>
+  <view class="taku-banner" :class="{ 'has-ad': hasAd }" :style="adPlaceStyle" ref="bannerRef"></view>
 </template>
 
 <script>
@@ -29,7 +29,7 @@ export default { name: 'TakuBanner' }
  *
  * App 端页面显示/滚动经 utils/mixin.js 全局广播校准（taku:pageShow / taku:pageScroll）。
  */
-import { onMounted, onBeforeUnmount, nextTick, watch, ref, getCurrentInstance } from 'vue'
+import { onMounted, onBeforeUnmount, nextTick, watch, ref, computed, getCurrentInstance } from 'vue'
 import TakuAds, { bannerPositionKey } from '@/common/taku-sdk'
 
 const props = defineProps({
@@ -40,6 +40,15 @@ const instance = getCurrentInstance()
 const bannerRef = ref(null)
 // 是否已拉到广告素材：无广告时占位塌缩，避免白栏遮挡页面内容
 const hasAd = ref(false)
+// 素材实际高度（CSS px，原生 onBannerResized 回报）：占位据此对齐，
+// 防止 WRAP_CONTENT 悬浮层高出占位、向下盖住底部 tabbar 等内容
+const adHeightPx = ref(0)
+const adPlaceStyle = computed(() => {
+  if (hasAd.value && adHeightPx.value > 0) {
+    return { height: adHeightPx.value + 'px', minHeight: adHeightPx.value + 'px', padding: '0' }
+  }
+  return {}
+})
 let refreshAfterLoaded = false // 撑开占位后只重报一次位置
 
 let observer = null        // 可见性观察器（H5）
@@ -140,6 +149,24 @@ const doShow = async () => {
       onAdFailed(res) {
         console.warn('[taku-banner] failed:', res && res.msg)
         hasAd.value = false // 无填充：占位收回，不占页面空间
+        adHeightPx.value = 0
+      },
+      onBannerResized(res) {
+        // 原生回报素材实际高度（首次 attach 及 auto-refresh 换高度时）
+        const h = parseFloat(res && res.msg)
+        if (!h || h <= 0) return
+        const heightChanged = Math.abs(h - adHeightPx.value) >= 2
+        adHeightPx.value = h
+        if (!hasAd.value) {
+          // 复用预加载实例时 onAdLoaded 可能不再触发：据高度事件同样撑开占位并重报位置
+          hasAd.value = true
+          isShown = false
+          nextTick(() => doShow())
+        } else if (heightChanged) {
+          // 素材变高/变矮：占位随之伸缩后重报悬浮层位置（底部常驻布局下 top 会变化）
+          isShown = false
+          nextTick(() => doShow())
+        }
       }
     }
   )

@@ -262,9 +262,18 @@ class MainActivity : AppCompatActivity() {
     /**
      * 附着横幅悬浮视图（由 AdBridge 的 ad.banner.show 调用）。
      * 坐标为相对 WebView 内容区的物理像素（JS 侧 rect(CSS px) × dpr）。
-     * 高度采用 WRAP_CONTENT，由 ATBannerView 按素材自适应。
+     * 高度采用 WRAP_CONTENT，由 ATBannerView 按素材自适应；
+     * 素材实际高度（含 auto-refresh 变化）经 onResize 以 CSS px 回报 H5，
+     * 使占位高度同步对齐，防止悬浮层溢出占位盖住下方内容（如底部 tabbar）。
      */
-    fun attachBannerView(view: View, left: Int, top: Int, width: Int) {
+    fun attachBannerView(
+        view: View,
+        left: Int,
+        top: Int,
+        width: Int,
+        dpr: Double,
+        onResize: (cssHeight: Int) -> Unit
+    ) {
         val parent = view.parent
         if (parent is ViewGroup) parent.removeView(view)
         if (view.parent == null) bannerLayer.addView(view)
@@ -277,6 +286,17 @@ class MainActivity : AppCompatActivity() {
         view.layoutParams = lp
         view.visibility = View.VISIBLE
         view.bringToFront()
+        // 监听素材高度变化（复用实例反复 attach 时先移除旧监听，避免叠加）
+        (view.tag as? View.OnLayoutChangeListener)?.let { view.removeOnLayoutChangeListener(it) }
+        val listener = View.OnLayoutChangeListener { _, _, t, _, b, _, _, ot, ob ->
+            if (b - t != ob - ot && b > t) onResize(((b - t) / dpr).toInt())
+        }
+        view.tag = listener
+        view.addOnLayoutChangeListener(listener)
+        // 复用已加载实例时布局可能早已完成、不会再触发变化：post 主动报一次当前高度
+        view.post {
+            if (view.height > 0) onResize((view.height / dpr).toInt())
+        }
     }
 
     /** 移除横幅悬浮视图（由 AdBridge 的 ad.banner.hide 调用；原生实例保留复用） */
