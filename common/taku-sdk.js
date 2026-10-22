@@ -31,18 +31,17 @@ import { createAdBridgeAdapter } from '@/utils/h5-native-bridge'
 // #endif
 
 // ============ 配置（Taku 后台注册后填入） ============
-// 【待填】福优智家在 Taku 后台（https://www.takuad.com）新建两个应用（Android / iOS）后，
-// 把后台-应用管理里的 AppId/AppKey 填入下方对应分组；留空时 init 安全失败，全链路自动不出广告。
+// 福优智家在 Taku 后台创建的 Android / iOS 双端应用凭据（后台-应用管理）。
 // 双端 AppId/AppKey 不同，而 H5 壳产物双端共用：此处按平台分组存放，运行时自动取当前平台。
 // 广告位（placementId）同步维护于 store/modules/ad.js 的 AD_IDS 双端分组。
 export const TAKU_CONFIG = {
   android: {
-    appId: '', // 【待填】Taku AppId（后台-应用管理 Android 应用）
-    appKey: '' // 【待填】Taku AppKey
+    appId: 'a6ad5e437e82e5', // Taku AppId（后台-应用管理 Android 应用「福优智家」）
+    appKey: 'afd32c9c3b88a5ebbc2e6a2ac8805762d' // Taku AppKey
   },
   ios: {
-    appId: '', // 【待填】Taku AppId（后台-应用管理 iOS 应用）
-    appKey: '' // 【待填】Taku AppKey
+    appId: 'a6ad6cb644aec3', // Taku AppId（后台-应用管理 iOS 应用「福优智家」）
+    appKey: 'ac372e42c9596cf6441d49d069e2f4a62' // Taku AppKey
   }
 }
 

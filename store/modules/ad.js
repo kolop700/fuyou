@@ -10,21 +10,21 @@ import TakuAds from '@/common/taku-sdk' // 预加载横幅（提前竞价）
 //   test.*      → 联调阶段使用，配合 setTestMode(true) 生效（Taku 后台可建测试广告位）
 // 值为空字符串时，对应广告形式不会加载与展示（页面自动隐藏），属正常状态。
 // 说明：Taku 广告位与旧 uni-ad 的 adpid 完全独立，不可沿用旧值。
-// 【待填】福优智家在 Taku 后台新建应用后，把双端 5 个广告位 placementId 填入下方（当前留空 = 不出广告，页面自动隐藏广告位，属正常状态）
+// 福优智家 Taku 后台已创建双端广告位（各 4 类：原生/横幅/激励/开屏）；未建插屏位，置空自动跳过（激励视频为主广告，插屏仅为降级备胎）。
 const AD_IDS = {
   android: {
-    banner: '', // 【待填】Android 横幅（Banner）
-    interstitial: '', // 【待填】Android 插屏
-    rewardedVideo: '', // 【待填】Android 激励视频
-    informationflow: '', // 【待填】Android 原生信息流
-    splash: '' // 【待填】Android 开屏
+    banner: 'b6ad81a0981522', // Android 横幅（Banner）
+    interstitial: '', // 未建：Android 插屏（后台建位后回填即生效）
+    rewardedVideo: 'b6ad813b4cf12c', // Android 激励视频
+    informationflow: 'b6ad81a246fdad', // Android 原生信息流
+    splash: 'b6ad8133b6275c' // Android 开屏
   },
   ios: {
-    banner: '', // 【待填】iOS 横幅（Banner）
-    interstitial: '', // 【待填】iOS 插屏
-    rewardedVideo: '', // 【待填】iOS 激励视频
-    informationflow: '', // 【待填】iOS 原生信息流
-    splash: '' // 【待填】iOS 开屏
+    banner: 'b6ad81a58eafd1', // iOS 横幅（Banner）
+    interstitial: '', // 未建：iOS 插屏（后台建位后回填即生效）
+    rewardedVideo: 'b6ad81a49d3bec', // iOS 激励视频
+    informationflow: 'b6ad81a670d199', // iOS 原生信息流
+    splash: 'b6ad81a37b8952' // iOS 开屏
   },
   test: {
     banner: '', // 测试横幅
