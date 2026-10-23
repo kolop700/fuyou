@@ -127,13 +127,11 @@ jobs:
         working-directory: shell-ios
         run: |
           set -euo pipefail
-          # 构建号用 UTC 时间戳（如 202610200930），永远递增，免手动维护且必过 Apple 的 -19232 校验
-          BUILD_NUM="$(date -u +%Y%m%d%H%M)"
-          echo "本次构建号 CFBundleVersion = ${BUILD_NUM}"
+          # 构建号沿用 project.yml 的 CURRENT_PROJECT_VERSION（发版手动 +1），不再用时间戳覆盖
+          echo "本次构建号以 project.yml 为准"
           xcodebuild -workspace CloudGuard.xcworkspace -scheme CloudGuard \
             -configuration Release -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/CloudGuard.xcarchive" \
-            CURRENT_PROJECT_VERSION="${BUILD_NUM}" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="iPhone Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="9f798af1-e9bc-4c20-abfa-260b798d1ffa" \
