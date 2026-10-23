@@ -170,7 +170,11 @@ jobs:
           set -euo pipefail
           IPA=$(ls "$RUNNER_TEMP"/ipa/*.ipa | head -1)
           echo "上传：$IPA"
-          xcrun altool --validate-app -f "$IPA" -t ios \
-            --apiKey "${{ secrets.ASC_API_KEY_ID }}" --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
-          xcrun altool --upload-app  -f "$IPA" -t ios \
-            --apiKey "${{ secrets.ASC_API_KEY_ID }}" --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
+          # 用 iTMSTransporter 直传（altool 已被 Apple 弃用且旧版在 GitHub runner 网络下常卡死被 360s 取消，本步显式放宽）
+          xcrun iTMSTransporter \
+            -m upload -assetType IPA \
+            -f "$IPA" \
+            -apiKey "${{ secrets.ASC_API_KEY_ID }}" \
+            -apiIssuer "${{ secrets.ASC_ISSUER_ID }}" \
+            -platform iOS
+        timeout-minutes: 25
