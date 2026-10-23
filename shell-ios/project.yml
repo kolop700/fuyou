@@ -28,7 +28,7 @@ settings:
     IPHONEOS_DEPLOYMENT_TARGET: "14.0"
     DEVELOPMENT_TEAM: "DW47QPNP7Y"
     # 构建号：本地默认值；CI 上传 TestFlight 时由 workflow 用 UTC 时间戳覆盖（必须递增才能过 Apple 校验）
-    CURRENT_PROJECT_VERSION: "116"
+    CURRENT_PROJECT_VERSION: "117"
     ENABLE_BITCODE: "NO"
 
 targets:
