@@ -48,11 +48,8 @@ targets:
     # 其余 SDK（微信/支付宝/Taku）经 CocoaPods 链接：xcodegen generate → pod install → .xcworkspace
     dependencies:
       - sdk: AppTrackingTransparency.framework
-      # AlipaySDK 链接必需（CI 报 Undefined symbols：CNCopy*/SCNetworkReachability* → SystemConfiguration，
-      # CT* → CoreTelephony，deflate/inflate → libz），缺任一则 Ld 阶段 exit 1
-      - sdk: SystemConfiguration.framework
-      - sdk: CoreTelephony.framework
-      - sdk: libz.tbd
+      # 注：曾为 AlipaySDK 补链 SystemConfiguration/CoreTelephony/libz，后因「本 App 无支付宝支付」
+      # 移除 AlipaySDK pod（见 Podfile），三库随之撤回；若未来恢复支付宝需一并加回
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yefiot.fuyou

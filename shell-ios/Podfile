@@ -25,8 +25,10 @@ target 'CloudGuard' do
   # —— 微信开放平台 SDK（支付 / 分享 / 小程序）——
   pod 'WechatOpenSDK-XCFramework', '2.0.4'
 
-  # —— 支付宝 SDK（App 支付）——
-  pod 'AlipaySDK-iOS'
+  # —— 支付宝 SDK：已移除 ——本 App 无真实支付宝支付（收银台支付宝选项为演示 UI，
+  # 未调用 pay.alipay 桥）；且 AlipaySDK 需额外链接 SystemConfiguration/CoreTelephony/libz
+  # 否则 Ld 阶段 Undefined symbols（CI run 12 实锤）。如未来启用支付宝支付再恢复下行。
+  # pod 'AlipaySDK-iOS'
 
   # —— 广告聚合 Taku（AnyThinkiOS）+ 莱特摩比（Litemize）适配器，版本与云卫家实测一致 ——
   pod 'AnyThinkiOS', '6.5.73'                                    # Taku 聚合 SDK 主包
