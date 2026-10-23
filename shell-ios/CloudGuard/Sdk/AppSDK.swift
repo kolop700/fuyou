@@ -57,9 +57,11 @@ enum AppSDK {
         }
         #endif
         #if canImport(AlipaySDK)
-        return AlipaySDK.defaultService().processOrder(withPaymentResult: url, standbyCallback: { dict in
+        // processOrder 返回 Void（非 Bool）：处理完回调即视为已消费该 URL
+        AlipaySDK.defaultService().processOrder(withPaymentResult: url, standbyCallback: { dict in
             if let d = dict { AppSDK.deliverAlipay(d) }
-        }) ?? false
+        })
+        return true
         #else
         return false
         #endif
@@ -162,7 +164,8 @@ enum AppSDK {
         #if canImport(AlipaySDK)
         guard !orderStr.isEmpty else { completion(.failed("orderStr 为空")); return }
         AlipaySDK.defaultService().payOrder(orderStr, fromScheme: alipayReturnScheme) { dict in
-            AppSDK.deliverAlipay(dict)
+            // payOrder 回调字典为可选型（nil 表示无结果），解包后再解析
+            if let d = dict { AppSDK.deliverAlipay(d) }
             completion(.launched)
         }
         #else
