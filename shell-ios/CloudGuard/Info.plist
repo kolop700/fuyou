@@ -69,11 +69,9 @@
     <array>
         <string>UIInterfaceOrientationPortrait</string>
     </array>
-    <!-- 蓝牙后台（连接门禁保持） -->
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>bluetooth-central</string>
-    </array>
+    <!-- 蓝牙开门为前台操作（扫描→连接→写特征均在前台完成），不声明 UIBackgroundModes：
+         声明 bluetooth-central 会触发审核 2.5.4 要求提供 BLE 后台演示（2026-10-23 实锤），
+         云卫家同样无此声明且多次过审 -->
     <key>UIFileSharingEnabled</key>
     <false/>
 
