@@ -76,6 +76,7 @@ const request = ({
     data, // post/put请求提交参数
     headers, // 请求头
     showLoading = true, // 新增参数，默认为true保持原有行为
+    silent = false, // 静默模式：请求失败不弹全局错误 toast（非关键接口用，如版本检查；海外访问国内服务器失败不应在启动时吓到用户/审核员）
 }) => {
     return new Promise((resolve, reject) => {
         // 仅在 showLoading 为 true 时显示加载框
@@ -132,8 +133,8 @@ const request = ({
                         errorMessages[res.statusCode] || '请求失败，请稍后重试'
                     );
 
-                    // 只对全局错误码进行统一提示
-                    if (globalErrorCodes.includes(res.statusCode)) {
+                    // 只对全局错误码进行统一提示（silent 模式跳过）
+                    if (!silent && globalErrorCodes.includes(res.statusCode)) {
                         uni.showToast({
                             icon: 'none',
                             duration: 3000,
@@ -179,11 +180,13 @@ const request = ({
                     console.log('[request] locker fail error:', error);
                 }
                 console.log('请求错误：', error);
-                uni.showToast({
-                    icon: 'none',
-                    duration: 3000,
-                    title: '网络异常，请稍后重试！',
-                });
+                if (!silent) {
+                    uni.showToast({
+                        icon: 'none',
+                        duration: 3000,
+                        title: '网络异常，请稍后重试！',
+                    });
+                }
                 return reject(error);
             },
             // 接口调用结束的回调函数（调用成功、失败都会执行）

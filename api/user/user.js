@@ -164,7 +164,7 @@ export default {
       })
     })
   },
-  // 获取应用版本信息
+  // 获取应用版本信息（启动时自动调用，非关键接口：失败静默，不弹 toast —— 海外网络访问国内服务器失败时避免启动即报错被审核 2.1(a) 拒）
   getAppVersion(options = {}) {
     return request({
       url: BASE_API + 'getAppVer/',
@@ -172,6 +172,7 @@ export default {
       data: {
         app_no: '1'  // 固定传入 app_no: 1
       },
+      silent: true,
       ...defaultOptions,
       ...options
     })
