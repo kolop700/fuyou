@@ -31,30 +31,35 @@ final class WebAppSchemeHandler: NSObject, WKURLSchemeHandler {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             let (data, mime, code) = self.load(for: url)
-            guard self.isAlive(urlSchemeTask) else { return }
-            if let data = data {
-                let headers = [
-                    "Content-Type": mime,
-                    "Content-Length": String(data.count),
-                    "Access-Control-Allow-Origin": "*",
-                    "Cache-Control": "no-cache"
-                ]
-                let resp = HTTPURLResponse(url: url ?? URL(string: "about:blank")!,
-                                           statusCode: code, httpVersion: "HTTP/1.1", headerFields: headers)!
-                urlSchemeTask.didReceive(resp)
-                urlSchemeTask.didReceive(data)
-                urlSchemeTask.didFinish()
-            } else {
-                let resp = HTTPURLResponse(url: url ?? URL(string: "about:blank")!,
-                                           statusCode: 404, httpVersion: "HTTP/1.1", headerFields: nil)!
-                urlSchemeTask.didReceive(resp)
-                urlSchemeTask.didFinish()
+            // WKURLSchemeTask 回调必须在主线程：iOS 27 beta 起非主线程调用会抛异常
+            // 导致整个页面加载失败（App Store 审核 2.1(a)“启动即报错”实锤于 iPadOS 27，2026-10-27）
+            DispatchQueue.main.async {
+                guard self.isAlive(urlSchemeTask) else { return }
+                if let data = data {
+                    let headers = [
+                        "Content-Type": mime,
+                        "Content-Length": String(data.count),
+                        "Access-Control-Allow-Origin": "*",
+                        "Cache-Control": "no-cache"
+                    ]
+                    let resp = HTTPURLResponse(url: url ?? URL(string: "about:blank")!,
+                                               statusCode: code, httpVersion: "HTTP/1.1", headerFields: headers)!
+                    urlSchemeTask.didReceive(resp)
+                    urlSchemeTask.didReceive(data)
+                    urlSchemeTask.didFinish()
+                } else {
+                    let resp = HTTPURLResponse(url: url ?? URL(string: "about:blank")!,
+                                               statusCode: 404, httpVersion: "HTTP/1.1", headerFields: nil)!
+                    urlSchemeTask.didReceive(resp)
+                    urlSchemeTask.didFinish()
+                }
+                self.forget(urlSchemeTask)
             }
-            self.forget(urlSchemeTask)
         }
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
+        // stop 由 WebKit 在主线程回调；若任务已完成被 forget，移除为空操作安全
         forget(urlSchemeTask)
     }
 

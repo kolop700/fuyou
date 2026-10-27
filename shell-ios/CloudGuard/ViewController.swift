@@ -16,6 +16,8 @@ final class ViewController: UIViewController {
     private let permissionBridge = PermissionBridge()
     private let scan = ScanBridge()
     private var schemeHandler: WebAppSchemeHandler!
+    /// 主帧加载失败自动重试计数（防偶发导航失败直接白屏/错误页；限 2 次避免死循环）
+    private var reloadAttempts = 0
 
     /// WebView 下层，bannerLayer 上层承载悬浮横幅；splashLayer 最顶层默认隐藏
     let bannerContainer = UIView()
@@ -150,6 +152,24 @@ extension ViewController: WKNavigationDelegate {
             // 其它 scheme（tel/mailto/自定义）交系统
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
             decisionHandler(.cancel)
+        }
+    }
+
+    // 主帧加载失败（含 scheme handler 异常/导航被中断）：限次自动重载起点页，避免用户/审核员面对错误页
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        retryLoadOnce()
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        retryLoadOnce()
+    }
+
+    private func retryLoadOnce() {
+        guard reloadAttempts < 2 else { return }
+        reloadAttempts += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            self.webView.load(URLRequest(url: WebAppSchemeHandler.startURL))
         }
     }
 }
