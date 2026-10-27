@@ -32,7 +32,11 @@ target 'CloudGuard' do
 
   # —— 广告聚合 Taku（AnyThinkiOS）+ 莱特摩比（Litemize）适配器，版本与云卫家实测一致 ——
   pod 'AnyThinkiOS', '6.5.73'                                    # Taku 聚合 SDK 主包
-  pod 'AnyThinkMediationAdxSmartdigimktCNAdapter', '6.5.78.2.0'  # 酷映 Adx SDK（necessary）
+  # 酷盈（= Taku ADX 网络）主 SDK：此前只装了适配器、缺主 SDK 本体，
+  # 导致启动弹 "AnyThink Adx SDK is missing" 警告框被审核 2.1(a) 三拒（2026-10-27 实锤），
+  # 且 iOS 侧酷盈流量零填充。版本须与适配器 podspec 声明的依赖一致（6.5.90）
+  pod 'SmartdigimktCNSDK', '6.5.90'                              # 酷盈（Taku ADX）主 SDK
+  pod 'AnyThinkMediationAdxSmartdigimktCNAdapter', '6.5.90.2.1'  # 酷盈 Adx 适配器（依赖上方主 SDK + AnyThinkiOS>=6.5.60）
   pod 'LitemobAd', '1.5.9'                                        # 莱特摩比 SDK 主包
   pod 'LitemobTakuAdapter', '1.1.3'                              # 莱特摩比 Taku 适配器
 end
