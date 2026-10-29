@@ -29,7 +29,7 @@ settings:
     DEVELOPMENT_TEAM: "DW47QPNP7Y"
     # 构建号：本地与 CI 均以此值为准（发新版时手动 +1；Apple 仅要求同一版本号内递增，
     # 旧 1.0.16/17 的时间戳构建属于历史版本，不阻塞新版本从 118 起算）
-    CURRENT_PROJECT_VERSION: "122"
+    CURRENT_PROJECT_VERSION: "123"
     ENABLE_BITCODE: "NO"
 
 targets:
