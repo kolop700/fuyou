@@ -69,6 +69,11 @@ final class TakuNetwork: NSObject, AdNetwork {
             // 由 H5 在用户同意隐私政策后经 ad.init 触发，不在 App 启动路径调用
             try ATAPI.sharedInstance().start(withAppID: appId, appKey: appKey)
             sdkStarted = true
+            // 抑制 SDK「集成完整性检查」的开发者警告弹窗（如 AnyThink Adx SDK is missing）：
+            // 该弹窗与广告位配置无关（后台关闭 Taku ADX 网络仍弹），文案由服务端下发
+            // （adxIntegratedVerificationErrorText），审核场景会被判为启动报错（2.1(a)）。
+            // ignoreToastIfNeeded 是 ATAPI 公开 API（AnyThinkSDK 头文件 integrationChecking 同节）。
+            ATAPI.ignoreToastIfNeeded()
             requestTrackingIfNeeded()
         } catch {
             NSLog("[TakuNetwork] ATSDK start failed: %@", errMsg(error))
