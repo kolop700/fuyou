@@ -9,7 +9,14 @@ import WebKit
 final class WebAppSchemeHandler: NSObject, WKURLSchemeHandler {
 
     static let scheme = "cloudapp"
-    static let startURL = URL(string: "\(scheme)://local/index.html")!
+    /// 入口 URL 带构建号参数击穿缓存：覆盖安装后 H5 产物 hash 文件整体更名，
+    /// 若 WebKit 复用缓存的旧 index.html 会请求已不存在的旧 chunk（404）导致白屏/一直加载。
+    /// 自定义 scheme 的 Cache 响应头在 WebKit 中不可靠（业界通用做法即 query bust），
+    /// 构建号每次发版递增故升级必失效重取；同构建内 URL 稳定不影响 SPA 回退。
+    static var startURL: URL {
+        let v = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "0"
+        return URL(string: "\(scheme)://local/index.html?v=\(v)")!
+    }
 
     private let rootURL: URL
     private var tasks: [ObjectIdentifier: WKURLSchemeTask] = [:]
