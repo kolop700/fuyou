@@ -34,9 +34,14 @@ target 'CloudGuard' do
   # 主包 6.5.84：Taku SDK 下载中心官方生成代码指定版本（2026-10-28）；
   # 旧 6.5.73 与 6.5.90.x 酷盈适配器不匹配，导致启动弹 "AnyThink Adx SDK is missing"
   pod 'AnyThinkiOS', '6.5.84'                                    # Taku 聚合 SDK 主包
-  # 酷盈（= Taku ADX 网络）主 SDK：适配器依赖它；显式声明防解析漂移
-  pod 'SmartdigimktCNSDK', '6.5.90'                              # 酷盈（Taku ADX）主 SDK
-  pod 'AnyThinkMediationAdxSmartdigimktCNAdapter', '6.5.90.2.1'  # 酷盈 Adx 适配器（官方下载中心指定）
+  # —— 酷盈（Taku ADX）适配器：已移除（构建 127）——
+  # 移除原因：主包「集成完整性自检」持续误报 "AnyThink Adx SDK is missing" 启动弹窗
+  # （已按官方代码完整集成 6.5.90+6.5.90.2.1 仍报，后台关闭 ADX 网络仍弹，缺的组件
+  #  CocoaPods 上不存在，文案由服务端下发）。弹窗致 App Store 审核 2.1(a) 连续被拒。
+  # 物理移除适配器后 SDK 无 ADX 可检，从根源不可能再报 missing；待 Taku 官方给出
+  # 正确组件版本后恢复下列两行即可（与 App.vue 的 iOS init 短路同时删除恢复广告）。
+  # pod 'SmartdigimktCNSDK', '6.5.90'                              # 酷盈（Taku ADX）主 SDK
+  # pod 'AnyThinkMediationAdxSmartdigimktCNAdapter', '6.5.90.2.1'  # 酷盈 Adx 适配器
   pod 'LitemobAd', '1.5.9'                                        # 莱特摩比 SDK 主包
   pod 'LitemobTakuAdapter', '1.1.3'                              # 莱特摩比 Taku 适配器
 end

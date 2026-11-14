@@ -1,4 +1,7 @@
 import UIKit
+#if canImport(AnyThinkSDK)
+import AnyThinkSDK
+#endif
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,6 +10,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        // 【启动弹窗兜底】先于一切 SDK 调用预置「集成自检警告」抑制标记：
+        // "AnyThink Adx SDK is missing" 弹窗文案由 Taku 服务端下发，只要 SDK 被加载
+        // 就可能触发（与该不该初始化无关），审核场景会被判为启动报错（Guideline 2.1(a)）。
+        // H5 层 iOS 已不初始化 SDK（App.vue 短路），此处再提前置位，确保任何触发路径均不弹。
+        #if canImport(AnyThinkSDK)
+        ATAPI.ignoreToastIfNeeded()
+        #endif
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = ViewController()
         window.makeKeyAndVisible()
