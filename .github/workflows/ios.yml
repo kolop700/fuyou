@@ -172,8 +172,11 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set -euo pipefail
-          pip3 install --quiet pyjwt || python3 -m pip install --quiet pyjwt
-          python3 - <<'PY'
+          # macos 镜像的 Python 为 Homebrew 外部托管环境（PEP 668），系统 pip 安装直接被拦
+          # （run 33 实锤），改用临时 venv 隔离安装依赖
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
           import json, time, os, sys
           import jwt, urllib.request, urllib.error
           kid = os.environ['ASC_API_KEY_ID']; iss = os.environ['ASC_ISSUER_ID']
