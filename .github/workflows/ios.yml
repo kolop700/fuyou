@@ -162,6 +162,35 @@ jobs:
           name: fuyou-ios
           path: ${{ runner.temp }}/ipa/*.ipa
 
+      # 上传前诊断：run 31/32 两次在 altool 报 "Cannot determine the Apple ID from
+      # Bundle ID 'com.yefiot.fuyou'"（排查 key 失效 / bundle 解析 / app 状态，
+      # 401=API Key 无效或被删；返回空数组=bundle 在该 key 团队下查不到；正常=altool 自身问题）
+      - name: 诊断 ASC API（Key 与 Bundle ID 有效性）
+        if: inputs.mode == 'testflight'
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          pip3 install --quiet pyjwt || python3 -m pip install --quiet pyjwt
+          python3 - <<'PY'
+          import json, time, os, sys
+          import jwt, urllib.request, urllib.error
+          kid = os.environ['ASC_API_KEY_ID']; iss = os.environ['ASC_ISSUER_ID']
+          key = open(os.path.expanduser(f"~/.appstoreconnect/private_keys/AuthKey_{kid}.p8")).read()
+          tok = jwt.encode({'iss': iss, 'iat': int(time.time()), 'exp': int(time.time())+600, 'aud': 'appstoreconnect-v1'}, key, algorithm='ES256', headers={'kid': kid})
+          req = urllib.request.Request('https://api.appstoreconnect.apple.com/v1/apps?filter%5BbundleId%5D=com.yefiot.fuyou&fields%5Bapps%5D=name,bundleId', headers={'Authorization': f'Bearer {tok}'})
+          try:
+              with urllib.request.urlopen(req) as r:
+                  data = json.load(r)
+          except urllib.error.HTTPError as e:
+              print('ASC_API_HTTP_ERROR', e.code, e.read().decode()[:800]); sys.exit(0)
+          apps = data.get('data', [])
+          print('ASC_API_OK apps_found=', len(apps))
+          for a in apps:
+              print('APP:', a['id'], a['attributes'])
+          PY
+
       - name: 上传 TestFlight
         if: inputs.mode == 'testflight'
         run: |
