@@ -167,15 +167,17 @@ jobs:
       # 401=API Key 无效或被删；返回空数组=bundle 在该 key 团队下查不到；正常=altool 自身问题）
       - name: 诊断 ASC API（Key 与 Bundle ID 有效性）
         if: inputs.mode == 'testflight'
+        # 诊断仅辅助定位，失败绝不阻塞后续上传（run 33/34 教训：诊断自身两度挂掉，白白跳过上传）
+        continue-on-error: true
         env:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set -euo pipefail
           # macos 镜像的 Python 为 Homebrew 外部托管环境（PEP 668），系统 pip 安装直接被拦
-          # （run 33 实锤），改用临时 venv 隔离安装依赖
+          # （run 33 实锤），改用临时 venv 隔离安装依赖；ES256 签名需 cryptography（run 34 实锤）
           python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet 'pyjwt[crypto]'
           "$RUNNER_TEMP/venv/bin/python" - <<'PY'
           import json, time, os, sys
           import jwt, urllib.request, urllib.error
