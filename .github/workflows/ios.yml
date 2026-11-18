@@ -61,7 +61,12 @@ jobs:
           xcodebuild -workspace CloudGuard.xcworkspace -scheme CloudGuard \
             -configuration Release -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO build
+          # 白屏防回归：模拟器包同样校验 WebApp/ 目录结构（免费模式即可发现问题）
+          APP="$RUNNER_TEMP/dd/Build/Products/Release-iphonesimulator/CloudGuard.app"
+          test -f "$APP/WebApp/index.html" || { echo "::error::Bundle 缺少 WebApp/index.html（资源被平铺，会白屏）"; ls "$APP" | head -50; exit 1; }
+          echo "WebApp 结构 OK：$(find "$APP/WebApp" -type f | wc -l) 个文件"
 
       # ---------------- 模式二：签名打包并上传 TestFlight ----------------
       - name: 配置签名证书与描述文件
@@ -140,6 +145,19 @@ jobs:
             -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
             -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
             archive
+
+      # 【白屏防回归】校验 H5 产物以目录结构进入 .app（build 127 事故：XcodeGen 未写
+      # type: folder 时资源被平铺到包根目录，壳内 WebApp/ 不存在 → 全 404 → 启动白屏）。
+      # 编译成功不代表能渲染，此处直接检查归档产物内的关键文件，缺失立即失败终止上传。
+      - name: 校验 Bundle 内 WebApp 目录结构（防白屏）
+        if: inputs.mode == 'testflight'
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/CloudGuard.xcarchive/Products/Applications/CloudGuard.app"
+          test -f "$APP/WebApp/index.html" || { echo "::error::Bundle 缺少 WebApp/index.html（资源被平铺，会白屏）"; ls "$APP" | head -50; exit 1; }
+          ENTRY=$(grep -o 'assets/index-[^"]*\.js' "$APP/WebApp/index.html" | head -1)
+          test -n "$ENTRY" && test -f "$APP/WebApp/$ENTRY" || { echo "::error::入口 JS $ENTRY 不在 Bundle WebApp/ 内"; exit 1; }
+          echo "WebApp 结构 OK：$(find "$APP/WebApp" -type f | wc -l) 个文件，入口 $ENTRY"
 
       - name: 导出 ipa
         if: inputs.mode == 'testflight'

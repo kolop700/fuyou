@@ -29,7 +29,7 @@ settings:
     DEVELOPMENT_TEAM: "DW47QPNP7Y"
     # 构建号：本地与 CI 均以此值为准（发新版时手动 +1；Apple 仅要求同一版本号内递增，
     # 旧 1.0.16/17 的时间戳构建属于历史版本，不阻塞新版本从 118 起算）
-    CURRENT_PROJECT_VERSION: "127"
+    CURRENT_PROJECT_VERSION: "128"
     ENABLE_BITCODE: "NO"
 
 targets:
@@ -41,8 +41,14 @@ targets:
       - path: CloudGuard
         excludes:
           - "WebApp/**"
-      # 显式把 WebApp 目录作为 folder reference（蓝色文件夹），Bundle 内保持 WebApp/... 层级
+      # 显式把 WebApp 目录作为 folder reference（蓝色文件夹），Bundle 内保持 WebApp/... 层级。
+      # 【白屏根因】必须写 type: folder —— XcodeGen 目录 source 默认按 group 逐文件引用生成，
+      # Copy Bundle Resources 会把全部 H5 文件平铺到 .app 根目录（Bundle 内无 WebApp/ 目录），
+      # WebAppSchemeHandler 按 WebApp/<path> 找不到任何文件 → 全部 404 → WKWebView 白屏。
+      # CI run（build 127）归档日志实锤：CpResource 目标全是 CloudGuard.app/<文件名> 而非
+      # CloudGuard.app/WebApp/...。改为 folder reference 后整目录原样拷贝，保留目录结构。
       - path: CloudGuard/WebApp
+        type: folder
         buildPhase: resources
     # 显式链接的系统框架：AppTrackingTransparency 供 TakuNetwork.swift ATT 授权请求使用
     # （弹窗文案 NSUserTrackingUsageDescription 已配于 Info.plist；pod 集成前的无 Pods 构建也不报错）
