@@ -56,10 +56,30 @@ final class TakuNetwork: NSObject, AdNetwork {
 
     func initSDK(appId: String, appKey: String) {
         guard !appId.isEmpty, !appKey.isEmpty else { return }
-        if sdkStarted {
-            requestTrackingIfNeeded() // 已初始化（幂等）：仅补一次 ATT 授权检查
-            return
+        if sdkStarted { return }
+        // 【ATT 合规时序】Apple 审核要求：可能用于追踪的数据（IDFA 等）收集前必须出现 ATT 授权窗
+        // （2026-11-18 Guideline 2.1 iPadOS 27.2.1 实锤：SDK 已链接 ATT 但审核员未见弹窗）。
+        // Taku start 即会读取 IDFA/拉配置，故授权请求必须在 ATAPI.start 之前完成回调。
+        // 兜底超时：授权窗在特殊场景（如场景 inactive）可能不回调，超时后照常启动
+        // （此时 IDFA 恒为全 0，不构成追踪数据收集，合规且广告链路不因弹窗卡死）。
+        DispatchQueue.main.async {
+            guard !self.sdkStarted else { return }
+            if ATTrackingManager.trackingAuthorizationStatus == .notDetermined {
+                var started = false
+                let startOnce: () -> Void = {
+                    if !started { started = true; self.startSDK(appId: appId, appKey: appKey) }
+                }
+                ATTrackingManager.requestTrackingAuthorization { _ in startOnce() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: startOnce)
+            } else {
+                startSDK(appId: appId, appKey: appKey)
+            }
         }
+    }
+
+    /// ATT 授权窗出现/已授权后真正的 SDK 启动（主线程调用，sdkStarted 幂等保护）
+    private func startSDK(appId: String, appKey: String) {
+        guard !sdkStarted else { return }
         // customData 在 start 前设置，保证初始化后的首个广告请求即携带用户分组信息
         applyCustomData()
 #if DEBUG
@@ -74,7 +94,6 @@ final class TakuNetwork: NSObject, AdNetwork {
             // （adxIntegratedVerificationErrorText），审核场景会被判为启动报错（2.1(a)）。
             // ignoreToastIfNeeded 是 ATAPI 公开 API（AnyThinkSDK 头文件 integrationChecking 同节）。
             ATAPI.ignoreToastIfNeeded()
-            requestTrackingIfNeeded()
         } catch {
             NSLog("[TakuNetwork] ATSDK start failed: %@", errMsg(error))
         }
@@ -88,16 +107,6 @@ final class TakuNetwork: NSObject, AdNetwork {
     /// Taku 全局自定义参数：user_type（免广告拦截在 AdManager 代码级完成，此处仅供后台统计对账）
     private func applyCustomData() {
         ATSDKGlobalSetting.sharedManager().customData = ["user_type": userType]
-    }
-
-    /// 请求 ATT 授权（iOS 14.5+，弹窗文案见 Info.plist 的 NSUserTrackingUsageDescription）。
-    /// 仅 .notDetermined 时弹；inactive 状态调用不弹也不回调，故不阻塞任何流程（fire-and-forget，
-    /// 下次 ad.init 会再尝试）。
-    private func requestTrackingIfNeeded() {
-        DispatchQueue.main.async {
-            guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
-            ATTrackingManager.requestTrackingAuthorization { _ in }
-        }
     }
 
     /// 广告点击落地页的呈现控制器兜底（横幅/开屏需要；主 window 的 rootViewController）

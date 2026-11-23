@@ -64,18 +64,12 @@ const loadSplashAd = () => {
 
 // Taku 广告 SDK 初始化（隐私合规时序，重复调用幂等）：
 // - Android：系统隐私弹窗同意后才进入/加载，可直接初始化；
-// - iOS：需应用内同意《隐私政策》（首次弹窗/登录页勾选写入 agreement store）后才初始化
+// - iOS：需应用内同意《隐私政策》（首次弹窗/登录页勾选写入 agreement store）后才初始化；
+//   ATT 授权弹窗由原生壳在 SDK 启动前拉起（见 shell-ios TakuNetwork.initSDK），
+//   满足 Apple 审核「追踪数据收集前必须出现 ATT 授权窗」（Guideline 2.1）
 const initTakuIfAgreed = () => {
 	// #ifdef APP-PLUS || H5
 	const sys = uni.getSystemInfoSync()
-	// 【iOS 临时停用广告】Taku SDK 集成自检误报 "AnyThink Adx SDK is missing" 警告弹窗
-	// （已按官方下载中心代码完整集成仍弹，缺的组件官方未随 pod 分发，后台关 ADX 网络也无效），
-	// 弹窗导致 App Store 审核 2.1(a) 连续被拒。不初始化 SDK 即不拉配置不自检不弹框，
-	// 全链路广告位自动隐藏（isReady=false）。Taku 提供正确组件/确认抑制方案后删除本段即恢复。
-	if (sys.platform === 'ios') {
-		console.log('[TakuAds] iOS 广告暂不初始化（规避审核 2.1(a)）')
-		return
-	}
 	const agreed = sys.platform === 'ios' ? useAgreementStore().checkAgreement() : true
 	if (agreed) {
 		TakuAds.init(TAKU_CONFIG, (res) => {

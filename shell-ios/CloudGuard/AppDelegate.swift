@@ -10,10 +10,12 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        // 【启动弹窗兜底】先于一切 SDK 调用预置「集成自检警告」抑制标记：
+        // 【启动弹窗兜底】先于一切 SDK 调用预置「集成警告」抑制标记：
         // "AnyThink Adx SDK is missing" 弹窗文案由 Taku 服务端下发，只要 SDK 被加载
         // 就可能触发（与该不该初始化无关），审核场景会被判为启动报错（Guideline 2.1(a)）。
-        // H5 层 iOS 已不初始化 SDK（App.vue 短路），此处再提前置位，确保任何触发路径均不弹。
+        // 酷盈 ADX 适配器已不集成（见 Podfile），此处再提前置位双保险，确保任何触发路径均不弹。
+        // 注：ATT 授权弹窗不在此处——追踪数据收集前才需授权，由 TakuNetwork.initSDK
+        // 在 SDK start 前拉起（Guideline 2.1 审核要求，2026-11-18）。
         #if canImport(AnyThinkSDK)
         ATAPI.ignoreToastIfNeeded()
         #endif
