@@ -72,7 +72,7 @@ final class TakuNetwork: NSObject, AdNetwork {
                 ATTrackingManager.requestTrackingAuthorization { _ in startOnce() }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: startOnce)
             } else {
-                startSDK(appId: appId, appKey: appKey)
+                self.startSDK(appId: appId, appKey: appKey)
             }
         }
     }
