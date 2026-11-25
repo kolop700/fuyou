@@ -153,9 +153,12 @@ defineExpose({
   left: 0;
   right: 0;
   height: 100rpx;
+  height: calc(100rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
   display: flex;
   justify-content: space-around;
   align-items: center;
+  padding-bottom: 0;
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid;
   z-index: 9999; // 提高z-index确保在最上层

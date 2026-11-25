@@ -50,7 +50,10 @@ final class ViewController: UIViewController {
 
         #if DEBUG
         // 调试包允许 Safari 远程审查 H5；正式包不启用，避免篡改 JS 桥。
+        // Xcode 14 的 iOS 16.2 SDK 尚未声明 isInspectable，旧工具链直接跳过。
+        #if compiler(>=5.9)
         if #available(iOS 16.4, *) { webView.isInspectable = true }
+        #endif
         #endif
 
         // 4) 视图层级：webView -> bannerContainer -> splashContainer
