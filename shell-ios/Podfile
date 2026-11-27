@@ -57,4 +57,18 @@ post_install do |installer|
       c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
   end
+
+  # 【CI run 44 实锤的链接缺失】CocoaPods 未把微信静态 xcframework 写进主 target 的
+  # OTHER_LDFLAGS（ld 仅报 "Could not find or use auto-linked library 'WechatOpenSDK'"，
+  # 随后全部 WX 类 Undefined symbols；podspec 声明的 -l z/sqlite3.0/c++ 同样缺失）。
+  # 此处直接在生成的聚合 xcconfig 里补齐链接 flags；已存在则不重复插入。
+  Dir.glob(File.join(__dir__, 'Pods/Target Support Files/Pods-CloudGuard/Pods-CloudGuard.*.xcconfig')).each do |f|
+    content = File.read(f)
+    unless content.include?('-framework "WechatOpenSDK"')
+      content = content.gsub(/^OTHER_LDFLAGS = (.*)$/) do
+        "OTHER_LDFLAGS = #{$1} -framework \"WechatOpenSDK\" -l \"z\" -l \"sqlite3.0\" -l \"c++\""
+      end
+      File.write(f, content)
+    end
+  end
 end
