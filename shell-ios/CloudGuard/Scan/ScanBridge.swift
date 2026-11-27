@@ -42,8 +42,44 @@ final class ScanViewController: UIViewController, AVCaptureMetadataOutputObjects
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .cancel, target: self, action: #selector(cancel)
         )
+        // 模拟器无真实相机（模拟视频自带测试码会秒触发误识别，或设备直接不可用），
+        // 改用手动输入二维码内容走通完整扫码链路；真机不受影响。
+        #if !targetEnvironment(simulator)
         setupCamera()
+        #endif
     }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        #if targetEnvironment(simulator)
+        guard !didFind else { return }
+        showSimulatorScanInput()
+        #endif
+    }
+
+    #if targetEnvironment(simulator)
+    /// 模拟器专用：手动输入二维码内容（如 https://.../c?device_number=YNxxxx），
+    /// 输入后按与真机相同的结果回传（resolveOk/resolveErr），验证 H5 校验与跳转链路。
+    private func showSimulatorScanInput() {
+        let alert = UIAlertController(
+            title: "模拟器扫码",
+            message: "模拟器无真实相机，请手动输入二维码内容以验证扫码链路（真机不受影响）",
+            preferredStyle: .alert
+        )
+        alert.addTextField { tf in
+            tf.placeholder = "粘贴二维码内容，如 https://.../c?device_number=YNxxxx"
+            tf.autocapitalizationType = "none"
+        }
+        alert.addAction(UIAlertAction(title: "模拟扫码成功", style: .default) { [weak self] _ in
+            let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if text.isEmpty { self?.finish(.cancelled) } else { self?.finish(.success(text)) }
+        })
+        alert.addAction(UIAlertAction(title: "取消扫码", style: .cancel) { [weak self] _ in
+            self?.finish(.cancelled)
+        })
+        present(alert, animated: true)
+    }
+    #endif
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
