@@ -69,5 +69,9 @@ targets:
         CODE_SIGN_ENTITLEMENTS: CloudGuard/CloudGuard.entitlements
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1"
-        OTHER_LDFLAGS: "-ObjC -framework WebKit"
+        # 【CI run 45 实锤】必须带 $(inherited)：此处不设该键时 XcodeGen 会在 target 层写入
+        # 裸值，把 Pods 聚合 xcconfig 的 OTHER_LDFLAGS（含 -framework WechatOpenSDK 等，
+        # Podfile post_install 补丁）整体覆盖——pod install 日志警告 "target overrides the
+        # OTHER_LDFLAGS build setting" 即此，导致 WX 类 Undefined symbols。
+        OTHER_LDFLAGS: "$(inherited) -ObjC -framework WebKit"
         ENABLE_DEBUG_DYLIB: "NO"
