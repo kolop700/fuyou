@@ -23,7 +23,11 @@ use_frameworks!
 
 target 'CloudGuard' do
   # —— 微信开放平台 SDK（支付 / 分享 / 小程序）——
-  pod 'WechatOpenSDK-XCFramework', '2.0.4'
+  # 【必须 ≥2.0.5】2.0.4 的 xcframework 是裸 libWechatOpenSDK.a 且无 module map，
+  # Swift `canImport(WechatOpenSDK)` 恒为 false → AppSDK 全部微信代码被条件编译剔除，
+  # 表现为「拉起小程序/登录/支付静默失败」（TF 130 实锤，run 42 链接行无 -framework WechatOpenSDK）。
+  # 2.0.5 起官方改为标准 WechatOpenSDK.framework（含 Modules），import 才生效。
+  pod 'WechatOpenSDK-XCFramework', '2.0.5'
 
   # —— 支付宝 SDK：已移除 ——本 App 无真实支付宝支付（收银台支付宝选项为演示 UI，
   # 未调用 pay.alipay 桥）；且 AlipaySDK 需额外链接 SystemConfiguration/CoreTelephony/libz
