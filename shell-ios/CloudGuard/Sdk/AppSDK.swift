@@ -88,8 +88,14 @@ enum AppSDK {
         req.package = Self.str(p["package"]) ?? "Sign=WXPay"
         req.timeStamp = UInt32(Self.str(p["timestamp"]) ?? "0") ?? 0
         req.sign = Self.str(p["sign"]) ?? ""
-        req.extData = Self.str(p["extData"]) ?? ""
-        return WXApi.send(req, delegate: WechatHandler.shared) ? .launched : .failed("微信下单失败")
+        // 注：2.0.5 PayReq 无 extData 字段（旧写法来自记忆版 API），下单结果经 onResp 异步回传
+        // sendReq 为异步接口：completion(false) 表示「调起微信失败」，经支付事件通道透出
+        WXApi.send(req) { success in
+            if !success {
+                AppSDK.onPayEvent?(PayEventPayload(channel: "wechat", event: "pay.fail", code: -1, msg: "微信下单失败"))
+            }
+        }
+        return .launched
         #else
         return .notIntegrated
         #endif
@@ -104,8 +110,12 @@ enum AppSDK {
         let req = WXLaunchMiniProgramReq()
         req.userName = userName
         req.path = path ?? ""
-        req.miniprogramType = WXMiniProgramType(rawValue: type) ?? .release
-        return WXApi.send(req, delegate: WechatHandler.shared) ? .launched : .failed("拉起小程序失败")
+        // 2.0.5 属性名为 miniProgramType（枚举底层 NSUInteger）
+        req.miniProgramType = WXMiniProgramType(rawValue: UInt(type)) ?? .release
+        WXApi.send(req) { success in
+            if !success { NSLog("[AppSDK] 拉起小程序 sendReq 失败（未收到微信响应）") }
+        }
+        return .launched
         #else
         return .notIntegrated
         #endif
@@ -122,7 +132,8 @@ enum AppSDK {
         msg.title = title ?? ""
         msg.description = summary ?? ""
 
-        let obj: WXMediaMessageObject
+        // 2.0.5 中 mediaObject 类型为 id（无 WXMediaMessageObject 协议）
+        let obj: AnyObject
         switch type {
         case "image":
             guard let b64 = imageBase64, let data = Data(base64Encoded: b64), let image = UIImage(data: data) else {
@@ -131,28 +142,30 @@ enum AppSDK {
             let im = WXImageObject()
             im.imageData = data
             obj = im
-            msg.thumbImage = Self.thumbData(from: image)
+            msg.thumbData = Self.thumbData(from: image)   // 2.0.5 属性名为 thumbData
         case "webpage", "link", "news":
             let web = WXWebpageObject()
             web.webpageUrl = href ?? ""
             obj = web
             if let b64 = imageBase64, let data = Data(base64Encoded: b64), let image = UIImage(data: data) {
-                msg.thumbImage = Self.thumbData(from: image)
+                msg.thumbData = Self.thumbData(from: image)
             }
         default:
             let txt = WXTextObject()
-            txt.text = summary ?? title ?? ""
+            txt.contentText = summary ?? title ?? ""     // 2.0.5 属性名为 contentText
             obj = txt
         }
         msg.mediaObject = obj
-        if msg.mediaObject is WXTextObject { /* 文本无需 thumb */ }
 
         let req = SendMessageToWXReq()
         req.bText = (type != "image" && type != "webpage" && type != "link" && type != "news")
         req.text = req.bText ? (summary ?? title ?? "") : ""
         req.message = msg
         req.scene = Int32(scene)  // 0 会话 / 1 朋友圈 / 2 收藏
-        return WXApi.send(req, delegate: WechatHandler.shared) ? .launched : .failed("微信分享失败")
+        WXApi.send(req) { success in
+            if !success { NSLog("[AppSDK] 微信分享 sendReq 失败") }
+        }
+        return .launched
         #else
         return .notIntegrated
         #endif
@@ -223,13 +236,14 @@ final class WechatHandler: NSObject, WXApiDelegate {
         if resp is PayResp {
             let r = resp as! PayResp
             var event = "pay.fail"
-            switch r.errCode {
+            // 2.0.5 头文件无 WXErrorCode 枚举：errCode 约定 -2 = 用户取消（WXErrCodeCancel）
+            switch Int32(r.errCode) {
             case 0: event = "pay.success"
-            case Int(WXErrorCode.userCancel.rawValue): event = "pay.cancel"
+            case -2: event = "pay.cancel"
             default: event = "pay.fail"
             }
             AppSDK.onPayEvent?(PayEventPayload(channel: "wechat", event: event,
-                                               code: r.errCode, msg: r.errStr ?? ""))
+                                               code: Int(r.errCode), msg: r.errStr ?? ""))
         } else if resp is WXLaunchMiniProgramResp {
             // 小程序返回：业务侧如需可从此读取 extMsg；当前无需回传
         }
