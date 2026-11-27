@@ -3,7 +3,7 @@
     <!-- 自定义导航栏（不显示标题） -->
     <custom-navbar title="我的" />
     
-    <scroll-view class="my-content" scroll-y :style="{ paddingTop: navbarHeight + 'px', paddingBottom: '120rpx' }">
+    <scroll-view class="my-content" scroll-y :style="{ paddingTop: navbarHeight + 'px' }">
       <view class="page-padding">
         <!-- 用户信息卡片 -->
         <view class="glass-card user-card" :style="{ background: theme.bgCard, borderColor: theme.borderColor, boxShadow: theme.shadowCard }">
@@ -241,6 +241,9 @@ const bannerAdId = __takuComputed(() => __takuAdStore.getBannerAdId())
 
 .page-padding {
   padding: 20px 24px;
+  /* 底部留白对齐 custom-tabbar 实际高度（100rpx + iPhone 安全区），
+     滚到底时最后一行完整可见不被 tab 栏遮挡（Android 安全区为 0，表现不变） */
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 // 玻璃拟态卡片通用样式

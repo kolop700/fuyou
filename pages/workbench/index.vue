@@ -7,7 +7,7 @@
     <scroll-view 
       class="workbench-content" 
       scroll-y
-      :style="{ paddingTop: navbarHeight + 'px', paddingBottom: '120rpx' }"
+      :style="{ paddingTop: navbarHeight + 'px' }"
     >
       <view class="content-wrapper">
         <!-- 门禁服务 -->
@@ -274,6 +274,9 @@ const bannerAdId = __takuComputed(() => __takuAdStore.getBannerAdId())
 
 .content-wrapper {
   padding: 20rpx 32rpx;
+  /* 底部留白对齐 custom-tabbar 高度（100rpx + iPhone 安全区），
+     滚到底内容完整可见不被 tab 栏遮挡（Android 安全区为 0，表现不变） */
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .section {

@@ -184,6 +184,12 @@ final class TakuNetwork: NSObject, AdNetwork {
 
     // MARK: - 开屏（VIP 不免，拦截与否由 AdManager 决定）
 
+    /// 开屏防残留状态：container 弱引用 + 「show 已发起但未收到任何生命周期事件」标记。
+    /// 背景：SDK 开屏走自己的 window/悬浮层（不经过我们的 splashContainer），无填充竞态或
+    /// adapter 异常时事件可能缺失，残层会以半透明「灰膜」盖住页面且不留引用可查。
+    private weak var splashHostContainer: UIView?
+    private var splashPending = false
+
     func loadSplash(_ pid: String, _ cb: @escaping AdManager.Event) {
         guard !pid.isEmpty else { cb("onAdFailed", badParamCode, "empty placementId"); return }
         callbacks[pid] = cb
@@ -199,18 +205,39 @@ final class TakuNetwork: NSObject, AdNetwork {
         callbacks[pid] = cb
         guard let window = container.window,
               let vc = window.rootViewController ?? TakuNetwork.rootViewController() else {
+            cleanupSplash()
             cb("onAdFailed", notReadyCode, "window not available"); return
         }
         guard ATAdManager.shared().splashReady(forPlacementID: pid) else {
+            // 无填充/未就绪：容器与悬浮残层必须即刻归位隐藏
+            cleanupSplash()
             cb("onAdFailed", notReadyCode, "ad not ready"); return
         }
         let config = ATShowConfig(scene: "", showCustomExt: "")
+        splashHostContainer = container
+        splashPending = true
         ATAdManager.shared().showSplash(withPlacementID: pid,
                                         config: config,
                                         window: window,
                                         in: vc,
                                         extra: [:],
                                         delegate: self)
+        // 看门狗：SDK 未响应或生命周期事件缺失时（无填充竞态/adapter 异常），
+        // 12 秒后强制清理容器残层并回落失败事件，绝不允许「灰膜」长期盖住页面
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
+            guard let self = self, self.splashPending else { return }
+            self.splashPending = false
+            self.cleanupSplash()
+            self.fire(pid, "onAdFailed", -1, "splash show watchdog cleanup")
+        }
+    }
+
+    /// 开屏收口清理（契约：任何失败/关闭/超时路径都不得留下遮挡页面视觉或触摸的残层）
+    private func cleanupSplash() {
+        splashPending = false
+        guard let container = splashHostContainer else { return }
+        container.subviews.forEach { $0.removeFromSuperview() }
+        container.isHidden = true
     }
 }
 
@@ -290,6 +317,8 @@ extension TakuNetwork: ATAdLoadingDelegate, ATRewardedVideoDelegate, ATInterstit
     // ---- 开屏（ATSplashDelegate） ----
 
     func splashDidShow(forPlacementID placementID: String, extra: [AnyHashable: Any]) {
+        // 正常展示：SDK 接管关闭时序（跳过按钮/倒计时），停掉看门狗，勿清理画面
+        splashPending = false
         fire(placementID, "onAdShow", 0, "")
     }
 
@@ -298,6 +327,7 @@ extension TakuNetwork: ATAdLoadingDelegate, ATRewardedVideoDelegate, ATInterstit
     }
 
     func splashDidClose(forPlacementID placementID: String, extra: [AnyHashable: Any]) {
+        cleanupSplash() // 关闭即收口：确保容器与 SDK 塞入的视图全部移除，不残留
         fire(placementID, "onAdClosed", 0, "")
     }
 
@@ -311,6 +341,7 @@ extension TakuNetwork: ATAdLoadingDelegate, ATRewardedVideoDelegate, ATInterstit
     }
 
     func splashDidShowFailed(forPlacementID placementID: String, error: Error, extra: [AnyHashable: Any]) {
+        cleanupSplash() // 展示失败：立刻收口，防止半展示状态的残层盖页
         fire(placementID, "onAdFailed", errCode(error), errMsg(error))
     }
 

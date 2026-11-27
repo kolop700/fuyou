@@ -180,6 +180,8 @@
           </view>
         </view>
       </view>
+      <!-- 底部留白：保证最后一屏内容可滚到 iPhone tab 栏（100rpx+安全区）上方 -->
+      <view class="bottom-safe-space"></view>
     </scroll-view>
     
     <!-- 自定义底部标签栏 -->
@@ -725,6 +727,11 @@ const bannerAdId = __takuComputed(() => __takuAdStore.getBannerAdId())
   height: 100vh;
   position: relative;
   z-index: 1;
+}
+
+/* 滚动内容底部留白：tab 栏高 100rpx + iPhone 底部安全区（Android 安全区为 0，表现不变） */
+.bottom-safe-space {
+  height: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .header-section {

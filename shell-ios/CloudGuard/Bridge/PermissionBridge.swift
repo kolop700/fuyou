@@ -22,8 +22,6 @@ final class PermissionBridge: NSObject, CLLocationManagerDelegate, CBCentralMana
     private var locationContinuation: ((Bool) -> Void)?
     private var bluetoothTimeout: DispatchWorkItem?
 
-    private let queue = DispatchQueue(label: "com.yefiot.cloudguard.permission")
-
     // MARK: - 对外
 
     /// 批量申请权限；批内各能力串行申请（见 handleRequest），避免系统弹窗叠加。
@@ -54,7 +52,11 @@ final class PermissionBridge: NSObject, CLLocationManagerDelegate, CBCentralMana
                 default: out[item.perm] = capResults[item.cap] ?? true
                 }
             }
-            completion(out)
+            // 【主线程契约】权限结果的消费方（扫码/相册）会直接做 UIKit 操作
+            // （UINavigationController 布局、present 等），必须在主线程执行。
+            // 旧实现里 finish 常在后台串行队列 com.yefiot.cloudguard.permission 上触发，
+            // 导致 ScanBridge.present 的 AutoLayout 在子线程抛异常崩溃（SIGABRT，构建 129 模拟器日志实锤）。
+            if Thread.isMainThread { completion(out) } else { DispatchQueue.main.async { completion(out) } }
         }
         guard !caps.isEmpty else { finish(); return }
 
@@ -64,7 +66,9 @@ final class PermissionBridge: NSObject, CLLocationManagerDelegate, CBCentralMana
             let cap = remaining.removeFirst()
             requestCapability(cap) { ok in
                 capResults[cap] = ok
-                self.queue.async { next() }
+                // 串回主线程继续下一项：既串行保护 capResults/remaining 的并发修改，
+                // 又保证最终 finish()→completion 天然落在主线程（消费方 UIKit 操作依赖）
+                DispatchQueue.main.async { next() }
             }
         }
         next()

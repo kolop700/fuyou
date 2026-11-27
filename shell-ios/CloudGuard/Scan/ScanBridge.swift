@@ -11,6 +11,13 @@ enum ScanResult {
 final class ScanBridge {
 
     func present(from presenter: UIViewController, completion: @escaping (ScanResult) -> Void) {
+        // 【主线程兜底】建导航控制器/present 属 UIKit 操作，子线程调用会崩（AutoLayout 异常）。
+        // 主修复在 PermissionBridge（权限结果统一切回主线程），此处再设一道防护，
+        // 任何调用方误在子线程进来都自动回主线程执行。
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.present(from: presenter, completion: completion) }
+            return
+        }
         let scanVC = ScanViewController()
         scanVC.completion = completion
         let nav = UINavigationController(rootViewController: scanVC)
