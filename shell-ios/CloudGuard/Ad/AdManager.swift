@@ -70,8 +70,15 @@ final class AdManager {
     // MARK: - 横幅（VIP 免）
 
     /// 返回待挂载的 banner 视图（未就绪/未集成/VIP 时为 nil）
+    ///
+    /// 【实例复用】契约约定同一 positionKey 复用同一横幅实例（见 taku-sdk.js bannerPositionKey）。
+    /// H5 首次展示、素材高度回报、切页回显都会重复发起 show；若每次都 retrieveBannerView
+    /// 新实例并 attach，旧视图不会被移除 —— 多层横幅叠加、位置错乱。复用实例只更新 frame。
     func showBanner(positionKey: String, placementId: String, _ cb: @escaping Event) -> UIView? {
         if isVip { cb("onAdFailed", vipBlockCode, "vip_no_ad"); return nil }
+        if let existing = bannerViews[positionKey] {
+            return existing
+        }
         let view = network.makeBanner(placementId: placementId, cb)
         if let view = view { bannerViews[positionKey] = view }
         else { cb("onAdFailed", notReadyCode, "banner not ready") }

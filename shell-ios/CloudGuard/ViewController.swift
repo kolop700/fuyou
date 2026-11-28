@@ -82,6 +82,13 @@ final class ViewController: UIViewController {
 
     // MARK: - 供 AdBridge 使用（对齐 Android attachBannerView / getSplashLayer）
 
+    /// H5 视口原点在原生视图坐标系中的 Y 偏移（pt）。
+    /// WKWebView 默认 contentInsetAdjustmentBehavior=.automatic：全屏铺满时会把内容
+    /// 自动避让安全区（刘海屏顶部 inset ≈ 47pt、底部 home indicator ≈ 34pt），
+    /// 此时 H5 `getBoundingClientRect()` 的 (0,0) 对应原生 y = adjustedContentInset.top。
+    /// 原生悬浮广告按 H5 坐标挂载时必须叠加该偏移，否则横幅整体上移、与 H5 占位错位。
+    var webViewViewportTopInset: CGFloat { webView?.scrollView.adjustedContentInset.top ?? 0 }
+
     /// 把横幅视图加到悬浮层（按传入 frame，pt 单位）
     func attachBannerView(_ v: UIView, frame: CGRect) {
         v.removeFromSuperview()

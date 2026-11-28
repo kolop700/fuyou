@@ -85,12 +85,20 @@ final class AdBridge: BridgeModule {
         let view = manager.showBanner(positionKey: key, placementId: pid, fire(pid))
         if let view = view, let rect = params["rect"] as? [String: Any] {
             let dpr = (params["dpr"] as? NSNumber)?.doubleValue ?? 1.0
-            // iOS 以 pt 布局：CSS px 直接作为 pt（无需 ×dpr，屏幕缩放由系统处理）
+            // iOS 以 pt 布局：1 CSS px = 1 pt（viewport width=device-width / scale=1），无需 ×dpr
             _ = dpr
-            let f = CGRect(x: CGFloat((rect["left"] as? NSNumber)?.doubleValue ?? 0),
-                           y: CGFloat((rect["top"] as? NSNumber)?.doubleValue ?? 0),
-                           width: CGFloat((rect["width"] as? NSNumber)?.doubleValue ?? 0),
-                           height: CGFloat((rect["height"] as? NSNumber)?.doubleValue ?? 0))
+            let left = CGFloat((rect["left"] as? NSNumber)?.doubleValue ?? 0)
+            let top = CGFloat((rect["top"] as? NSNumber)?.doubleValue ?? 0)
+            let width = CGFloat((rect["width"] as? NSNumber)?.doubleValue ?? 0)
+            var height = CGFloat((rect["height"] as? NSNumber)?.doubleValue ?? 0)
+            // H5 无素材时占位塌缩为 1px：此时不要按 1pt 压迫横幅，先按标准横幅 320x50
+            // 等比兜底；素材展示后 H5 收到 onBannerResized 会撑开占位并重报精确位置。
+            if height < 20 && width > 0 {
+                height = (width * 50.0 / 320.0).rounded()
+            }
+            // H5 视口坐标 -> 原生坐标：叠加 WebView 安全区顶部 inset（见 ViewController 同名属性）
+            let yOffset = viewController?.webViewViewportTopInset ?? 0
+            let f = CGRect(x: left, y: top + yOffset, width: width, height: height)
             viewController?.attachBannerView(view, frame: f)
         }
         channel.resolveOk(callbackId)

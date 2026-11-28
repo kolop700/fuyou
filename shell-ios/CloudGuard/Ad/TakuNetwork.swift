@@ -348,6 +348,13 @@ extension TakuNetwork: ATAdLoadingDelegate, ATRewardedVideoDelegate, ATInterstit
     // ---- 横幅（ATBannerDelegate） ----
 
     func bannerView(_ bannerView: ATBannerView, didShowAdWithPlacementID placementID: String, extra: [AnyHashable: Any]) {
+        // 【排版对齐】回报素材实际高度（pt，1 CSS px = 1 pt）：H5 taku-banner 收到
+        // onBannerResized 后把占位撑到同等高度并重报悬浮层位置 —— 保证占位与素材严丝合缝，
+        // 不会出现「素材盖住底部 tabbar」或「占位留白」。auto-refresh 换素材高度变化时同样受益。
+        let h = bannerView.bounds.height
+        if h > 0 {
+            fire(placementID, "onBannerResized", 0, String(Int(h.rounded())))
+        }
         fire(placementID, "onAdShow", 0, "")
     }
 
