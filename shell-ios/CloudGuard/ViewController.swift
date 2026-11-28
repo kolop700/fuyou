@@ -20,7 +20,7 @@ final class ViewController: UIViewController {
     private var reloadAttempts = 0
 
     /// WebView 下层，bannerLayer 上层承载悬浮横幅；splashLayer 最顶层默认隐藏
-    let bannerContainer = UIView()
+    let bannerContainer = BannerContainerView()
     let splashContainer = UIView()
 
     override func viewDidLoad() {
@@ -174,5 +174,25 @@ extension ViewController: WKNavigationDelegate {
             guard let self = self else { return }
             self.webView.load(URLRequest(url: WebAppSchemeHandler.startURL))
         }
+    }
+}
+
+// MARK: - 横幅悬浮容器（触摸穿透）
+
+/// 全屏覆盖在 WebView 之上的横幅悬浮层。
+///
+/// 【修复：底部导航栏点不动】普通 UIView 一旦 `isUserInteractionEnabled = true`，
+/// 其默认 `hitTest` 对「落在自身 bounds 内、但不在任何子视图上」的点也会返回自身，
+/// 于是整屏（含 H5 自定义底部 tabbar）的触摸都被这层透明容器吞掉，导航栏无法点击。
+/// 这里重写 `hitTest`：仅当触摸点命中某个横幅子视图时才拦截（保证横幅可点），
+/// 否则返回 nil，让触摸穿透到下层 WebView。
+final class BannerContainerView: UIView {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard isUserInteractionEnabled, !isHidden, alpha > 0.01 else { return nil }
+        for sub in subviews.reversed() {
+            let local = convert(point, to: sub)
+            if let hit = sub.hitTest(local, with: event) { return hit }
+        }
+        return nil
     }
 }
