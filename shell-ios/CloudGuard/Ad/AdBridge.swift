@@ -91,11 +91,12 @@ final class AdBridge: BridgeModule {
             let top = CGFloat((rect["top"] as? NSNumber)?.doubleValue ?? 0)
             let width = CGFloat((rect["width"] as? NSNumber)?.doubleValue ?? 0)
             var height = CGFloat((rect["height"] as? NSNumber)?.doubleValue ?? 0)
-            // H5 无素材时占位塌缩为 1px：此时不要按 1pt 压迫横幅，先按标准横幅 320x50
-            // 等比兜底；素材展示后 H5 收到 onBannerResized 会撑开占位并重报精确位置。
-            if height < 20 && width > 0 {
-                height = (width * 50.0 / 320.0).rounded()
-            }
+            // 【不遮挡底部导航】frame 严守 H5 占位，绝不向下放大：
+            // 广告占位是 fixed 底部布局（tab 页位于 tabbar 正上方），H5 无素材时占位
+            // 塌缩为 1px。若此处把高度放大（如 320x50 等比），悬浮层会向下伸进
+            // tabbar 区域直接盖住导航栏（build 133 实况）。素材就绪后原生经
+            // onBannerResized 回报高度，H5 撑开占位再重报精确位置（向上生长）。
+            if height < 1 { height = 1 }
             // H5 视口坐标 -> 原生坐标：叠加 WebView 安全区顶部 inset（见 ViewController 同名属性）
             let yOffset = viewController?.webViewViewportTopInset ?? 0
             let f = CGRect(x: left, y: top + yOffset, width: width, height: height)

@@ -348,12 +348,18 @@ extension TakuNetwork: ATAdLoadingDelegate, ATRewardedVideoDelegate, ATInterstit
     // ---- 横幅（ATBannerDelegate） ----
 
     func bannerView(_ bannerView: ATBannerView, didShowAdWithPlacementID placementID: String, extra: [AnyHashable: Any]) {
-        // 【排版对齐】回报素材实际高度（pt，1 CSS px = 1 pt）：H5 taku-banner 收到
-        // onBannerResized 后把占位撑到同等高度并重报悬浮层位置 —— 保证占位与素材严丝合缝，
-        // 不会出现「素材盖住底部 tabbar」或「占位留白」。auto-refresh 换素材高度变化时同样受益。
-        let h = bannerView.bounds.height
-        if h > 0 {
-            fire(placementID, "onBannerResized", 0, String(Int(h.rounded())))
+        // 【排版对齐】回报横幅高度（pt，1 CSS px = 1 pt）：延迟到下一 runloop 布局完成后
+        // 再测量（didShowAd 当帧内部布局可能未完成），优先取内容子视图占用的高度，
+        // 回退视图 frame 高度。H5 taku-banner 收到 onBannerResized 后把占位撑到同等
+        // 高度并重报悬浮层位置 —— 占位与悬浮层严丝合缝，绝不遮挡底部 tabbar。
+        DispatchQueue.main.async { [weak self, weak bannerView] in
+            guard let self = self, let bv = bannerView else { return }
+            bv.layoutIfNeeded()
+            let contentMaxY = bv.subviews.map { $0.frame.maxY }.max() ?? 0
+            let h = contentMaxY > 1 ? contentMaxY : bv.bounds.height
+            if h > 0 {
+                self.fire(placementID, "onBannerResized", 0, String(Int(h.rounded())))
+            }
         }
         fire(placementID, "onAdShow", 0, "")
     }

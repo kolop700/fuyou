@@ -92,6 +92,10 @@ final class ViewController: UIViewController {
     /// 把横幅视图加到悬浮层（按传入 frame，pt 单位）
     func attachBannerView(_ v: UIView, frame: CGRect) {
         v.removeFromSuperview()
+        // 【不遮挡底部导航】ATBannerView 素材按自身尺寸渲染，可能高于 H5 占位帧；
+        // UIView 默认 clipsToBounds=false 会把超出 frame 的内容画到下方（如 tabbar）。
+        // 强制裁剪：悬浮层视觉永不越出 H5 占位区域。
+        v.clipsToBounds = true
         v.frame = frame
         bannerContainer.addSubview(v)
         bannerContainer.isUserInteractionEnabled = true

@@ -152,9 +152,17 @@ const doShow = async () => {
         adHeightPx.value = 0
       },
       onBannerResized(res) {
-        // 原生回报素材实际高度（首次 attach 及 auto-refresh 换高度时）
-        const h = parseFloat(res && res.msg)
+        // 原生回报横幅高度（首次 attach 及 auto-refresh 换高度时）
+        let h = parseFloat(res && res.msg)
         if (!h || h <= 0) return
+        // 【不遮挡底部导航】原生在占位塌缩期只能回报 1pt 级别的帧高度（尚未撑开）。
+        // 此时按标准横幅 320x50 等比估算撑开占位 —— 广告区为 fixed 底部布局，
+        // 占位向上生长；原生按本占位挂载悬浮层，绝不会向下压住 tabbar。
+        // （原生侧同步保证 frame 高度以本占位为准且内容 clipsToBounds，不得向下放大。）
+        if (h < 20) {
+          const info = uni.getSystemInfoSync()
+          h = Math.max(40, Math.round(((info && info.windowWidth) || 375) * 50 / 320))
+        }
         const heightChanged = Math.abs(h - adHeightPx.value) >= 2
         adHeightPx.value = h
         if (!hasAd.value) {
